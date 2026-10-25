@@ -1,4 +1,6 @@
 /bin/
+.cache/
+.rumdl_cache/
 *.exe
 *.test
 coverage.out

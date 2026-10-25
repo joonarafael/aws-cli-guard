@@ -15,9 +15,11 @@ From the repository root:
 
 ```bash
 make help
-make check    # lint, 300-line file cap, vet, race-enabled tests
+make check    # Go lint, 300-line file cap, Markdown lint, vet, race-enabled tests
 make build    # CGO_ENABLED=0 wrapper in bin/aws
-make lint-fix # auto-fix formatting when golangci-lint can
+make lint-fix # auto-fix Go formatting when golangci-lint can
+make md-fmt   # auto-fix Markdown
+make md-lint  # Markdown check only
 ```
 
 `golangci-lint` is pinned in [go.mod](../go.mod) as a Go `tool` dependency. Nothing needs to be installed globally; Make invokes `go tool golangci-lint`.
@@ -28,6 +30,8 @@ To bump the pinned golangci-lint version:
 go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@vX.Y.Z
 go mod tidy
 ```
+
+Markdown is checked with [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](../Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and verifies its SHA-256. Line length is disabled in [.rumdl.toml](../.rumdl.toml). Relative links and heading fragments are checked. `make md-fmt` rewrites fixable issues and still exits successfully when something has to be fixed by hand; `make md-lint` is the check CI runs.
 
 Run `make check` before pushing. GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
 

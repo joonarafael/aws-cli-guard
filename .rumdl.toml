@@ -1,0 +1,7 @@
+# Line length stays off so prose keeps its existing wrapping.
+# Relative file links (MD057) and heading fragments (MD051) stay on.
+
+[global]
+disable = ["MD013"]
+cache-dir = ".cache/rumdl-cache"
+flavor = "gfm"

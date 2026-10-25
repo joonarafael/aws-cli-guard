@@ -43,6 +43,9 @@ jobs:
               run: echo 'GOFLAGS=-mod=readonly' >> "$GITHUB_ENV"
 
             - name: make check
+              env:
+                  # Annotations for rumdl, which make check runs via md-lint.
+                  RUMDL_OUTPUT_FORMAT: github
               run: make check
 
             - name: make build
