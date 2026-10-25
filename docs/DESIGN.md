@@ -22,6 +22,13 @@ The primary goals are:
 - Provide a simple, user-controlled configuration format.
 - Preserve normal AWS CLI behavior whenever a command is allowed.
 - Make bypasses and limitations understandable rather than claiming comprehensive enforcement.
+- Turn the wrapper fully off for the current terminal session only, with a dedicated command.
+- Disable and re-enable the wrapper persistently for the whole installation, including when a published build is broken.
+- Distribute builds through a cross-platform GitHub Releases pipeline, with an installer and direct downloads.
+- Offer auto-update that can be turned off, and suggest an update when a newer version is available.
+- Log tightly by default, and support verbose logging for troubleshooting.
+
+Session off, persistent disable, GitHub Releases, auto-update, and logging are recorded operational criteria. [Section 12](#12-recorded-operational-criteria) specifies them so they are not forgotten. They are outside the current roadmap.
 
 The implementation language will be Go.
 
@@ -41,6 +48,7 @@ The implementation language will be Go.
 - Support both PATH-based installation and an optional shell-integration mode.
 - Provide useful prompts explaining which profile and identity are about to be used.
 - Fail closed when policy evaluation is unavailable or ambiguous in ways that could bypass a configured restriction.
+- Meet the recorded operational criteria in [Recorded operational criteria](#12-recorded-operational-criteria): session-scoped off, persistent system-wide disable and enable, GitHub Releases with direct download, optional auto-update, and tight plus verbose logging. Those criteria are specified so they are not forgotten. They are not scheduled work yet.
 
 ### Non-Goals
 
@@ -602,7 +610,7 @@ Important UX requirements:
 - The AWS CLI's stdout and stderr should remain usable by scripts when execution is allowed.
 - The wrapper should preserve the real AWS CLI exit code.
 - Terminal prompts should not corrupt machine-readable command output.
-- Logs must not contain credential values or unnecessary sensitive command arguments.
+- Logs must not contain credential values or unnecessary sensitive command arguments. Tight default logging and verbose logging are recorded in [Recorded operational criteria](#125-logging). The redaction rules apply to both modes.
 
 ## 10. Bypass Limitations
 
@@ -622,6 +630,8 @@ Potential bypasses include:
 
 The project should clearly document these limitations.
 
+Intentional operator controls for turning the wrapper off are specified in [Recorded operational criteria](#12-recorded-operational-criteria). Those controls are separate from the bypasses above.
+
 The objective is to make accidental misuse harder and more visible, not to guarantee that a determined user or process cannot reach AWS.
 
 For actual authorization, AWS-side controls remain authoritative.
@@ -634,7 +644,7 @@ Even as a lightweight tool, the implementation should follow a few important rul
 
 If configuration cannot be parsed or policy evaluation fails, do not silently execute a command that requires approval.
 
-A configurable emergency bypass, if ever implemented, should be explicit, visible, and carefully documented.
+Session-scoped off and persistent system-wide disable are recorded operator controls for convenience and recovery. They are specified in [Recorded operational criteria](#12-recorded-operational-criteria). While the wrapper is enabled, failure to evaluate policy still refuses the command.
 
 ### Safe process execution
 
@@ -670,7 +680,99 @@ Tests should verify both the expected behavior and the absence of execution when
 
 The real AWS CLI should be replaceable with a test executable during automated tests.
 
-## 12. Go Implementation
+## 12. Recorded operational criteria
+
+These behaviors are part of the intended product. They are not designed in detail, and they sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten.
+
+### 12.1 Turn the wrapper off for one terminal session
+
+The user can turn the wrapper completely off for the current terminal session with a dedicated command.
+
+- The off state ends with that session. A new terminal, login, or shell starts with the wrapper on. The command writes no configuration and no other persistent state.
+- While the session is off, `aws` is the real AWS CLI: original arguments, original environment, no policy evaluation, and no prompt.
+- Processes launched from that session are off as well. A different session stays on.
+- The same session can turn the wrapper back on.
+- The session shows that it is unprotected, so the off state is not silent.
+- A child process cannot change its parent shell's `PATH`. The mechanism is still open. It may be a shell function the session evaluates, or a session-only environment marker that the wrapper honors by handing straight off to the real AWS CLI. Either way, the result above is the requirement.
+
+Illustrative commands, not a final interface:
+
+```text
+aws-guard off
+aws-guard on
+```
+
+### 12.2 Persistent system-wide disable and enable
+
+The user can disable the wrapper for the whole installation and enable it again later. The disabled state persists across terminal sessions, logins, and reboots until enable. System-wide means every session that uses this installation. A per-user install covers that user's sessions. A machine-wide install covers the machine.
+
+This is for troubleshooting, and for recovery when a published build is broken or corrupted.
+
+- Disable and enable work when the installed wrapper binary does not run. The recovery path is documented and does not depend on executing that binary. The mechanism is still open. Candidates are a sentinel file that shell integration checks before invoking the wrapper, a small control script installed beside the binary, and invoking the real AWS CLI by absolute path.
+- Earlier GitHub Release assets stay available, so a known-good build can be installed again by direct download. See [Publish pipeline](#123-publish-pipeline).
+- The disabled state is explicit and visible.
+- Persistent disable keeps every session off until enable, including a session that had been turned back on.
+- Session off ([above](#121-turn-the-wrapper-off-for-one-terminal-session)) applies only in the session that requested it, and only while the installation is enabled.
+
+This is an operator control for the person who administers the machine. [Bypass Limitations](#10-bypass-limitations) still describes what a determined local user can already do. While the wrapper is enabled, [fail-closed policy evaluation](#fail-closed-policy-evaluation) still refuses a command when policy cannot be evaluated.
+
+Illustrative commands, not a final interface:
+
+```text
+aws-guard disable
+aws-guard enable
+```
+
+### 12.3 Publish pipeline
+
+Distribution follows [Aikido safe-chain](https://github.com/AikidoSec/safe-chain): GitHub Releases hold the artifacts, and each build can be downloaded directly.
+
+Safe-chain publishes versioned release assets and treats those URLs as immutable. An installer script selects the platform, downloads the matching binary from `releases/download/<version>/...`, and verifies a checksum the pipeline produced. The binaries are also direct download assets. AWS CLI Guard uses that shape. GitHub Releases are the distribution channel.
+
+- A release builds a binary for every platform the project supports at that time. Today that is Linux and macOS, amd64 and arm64, per [ADR 0001](decisions/0001-linux-and-macos-first.md). A later platform, including Windows once the project supports it, is added by extending that build matrix. The channel stays GitHub Releases.
+- Artifacts are attached to a GitHub Release. The versioned asset URL is the canonical download. After publication, that version's bytes stay fixed.
+- Producing the build can be automated. Publishing the release that new installs fetch is a deliberate step, so a broken build can be held back.
+- Each release includes an installer that detects OS and architecture, downloads the matching binary, and verifies a checksum published with the release.
+- Each release also includes the binaries and checksums as direct downloads, without the installer.
+- Documentation install snippets name a specific version. The releases page lists the other versions. A latest-release URL may exist as a convenience. Installing a pinned version stays possible, including an older version during recovery.
+
+Illustrative asset layout, not a final naming scheme:
+
+```text
+aws-cli-guard_<version>_linux_amd64.tar.gz
+aws-cli-guard_<version>_linux_arm64.tar.gz
+aws-cli-guard_<version>_darwin_amd64.tar.gz
+aws-cli-guard_<version>_darwin_arm64.tar.gz
+checksums.txt
+install.sh
+```
+
+### 12.4 Auto-update and update notices
+
+- A setting turns automatic updates on or off. The default is not decided yet.
+- When a newer release exists and auto-update is off, the tool suggests the update.
+- When auto-update is on, the tool downloads that release, verifies it with the same checksums as the installer, replaces the installed binary, and tells the user that it did so.
+- The check and any suggestion leave the AWS command's stdout and exit code alone, and they do not stall the command. Suggestions are written to stderr.
+- The check contacts the release channel only. It sends what it needs to learn the current release, such as its own version. It does not send AWS credentials, profile names, or command arguments.
+- After an update, including a bad one, [persistent disable](#122-persistent-system-wide-disable-and-enable) still works, and an older release remains a direct download.
+
+### 12.5 Logging
+
+- Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path.
+- Verbose logging is for troubleshooting. It records the decision path: how the profile was resolved, which policy rule matched, which caller-context signals were seen, which real AWS CLI binary was selected, and why the wrapper handed off or refused.
+- Both modes write to stderr, so AWS CLI stdout stays usable by scripts.
+- Both modes omit secret access keys, session tokens, credential-process output, and other credential material. Verbose mode uses the same redaction. Entire command lines stay out of the default log, consistent with [Secret handling](#secret-handling).
+- The trigger is still open: a flag, an environment variable, a config setting, or a combination.
+
+Illustrative, not final:
+
+```text
+AWS_CLI_GUARD_LOG=verbose aws s3 ls
+```
+
+This is operational logging. The optional audit log in [Phase 6](#phase-6-optional-advanced-features) is a separate later idea, and it still has to redact sensitive data.
+
+## 13. Go Implementation
 
 Go is a good fit for a portable, self-contained command-line tool.
 
@@ -729,7 +831,7 @@ The main execution path should be straightforward:
 
 The actual implementation must handle unresolved profiles, credential-source ambiguity, non-interactive operation, signals, and execution errors. This pseudocode is only the conceptual happy path.
 
-## 13. Testing Strategy
+## 14. Testing Strategy
 
 The initial implementation should be tested without requiring access to a real AWS account.
 
@@ -785,7 +887,7 @@ The initial implementation should be tested without requiring access to a real A
 
 The test suite should explicitly verify that no agent detector treats an absent marker as proof that the caller is human.
 
-## 14. Initial Roadmap
+## 15. Initial Roadmap
 
 ### Phase 1: Minimum viable product
 
@@ -842,12 +944,24 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - AWS identity verification.
 - More detailed policy explanations.
 - Additional agent integrations.
-- Optional audit logging with sensitive-data redaction.
+- Optional audit logging with sensitive-data redaction. Day-to-day tight and verbose logging is a separate recorded criterion in [Logging](#125-logging).
 - Stronger integration with OS-level isolation mechanisms.
+
+### Recorded, not yet scheduled
+
+[Recorded operational criteria](#12-recorded-operational-criteria) are intentionally outside phases 1–6:
+
+- A command that turns the wrapper off for the current terminal session only.
+- A persistent system-wide disable and enable, usable when a published build is broken.
+- A cross-platform GitHub Releases pipeline with an installer and direct downloads.
+- Optional auto-update, with a suggestion when a newer version is available.
+- Tight default logging and verbose logging.
+
+Leave them unimplemented until a later pass pulls them into a phase.
 
 The later phases should be driven by actual user needs rather than being prerequisites for a useful initial release.
 
-## 15. Open Design Questions
+## 16. Open Design Questions
 
 Questions to resolve during implementation:
 
@@ -861,10 +975,10 @@ Questions to resolve during implementation:
 8. Which AI agents should be supported initially?
 9. Should agent detection be enabled by default or require explicit configuration?
 10. What should happen when the caller is unknown and the requested profile is ordinarily allowed?
-11. Should the tool support an explicit, conspicuous bypass for debugging or recovery?
+11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. A separate persistent control disables and re-enables it system-wide, including when a published build is broken. Mechanisms are not designed yet. See [Recorded operational criteria](#12-recorded-operational-criteria).
 12. What minimum AWS CLI versions and configuration features must be supported?
 
-## 16. Initial Product Principle
+## 17. Initial Product Principle
 
 AWS CLI Guard should be small, understandable, local-first, and conservative when it cannot determine whether an invocation is permitted.
 
