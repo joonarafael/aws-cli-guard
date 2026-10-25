@@ -1,4 +1,4 @@
-# AWS CLI Guard — Initial Design Document
+# Initial Design Document
 
 ## 1. Overview
 
