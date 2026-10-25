@@ -845,7 +845,7 @@ The later phases should be driven by actual user needs rather than being prerequ
 
 Questions to resolve during implementation:
 
-1. Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?
+1. ~~Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?~~ **Resolved:** [ADR 0001](decisions/0001-linux-and-macos-first.md) — Linux and macOS first; cross-platform intent; Windows deferred.
 2. Which shells should receive first-class integration?
 3. Should YAML or TOML be the canonical configuration format?
 4. Should `aws sso login` be allowed by default, or should it have a separate policy?
