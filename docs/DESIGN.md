@@ -17,7 +17,7 @@ The primary goals are:
 - Require explicit user approval before a profile can be used.
 - Allow users to permanently allow trusted profiles, such as explicitly designated read-only profiles.
 - Allow users to deny particular profiles entirely.
-- Support temporary approvals to reduce repetitive prompts.
+- Support explicit, time-limited grants so a profile can be used on this machine without asking again on each command.
 - Apply stricter policies when a caller appears to be an AI agent.
 - Provide a simple, user-controlled configuration format.
 - Preserve normal AWS CLI behavior whenever a command is allowed.
@@ -41,12 +41,12 @@ The implementation language will be Go.
 - Apply local policy before executing the real AWS CLI.
 - Support allow, prompt, and deny decisions.
 - Support user-defined profile policies.
-- Support optional session-scoped and time-limited approvals.
+- Support explicit system-wide grants that expire after a TTL.
 - Detect known AI coding agents using available signals.
 - Apply agent-specific policies, including unconditional profile denials.
 - Handle common AWS CLI configuration and credential-provider mechanisms safely.
 - Support both PATH-based installation and an optional shell-integration mode.
-- Provide useful prompts explaining which profile and identity are about to be used.
+- When a profile is not approved yet, fail the invocation and explain how to allow it on this machine before retrying, including headless use.
 - Fail closed when policy evaluation is unavailable or ambiguous in ways that could bypass a configured restriction.
 - Meet the recorded operational criteria in [Recorded operational criteria](#12-recorded-operational-criteria): session-scoped off, persistent system-wide disable and enable, GitHub Releases with direct download, optional auto-update, and tight plus verbose logging. Those criteria are specified so they are not forgotten. They are not scheduled work yet.
 
@@ -81,13 +81,19 @@ When a process executes `aws`, the wrapper:
 2. Determines the available caller-context signals.
 3. Loads the local configuration and applicable policy.
 4. Evaluates profile restrictions and caller-specific rules.
-5. Allows, prompts for approval, or denies the invocation.
+5. Allows the invocation, refuses it with guidance when a required grant is missing, or denies it.
 6. If allowed, executes the real AWS CLI with the original arguments and appropriate environment.
-7. Returns the subprocess exit status and propagates signals where practical.
+7. On Linux and macOS, replaces this process with the real AWS CLI so the caller observes that program's exit code.
 
 The wrapper must locate the real AWS CLI without accidentally invoking itself recursively.
 
-The original arguments should be forwarded without unnecessary modification. The implementation should use safe process execution rather than constructing a shell command from user-controlled arguments.
+The original arguments are forwarded unchanged. The wrapper does not add, remove, or reorder them, and it does not construct a shell command from them.
+
+### Wrapper control plane
+
+The `aws` entrypoint has no flags of its own. Guard behavior is controlled by the `aws-guard` binary and by `AWS_CLI_GUARD_*` environment variables. A flag on `aws` would collide with AWS CLI global options and would break the rule that arguments are forwarded unchanged.
+
+`AWS_CLI_GUARD_REAL_AWS` overrides discovery of the real binary. Other `AWS_CLI_GUARD_*` variables are defined with the feature that reads them. The wrapper does not invent a flag form of the same control.
 
 ### Installation modes
 
@@ -128,76 +134,95 @@ The installation process may let users select either mode. PATH-based installati
 
 Neither mode should be described as complete enforcement.
 
+### Reversibility
+
+Uninstall is out of scope. Anything the software changes on the machine still has to be reversible later, without guessing and without a working wrapper binary.
+
+- The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI. Both files remain, which is also how the wrapper finds the real one.
+- Every path an installer creates or edits is recorded in a manifest next to the installation. A later uninstall reads that manifest.
+- Edits to shell startup files sit between marked begin and end comments, so only those lines need to be removed.
+- Policy, grants, cache, session-off records, and a disable sentinel live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files.
+- User policy is kept unless a future uninstall is explicitly asked to purge it. Grants, cache, and session records can be removed without removing policy.
+- The manifest and the shell markers are plain files. Recovery does not depend on running the installed `aws` or `aws-guard` binary.
+
 ## 4. Policy Model
 
 Policies are configured locally by the user.
 
 Each profile has one of three basic actions:
 
-- `allow`: execute without an approval prompt.
-- `prompt`: require approval before execution.
-- `deny`: refuse execution.
+- `allow`: execute without a grant.
+- `prompt`: execute only when a valid system-wide grant exists for that profile. Otherwise fail the invocation and tell the user how to allow it. The `aws` process does not ask an interactive question.
+- `deny`: refuse execution. A grant cannot override this.
 
 The default policy should be `prompt`.
 
-A profile-specific `deny` must take precedence over a normal allow rule or temporary approval. Agent-specific restrictions must also be evaluated before an ordinary approval can authorize execution.
+A profile-specific `deny` takes precedence over a normal allow rule or a grant. Agent-specific restrictions are evaluated before a grant can authorize execution.
 
 The initial policy evaluation order should be:
 
-1. Resolve the effective invocation and profile, where possible.
-2. Load and validate configuration.
+1. Resolve the effective invocation and the credential subject, where possible. A named profile, the profile literally named `default`, environment credentials, and other ambient credentials are different subjects. See [Environment-based credentials](#64-environment-based-credentials).
+2. Load configuration. A missing policy file is not a corrupt file. See [Missing policy](#missing-policy) and [Corrupted files](#corrupted-files).
 3. Apply explicit unconditional deny rules.
-4. Apply applicable caller-context restrictions.
-5. Apply profile-specific policy.
-6. Check any valid temporary approval.
-7. Prompt when required.
+4. Apply applicable caller-context restrictions. An unknown caller uses the normal profile policy. See [Agent-specific policy](#85-agent-specific-policy).
+5. If the command would print access keys, apply the credential-export rule. A profile allow or a grant does not override it. See [Commands that print access keys](#commands-that-print-access-keys).
+6. Apply profile-specific policy.
+7. If the action is `prompt`, require a valid system-wide grant. See [Grants](#5-grants).
 8. Execute the real AWS CLI if permitted.
 
 The exact precedence between global and profile-specific rules should be documented and deterministic. Explicit denials should never be silently overridden by broader allow rules.
 
 ### Example configuration
 
-Illustrative YAML:
+User policy is TOML. Illustrative, not a finalized schema:
 
-```yaml
-    version: 1
+```toml
+version = 1
 
-    defaults:
-      action: prompt
+[defaults]
+action = "prompt"
 
-    profiles:
-      dev-readonly:
-        action: allow
+[profiles.dev-readonly]
+action = "allow"
 
-      staging-admin:
-        action: prompt
+[profiles.staging-admin]
+action = "prompt"
 
-      production-admin:
-        action: prompt
-        approval_ttl: 300
+[profiles.production-admin]
+action = "prompt"
+# Default duration for `aws-guard allow` when --ttl is omitted.
+# This field does not grant anything by itself.
+approval_ttl = "5m"
 
-      production-breakglass:
-        action: deny
+[profiles.production-breakglass]
+action = "deny"
 
-    agents:
-      default: deny
-      allow_readonly: true
+# Recognized agents only. Unknown callers use the profile policy above.
+[agents]
+default = "deny"
+
+[agents.profiles.dev-readonly]
+action = "allow"
+
+# Commands that print access keys. Default is prompt: fail until set to "allow".
+[credential_export]
+action = "prompt"
 ```
 
-This example is a starting point, not a finalized schema.
+A build that does not enforce a section rejects a file that contains it. Ignoring `agents` or `credential_export` would let the file claim a guarantee the binary does not provide. Adding an enforced section is a schema change, as described in [Versions and schema changes](#versions-and-schema-changes).
 
-`allow_readonly` must not be interpreted as proof that a profile is read-only merely because its name contains a word such as `readonly`. If the tool supports a read-only classification, the user must explicitly configure it or the tool must establish it through a documented, sufficiently reliable method.
+`allow_readonly` is not a policy key. A profile is not read-only because its name contains a word such as `readonly`. If the tool later supports a read-only classification, the user must set it explicitly, or the tool must establish it through a documented, sufficiently reliable method. A `classification` field would be a user assertion unless independently verified. It is not an AWS authorization guarantee.
 
-A more explicit future schema could distinguish a user's own profile labels from observed AWS identity information:
+### Commands that print access keys
 
-```yaml
-    profiles:
-      dev-readonly:
-        action: allow
-        classification: readonly
-```
+Some AWS CLI commands print credential material. The initial set is explicit:
 
-The `classification` field is a user assertion unless independently verified. It is not an AWS authorization guarantee.
+- `aws configure export-credentials`
+- `aws configure get` when the requested setting is `aws_access_key_id`, `aws_secret_access_key`, or `aws_session_token`
+
+If `configure get` is invoked and the wrapper cannot tell whether the setting is one of those, it treats the command as secret-printing. The set grows only by an intentional change. Ordinary API calls are not in it. `aws configure list-profiles`, `aws configure set`, and SSO login are not in it.
+
+The default action is `prompt`, including when the `[credential_export]` section is omitted. The invocation fails and the message points at that setting in the policy file. Setting it to `allow` is the override. Setting it to `deny` refuses the commands even for an otherwise allowed profile. A profile `allow` and a system-wide grant do not permit these commands.
 
 ### Configuration behavior
 
@@ -205,68 +230,129 @@ The tool should:
 
 - Support a default policy for unspecified profiles.
 - Support profile-specific overrides.
-- Validate configuration at startup or before each policy evaluation.
-- Reject malformed policy rather than silently treating it as allow.
-- Explain configuration errors clearly.
+- Validate configuration before each policy evaluation. Each `aws` invocation loads policy from disk. There is no long-lived daemon and no cached allow decision.
+- Reject malformed policy rather than treating it as allow.
+- Explain configuration errors clearly, without printing file bodies or credential values.
 - Keep configuration local by default.
-- Avoid silently creating persistent approvals.
+- Create grants only through the explicit allow command.
 - Provide a command to inspect the effective policy.
 - Provide a command to validate the configuration.
-- Consider restrictive file permissions for configuration and approval-state files.
-- Never store AWS credentials in its own configuration.
+- Create policy, grant, and cache files with mode `0600`, and their directories with mode `0700`, using an explicit chmod rather than the process umask.
+- Never store AWS credentials in its own configuration, grants, cache, or logs.
 
-Example diagnostic commands:
-
-```text
-    aws-guard policy list
-    aws-guard policy explain production-admin
-    aws-guard config validate
-```
-
-These commands are illustrative.
-
-## 5. Approval Scopes
-
-Approval should be explicit and should not automatically grant unrestricted future access.
-
-Initial approval scopes:
-
-### One invocation
-
-Approve only the current AWS CLI invocation. This should be the default for privileged profiles.
-
-### Current shell session
-
-Allow subsequent invocations associated with the same recognized shell session, subject to expiry and policy changes.
-
-### Timed approval
-
-Allow a profile for a specified period, such as five minutes.
-
-The user interface should make the selected scope clear.
-
-Example:
+Example commands, not a final interface:
 
 ```text
-    AWS CLI Guard
-
-    Profile: production-admin
-    Caller: interactive terminal
-    Command: ec2 describe-instances
-
-    This profile requires approval.
-
-    [a] Allow this invocation
-    [s] Allow for this shell session
-    [t] Allow for five minutes
-    [d] Deny
+aws-guard init
+aws-guard allow production-admin --ttl 5m
+aws-guard policy list
+aws-guard policy explain production-admin
+aws-guard config validate
+aws-guard recover policy
+aws-guard recover grants
+aws-guard recover cache
 ```
 
-Approval persistence must be designed carefully. A PID alone is not a reliable session identifier because PIDs can be reused. Possible session mechanisms include an explicit shell integration, a wrapper-managed session token, or a suitable process/session identifier on supported operating systems.
+### On-disk files
 
-Temporary approvals must not override explicit deny rules, including agent-specific restrictions.
+Three directories, because the files have different lifetimes. User policy is something people keep and sync. Grants are machine-written and must not travel with that policy. Cache is disposable. They are not stored under `~/.aws`.
 
-For unattended invocations, prompts cannot be assumed to work. The policy should explicitly define behavior for non-interactive contexts. A sensible default is to deny a command that requires approval if no usable interactive approval mechanism exists.
+The same paths are used on Linux and macOS. The tool does not call `os.UserConfigDir()`, which on macOS points at `~/Library/Application Support`.
+
+| Role | Default path | Respects |
+| --- | --- | --- |
+| User policy | `~/.config/aws-cli-guard/config.toml` | `XDG_CONFIG_HOME`, then `AWS_CLI_GUARD_CONFIG_DIR` |
+| Grants | `~/.local/state/aws-cli-guard/grants.json` | `XDG_STATE_HOME`, then `AWS_CLI_GUARD_STATE_DIR` |
+| Cache | `~/.cache/aws-cli-guard/` | `XDG_CACHE_HOME`, then `AWS_CLI_GUARD_CACHE_DIR` |
+
+`AWS_CLI_GUARD_CONFIG_DIR`, `AWS_CLI_GUARD_STATE_DIR`, and `AWS_CLI_GUARD_CACHE_DIR` override the directory for tests and for dogfooding. A single home directory is not used, so a grant cannot sit beside a policy file that dotfiles sync would copy to another machine.
+
+If `HOME` is unset and the relevant XDG variable is also unset, the wrapper stops. It does not fall back to the current directory or to `/tmp`.
+
+The tool reads and writes these paths as regular files. A symlink is a diagnosis failure. Recovery renames the symlink aside and creates a regular file. It does not follow the symlink and write to the target.
+
+Writes are atomic: a temporary file in the same directory, synced, then renamed into place. A crash leaves the previous file intact. Abandoned temporary files are kept and named as partials. They are not removed and they are not treated as the live file.
+
+Grants are rewritten under a lock so two overlapping `aws-guard allow` commands cannot drop one update in a way that widens access. A lost update means the user runs allow again.
+
+### Versions and schema changes
+
+The policy file and the grants file each carry their own integer `version`. The version is required. Cache files that are structured carry a version too.
+
+Decoding is strict. Unknown fields, duplicate keys, missing versions, and unknown action values are errors. The live `aws` path does not migrate or rewrite a file it does not understand.
+
+A binary interprets the current version and any older version it still supports, in memory. An explicit migrate command, separate from recovery, can rewrite an older supported file. That command copies the current file aside first, then atomically replaces it. `aws` never calls it.
+
+An unsupported version, including a newer one, uses the corrupted-file flow below. Writing a fresh file is not a migration. It drops the previous contents down to a default file, and the previous bytes stay on disk under the moved name.
+
+Policy keys for behavior this build does not enforce are unknown fields. They fail validation.
+
+### Missing policy
+
+A missing policy file means the user has not run init. `aws` does not create the file, does not execute the real CLI, and does not treat the absence as an allow. It exits with a wrapper status and tells the user to run `aws-guard init`.
+
+`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows. If the policy file already exists, init refuses to overwrite it.
+
+A missing grants file means there are no grants. That is normal before the first allow, and it is not corruption. A missing cache means there is nothing cached. Cache misses do not affect authorization.
+
+### Corrupted files
+
+Corruption is a file that is present but unusable: empty, unreadable, not a regular file, invalid syntax, duplicate keys, a missing or unsupported version, unknown fields, or invalid values. Permission bits looser than `0600` are reported and are not themselves corruption. Expired grants are not corruption.
+
+The tool diagnoses the file and prints the result to stderr. The note names the file class and path, the kind of failure, parser line and column when available, the version found, and the versions this binary supports. It names offending keys. It does not dump the file. A damaged file may contain a pasted access key or password.
+
+The user has two choices:
+
+1. Exit and fix the file. The file stays where it is.
+2. Write a fresh file. The tool first moves the unusable file to a sibling name in the same directory, `config.toml.corrupt.<utc-timestamp>` or the equivalent for `grants.json` and cache files. If that name is taken, it picks another suffix. It never overwrites a preserved file and never deletes one. The fresh policy file is the init default. The fresh grants file is the current version with an empty grant list, which grants nothing. The fresh cache is empty.
+
+Those two choices apply to the policy file, the grants file, and the cache. Choice 2 always moves the previous file aside for later diagnosis. The tool does not delete user data from these directories.
+
+An `aws` invocation that hits a corrupt policy file or a corrupt grants file takes choice 1. It prints the diagnosis, explains both choices, and exits without executing AWS and without modifying the file. Choice 2 is an explicit command (`aws-guard recover policy`, `aws-guard recover grants`, or `aws-guard recover cache`). That command requires a terminal and a confirmation, so a headless process cannot reset policy or grants.
+
+While the policy file is corrupt, nothing is executed. While the grants file is corrupt, nothing is executed either: a half-read grant file must not become an implicit allow. Cache corruption does not block `aws`. The wrapper prints a short warning and continues. The same recover command is available when the user wants a fresh cache.
+
+## 5. Grants
+
+A `prompt` profile runs only after the user has explicitly allowed it for this installation, for a limited time. That is the approval model. The `aws` process does not prompt. If the grant is missing or expired, the wrapper fails the call and tells the user to allow the profile first, then retry. The same failure happens in a terminal and in a headless script. Approving inside the failing process would hide the decision the tool exists to make explicit: this profile may be invoked anywhere on this machine for the TTL.
+
+On a per-user install, "anywhere on this machine" means later invocations in any session of that user, until expiry. It does not mean every account on a shared machine. A reboot does not clear a grant early. Expiry is a wall-clock timestamp in the grants file. A clock step backwards can keep a grant alive longer. That is accepted for this threat model.
+
+Grants are created only by the allow command. A successful `aws` invocation, an SSO login, and a config reload do not create one. Illustrative:
+
+```text
+aws-guard allow production-admin --ttl 5m
+```
+
+The command requires a controlling terminal. The user confirms by typing the profile name, so a headless caller cannot grant itself. The command then prints the profile, the expiry, and that the grant applies to later invocations on this installation, including headless ones. An agent that can already drive the user's terminal can still confirm. That limit is the same one documented for session-off in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session).
+
+`approval_ttl` in the profile's policy is the default duration when `--ttl` is omitted. It does not grant access on its own.
+
+A grant record stores the profile name, the expiry, and a fingerprint of the credential source visible in the AWS config: account, role ARN, SSO account and role, and whether `credential_process` is set. The fingerprint does not include secrets or the credential-process command. If those source fields change, or if they cannot be read, the grant does not apply and the profile has to be allowed again.
+
+Every invocation evaluates policy again. The grants file only answers a `prompt` action. Deny rules, including agent denials, beat a grant.
+
+One-invocation prompts and per-shell prompts are not approval scopes. They would obscure a decision that is machine-wide for a period of time. Session identity is used for the session-off control, not for grants.
+
+Illustrative failure:
+
+```text
+AWS CLI Guard
+
+Profile: production-admin
+Command: ec2 describe-instances
+Policy: prompt
+
+Prompt failed. This profile is not approved on this machine.
+The command was not executed.
+
+Allow it first, for a limited time, then retry. The grant covers later
+invocations on this machine, including headless ones, until it expires:
+
+  aws-guard allow production-admin --ttl 5m
+```
+
+The command words are illustrative. The message must say that the call failed because the profile is not allowed yet, and that the user allows it on the system before invoking it headlessly. It must not include a bypass, an environment variable that disables the wrapper, or the path of the real AWS CLI. It shows the service and operation, not the raw argument list.
 
 ## 6. Effective AWS Profile Resolution
 
@@ -321,7 +407,7 @@ If no explicit profile is selected, the AWS CLI may use its default configuratio
 
 The wrapper must not assume that the absence of `--profile` means no credentials will be used.
 
-The default profile must be subject to policy like any other profile.
+The profile named `default` is a normal named profile. Policy can allow, prompt, or deny it. The wrapper does not forbid it. Whenever the effective subject is that profile, the wrapper writes one stderr warning that a named profile is the better practice. The warning is not a denial, and it is not a substitute for policy. Ambient credentials are not the `default` profile and do not produce this warning. See [Environment-based credentials](#64-environment-based-credentials).
 
 ### 6.4 Environment-based credentials
 
@@ -333,21 +419,18 @@ AWS CLI credential resolution can use environment variables such as:
     AWS_SESSION_TOKEN
 ```
 
-These variables can provide credentials independently of the named profile mechanism.
+`AWS_ACCESS_KEY_ID` is not the named profile. When `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, the AWS CLI uses those environment credentials instead of the access key stored for the profile selected by `--profile` or `AWS_PROFILE`. `AWS_SESSION_TOKEN` belongs to that same environment credential set. An allow rule or a grant for the named profile does not authorize that invocation, and the wrapper must not describe it as use of that profile.
 
-The wrapper must detect when the invocation may use environment-supplied credentials instead of the expected profile and apply a documented policy.
+The credential subject is one of:
 
-It must not claim that it has gated `production-admin` if the command is actually using a different credential source.
+- A named profile, including the profile whose name is `default`.
+- Environment credentials, when the access-key variables above supply the keys.
+- Another ambient source the wrapper recognizes, such as container credentials or instance metadata.
+- Unresolved, when a credential source may be in use and the wrapper cannot classify it.
 
-Potential initial policy options:
+A grant or an allow for one subject does not cover another. The wrapper does not guess that an unresolved source is `default` or the profile named on the command line. An unresolved subject uses the default action, unless the user has set a policy for that subject. Environment credentials are that kind of subject: they can be named in policy, and they are not an entry under `profiles`.
 
-- Deny invocations that use credential sources the tool cannot classify.
-- Require approval for unclassified credential sources.
-- Allow them only through an explicit configuration option.
-
-The default should favor visibility and safety over silently assuming the selected profile determines the identity.
-
-The wrapper must never print secret access keys or session tokens.
+The wrapper must never print secret access keys, session tokens, or passwords.
 
 ### 6.5 AWS configuration files
 
@@ -410,7 +493,7 @@ The wrapper must not invoke a credential process merely to inspect it if doing s
 
 A profile name identifies a configuration entry, not necessarily the final AWS account, role, or permission set.
 
-For useful approval prompts, the tool may optionally display:
+For useful denial and guidance messages, the tool may optionally display:
 
 - Requested profile.
 - Configured account ID, if available.
@@ -443,9 +526,9 @@ Possible behavior:
 - Apply the normal profile policy to subsequent commands using that profile.
 - Avoid assuming that a profile has no usable credentials just because the user has not explicitly approved it in AWS CLI Guard.
 
-A successful SSO login must not automatically create an AWS CLI Guard approval.
+A successful SSO login must not automatically create a grant.
 
-Likewise, revoking a wrapper approval does not revoke cached SSO credentials.
+Likewise, revoking a grant does not revoke cached SSO credentials.
 
 ## 8. AI Agent Detection
 
@@ -518,26 +601,27 @@ They should remain optional.
 
 ### 8.5 Agent-specific policy
 
-Example:
+Illustrative TOML, for a build that enforces agent rules:
 
-```yaml
-    agents:
-      default: deny
-      detection:
-        environment_markers: true
-        parent_process: true
-      profiles:
-        dev-readonly:
-          action: allow
-        staging-admin:
-          action: deny
-        production-admin:
-          action: deny
+```toml
+[agents]
+default = "deny"
+
+[agents.detection]
+environment_markers = true
+parent_process = true
+
+[agents.profiles.dev-readonly]
+action = "allow"
+
+[agents.profiles.staging-admin]
+action = "deny"
+
+[agents.profiles.production-admin]
+action = "deny"
 ```
 
-This is illustrative configuration.
-
-The policy engine should distinguish between:
+The policy engine distinguishes:
 
 - Recognized agent.
 - Unknown caller.
@@ -545,11 +629,11 @@ The policy engine should distinguish between:
 - Non-interactive invocation.
 - Caller context that cannot be determined.
 
-If an agent is recognized, the tool can deny specific profiles even if those profiles are ordinarily allowed for human use.
+If an agent is recognized, the tool can deny specific profiles even when those profiles are allowed for other callers.
 
-An explicit deny should take precedence over a general allow rule or an existing temporary approval.
+An explicit deny takes precedence over a general allow rule or a current grant.
 
-If agent detection is uncertain, the tool must apply a documented fallback policy rather than assuming the caller is human.
+An unknown or uncertain caller uses the normal profile policy. A missing agent marker is not proof of a human, and it is not treated as a recognized agent. Applying the agent policy to an uncertain caller would make `allow` meaningless, because detection can never prove the caller is human. Only a positive recognition selects agent rules. Terminal and non-interactive state do not, by themselves, select those rules. See [TTY and interactive-session detection](#83-tty-and-interactive-session-detection).
 
 ### 8.6 Stronger isolation
 
@@ -559,58 +643,45 @@ Examples include running agents under separate operating-system accounts, in res
 
 These approaches are outside the minimum viable product.
 
-## 9. Prompt and User Experience
+## 9. User Experience
 
-Prompts should communicate the security-relevant information without overwhelming the user.
+Messages should state the security-relevant facts without overwhelming the user, and without asking the `aws` process to collect an approval.
 
-Example:
-
-```text
-    AWS CLI Guard
-
-    Requested profile: production-admin
-    Account: 123456789012
-    Role: AdministratorAccess
-    Caller: recognized AI agent
-    Command: ec2 describe-instances
-
-    Policy: DENY
-    Reason: production-admin is denied for recognized agents.
-
-    Command was not executed.
-```
-
-The account and role shown here are illustrative.
-
-For an ordinary approval:
+A denial:
 
 ```text
-    AWS CLI Guard
+AWS CLI Guard
 
-    Requested profile: staging-admin
-    Command: ec2 describe-instances
-    Caller: interactive terminal
+Requested profile: production-admin
+Account: 123456789012
+Role: AdministratorAccess
+Caller: recognized AI agent
+Command: ec2 describe-instances
 
-    This profile requires approval.
+Policy: deny
+Reason: production-admin is denied for recognized agents.
 
-    [a] Allow this invocation
-    [s] Allow for this shell session
-    [t] Allow for five minutes
-    [d] Deny
+Command was not executed.
 ```
 
-Important UX requirements:
+The account and role shown here are illustrative. They are included only when grounded in configuration or a real verification.
 
-- Denials should explain the applicable policy.
-- Approval should be explicit.
-- The default choice should be deny or no action.
-- Timeouts should not automatically grant permission.
-- Non-interactive prompts must not hang indefinitely.
-- Errors should be written to stderr.
-- The AWS CLI's stdout and stderr should remain usable by scripts when execution is allowed.
-- The wrapper should preserve the real AWS CLI exit code.
-- Terminal prompts should not corrupt machine-readable command output.
-- Logs must not contain credential values or unnecessary sensitive command arguments. Tight default logging and verbose logging are recorded in [Recorded operational criteria](#125-logging). The redaction rules apply to both modes.
+A `prompt` profile with no current grant fails the same way in a terminal and in a headless run. The message says the prompt failed and that the profile has to be allowed on this system before it is invoked, including headlessly. The full example is in [Grants](#5-grants). There is no menu, no default key, and no timeout that grants access. The process does not read stdin, so a piped payload is left untouched because the real CLI is not started.
+
+A command that would print access keys fails until `[credential_export] action` is `allow` in the user policy. The message says so. It does not echo the key, the token, or the argument that would have selected it.
+
+When the effective profile is `default`, stderr gets one warning line that a named profile is better practice. The command still follows policy for `default`.
+
+Requirements:
+
+- Denials and refusals name the policy rule that fired.
+- Grants are created only by the explicit allow command, which confirms the profile name on a terminal.
+- Errors and warnings go to stderr.
+- When execution is allowed, the real AWS CLI's stdout and stderr stay as that program writes them. The wrapper has been replaced and does not filter them.
+- The caller sees the real AWS CLI exit code. On Linux and macOS the wrapper replaces itself with that binary (`syscall.Exec`), so the code is the CLI's code, not a translation. Wrapper refusals, missing policy, corrupt policy, and corrupt grants exit with one documented wrapper status instead. That status must not be one of the AWS CLI's documented codes: 0, 1, 2, 130, 252, 253, 254, or 255. The stderr text identifies the failure as AWS CLI Guard's.
+- Guidance must not include a wrapper-disabling environment variable or the path of the real AWS CLI.
+- Displayed command text is the service and operation, not the raw argument vector. Profile names and other displayed fields are single-line and stripped of control characters.
+- Logs and crash text follow [Secret handling](#secret-handling) and [Logging](#125-logging).
 
 ## 10. Bypass Limitations
 
@@ -642,31 +713,36 @@ Even as a lightweight tool, the implementation should follow a few important rul
 
 ### Fail-closed policy evaluation
 
-If configuration cannot be parsed or policy evaluation fails, do not silently execute a command that requires approval.
+A missing policy file, a corrupt policy file, a corrupt grants file, or any other failure to evaluate policy refuses the command. The wrapper does not execute the real CLI on a guess. Missing and corrupt files are different cases, specified in [Missing policy](#missing-policy) and [Corrupted files](#corrupted-files). Cache corruption does not refuse the command.
 
-Session-scoped off and persistent system-wide disable are recorded operator controls for convenience and recovery. They are specified in [Recorded operational criteria](#12-recorded-operational-criteria). While the wrapper is enabled, failure to evaluate policy still refuses the command.
+Session-off and persistent system-wide disable are recorded operator controls for convenience and recovery. They are specified in [Recorded operational criteria](#12-recorded-operational-criteria). While the wrapper is enabled, failure to evaluate policy still refuses the command.
 
 ### Safe process execution
 
 - Do not build a shell command string from AWS arguments.
-- Execute the real AWS CLI using argument arrays.
+- Execute the real AWS CLI using argument arrays, forwarded unchanged.
+- On Linux and macOS, replace the wrapper process so the AWS CLI's exit code and signal behavior are what the caller observes.
 - Preserve the intended environment while applying any necessary wrapper-specific handling.
 - Avoid recursive invocation.
-- Forward signals and return exit status correctly where supported.
+- The `aws` entrypoint has no wrapper flags. See [Wrapper control plane](#wrapper-control-plane).
 
 ### Secret handling
 
-- Never log AWS secret access keys, session tokens, or credential-process output.
-- Avoid recording entire command lines by default.
-- Treat configuration and process environments as potentially sensitive.
-- Do not persist credentials.
+Wrapper logs, guidance, diagnoses, and crash text must not contain passwords, secret access keys, session tokens, or credential-process output, as far as that is feasible.
+
+- Do not put secrets, raw argument vectors, or the process environment into error strings. A Go panic prints argument values, so secret-bearing data stays out of function arguments and out of values that a stack trace would show.
+- An unexpected failure prints a short wrapper error. A stack trace is emitted only in verbose troubleshooting, and only after redaction of environment values, argument values, and fields that look like keys, tokens, or passwords.
+- This cannot cover a core dump, an uncaught runtime abort, or the real AWS CLI's own stdout and stderr after process replacement. The wrapper does not scrub the CLI's output, because it is no longer running. It also does not persist credentials.
+- Displayed command text is the service and operation. Diagnosis of a corrupt file names keys and parser locations and does not print the file body.
+- The `default` profile warning and other ordinary stderr lines follow the same redaction.
 
 ### Configuration integrity
 
-- Detect malformed configuration.
-- Use safe file permissions where practical.
-- Make policy changes explicit.
-- Ensure a failed configuration reload cannot accidentally leave a permissive policy active.
+- Detect malformed configuration and follow [Corrupted files](#corrupted-files).
+- Create directories at mode `0700` and files at mode `0600`.
+- Make policy changes and grants explicit.
+- A failed reload must not leave a permissive policy in effect. Each invocation loads from disk, and a file it cannot trust contributes no allows and no grants.
+- Recovery moves an unusable file aside and never deletes it. See [Reversibility](#reversibility).
 
 ### Policy transparency
 
@@ -682,18 +758,26 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. They are not designed in detail, and they sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten.
+These behaviors are part of the intended product. They sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). The other items are not designed in detail yet.
 
 ### 12.1 Turn the wrapper off for one terminal session
 
-The user can turn the wrapper completely off for the current terminal session with a dedicated command.
+The user can turn the wrapper off for the current terminal session with a dedicated command.
 
-- The off state ends with that session. A new terminal, login, or shell starts with the wrapper on. The command writes no configuration and no other persistent state.
-- While the session is off, `aws` is the real AWS CLI: original arguments, original environment, no policy evaluation, and no prompt.
-- Processes launched from that session are off as well. A different session stays on.
-- The same session can turn the wrapper back on.
-- The session shows that it is unprotected, so the off state is not silent.
-- A child process cannot change its parent shell's `PATH`. The mechanism is still open. It may be a shell function the session evaluates, or a session-only environment marker that the wrapper honors by handing straight off to the real AWS CLI. Either way, the result above is the requirement.
+- The off state ends with that session. A new terminal, login, or shell starts with the wrapper on.
+- The command writes no policy. It writes a session record under the state directory from [On-disk files](#on-disk-files). A record for another session id has no effect, so a leftover file does not turn a new terminal off.
+- For a caller that is not a recognized agent, the wrapper still starts, then replaces itself with the real AWS CLI: original arguments, original environment, no policy evaluation, and no grant check.
+- Processes launched from that session share this behavior, except a recognized agent. A recognized agent ignores session-off and stays under normal policy. A different session stays on.
+- The same session can turn the wrapper back on. `aws-guard on` writes a later record for that same session that turns enforcement back on. Older records are left on disk.
+- The session shows that it is unprotected. `aws-guard off` says so, and each skipped invocation prints a short stderr line that this session is off and policy is not being applied. That line does not explain how to forge the off state.
+- There is no environment variable whose presence disables policy. A boolean such as `AWS_CLI_GUARD_OFF=1` is something an agent can export on the same command that runs `aws`. Taking the wrapper off `PATH`, or pointing the shell at the real binary, would also skip the wrapper, which then cannot tell an agent from anything else.
+
+Session-off has to stay inside the wrapper so the agent exception can run. The mechanism is:
+
+1. `aws-guard off` requires a controlling terminal and an explicit confirmation. A headless caller cannot complete it. An agent that can already type on the user's terminal still can. That is an accepted limit.
+2. The command records the kernel session id (`getsid` on Linux and macOS), the controlling terminal's device identity when there is one, and a random token created by that command. The token is not a well-known constant.
+3. The wrapper honors the latest record for the current session only when the token matches and no recognized agent marker is present. An unknown caller with a matching record is off. That is the remaining hole: a missing agent marker is not proof of a human, so an unknown process in the confirmed session skips policy, including a process that stripped its markers. Detection remains heuristic. See [Agent-specific policy](#85-agent-specific-policy).
+4. Policy refusals do not mention this mechanism, the record path, the token, or the real AWS CLI path.
 
 Illustrative commands, not a final interface:
 
@@ -758,11 +842,11 @@ install.sh
 
 ### 12.5 Logging
 
-- Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path.
+- Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path. The exception is the `default` profile warning in [Default profile](#63-default-profile), which is always one stderr line when that profile is the subject.
 - Verbose logging is for troubleshooting. It records the decision path: how the profile was resolved, which policy rule matched, which caller-context signals were seen, which real AWS CLI binary was selected, and why the wrapper handed off or refused.
 - Both modes write to stderr, so AWS CLI stdout stays usable by scripts.
-- Both modes omit secret access keys, session tokens, credential-process output, and other credential material. Verbose mode uses the same redaction. Entire command lines stay out of the default log, consistent with [Secret handling](#secret-handling).
-- The trigger is still open: a flag, an environment variable, a config setting, or a combination.
+- Both modes omit passwords, secret access keys, session tokens, credential-process output, and other credential material. Verbose mode and any stack trace use the same redaction. Entire command lines stay out of the default log. See [Secret handling](#secret-handling).
+- The trigger is `AWS_CLI_GUARD_LOG` or a policy-file setting. It is not a flag on `aws`. See [Wrapper control plane](#wrapper-control-plane).
 
 Illustrative, not final:
 
@@ -778,13 +862,13 @@ Go is a good fit for a portable, self-contained command-line tool.
 
 Potential implementation components:
 
-- Standard Go process execution APIs for launching the real CLI.
-- A well-maintained YAML library if YAML is selected as the configuration format.
+- Standard Go process execution APIs for replacing the current process with the real CLI.
+- A strict TOML decoder for user policy, and JSON for the grants file. Unknown fields and duplicate keys are errors.
 - A robust parser for AWS CLI global options.
-- OS-specific process inspection behind platform-specific files or interfaces.
-- Unit tests for profile resolution and policy evaluation.
+- OS-specific process and session inspection behind platform-specific files or interfaces.
+- Unit tests for profile resolution, policy evaluation, and corrupt-file diagnosis.
 - Integration tests using a fake AWS executable.
-- A small terminal-prompting layer.
+- Terminal confirmation for `aws-guard allow`, `aws-guard off`, and `aws-guard recover`. The `aws` path does not prompt.
 
 The policy engine should be independent of process execution and terminal interaction.
 
@@ -802,7 +886,7 @@ Suggested conceptual components:
       policy/
       profile/
       agent/
-      approval/
+      grants/
       executor/
       terminal/
 ```
@@ -813,23 +897,30 @@ The main execution path should be straightforward:
 
 ```text
     invocation = parseInvocation(args, environment)
-    config = loadAndValidateConfig()
-    context = detectCallerContext()
-    profile = resolveEffectiveProfile(invocation, environment)
-    decision = evaluatePolicy(config, profile, context)
-
-    if decision == deny:
-        explainDenial()
+    subject = resolveCredentialSubject(invocation, environment)
+    config = loadConfig()
+    if config is missing:
+        explainRunInit()
+        exitWithoutExecuting()
+    if config or grants are corrupt:
+        explainDiagnosisAndChoices()
         exitWithoutExecuting()
 
-    if decision == prompt:
-        if not obtainExplicitApproval():
-            exitWithoutExecuting()
+    context = detectCallerContext()
+    if sessionOff(context) and context is not a recognized agent:
+        executeRealAwsCli(originalArgs, originalEnvironment)
 
-    executeRealAwsCli(args, environment)
+    decision = evaluatePolicy(config, subject, context, grants)
+    if decision != allow:
+        explainRefusal()
+        exitWithoutExecuting()
+
+    executeRealAwsCli(originalArgs, originalEnvironment)
 ```
 
-The actual implementation must handle unresolved profiles, credential-source ambiguity, non-interactive operation, signals, and execution errors. This pseudocode is only the conceptual happy path.
+`executeRealAwsCli` replaces the process. The caller sees the AWS CLI exit code. Wrapper exits use the documented wrapper status.
+
+The actual implementation must handle unresolved subjects, credential-export commands, the `default` profile warning, corrupt-file recovery, and execution errors. This pseudocode is only the conceptual path. A `prompt` decision with a valid grant is an allow at the `decision != allow` check above. A `prompt` decision without one refuses.
 
 ## 14. Testing Strategy
 
@@ -855,25 +946,31 @@ The initial implementation should be tested without requiring access to a real A
 
 - Allow, prompt, and deny.
 - Unspecified profiles.
-- Explicit deny precedence.
-- Temporary approval expiration.
-- Session-scoped approval behavior.
+- Explicit deny precedence over a grant.
+- System-wide grant expiry, and a grant whose credential fingerprint no longer matches.
+- A named-profile grant does not authorize `AWS_ACCESS_KEY_ID` environment credentials.
+- Credential-export commands fail unless `[credential_export] action` is `allow`, including when the profile action is `allow` or a grant is current.
 - Agent-specific restrictions.
-- Invalid configuration.
-- Non-interactive invocations.
-- Unknown caller context.
+- Unknown caller with an ordinarily allowed profile follows the profile policy, not the agent policy.
+- Missing policy file asks for init and does not execute.
+- Corrupt policy and corrupt grants: diagnosis names the failure, the process exits, and the file bytes are unchanged.
+- `aws-guard recover` moves the unusable file aside, writes a fresh file that grants nothing, and does not delete the moved file.
+- A missing grants file means no grants, not corruption.
 
 ### Execution tests
 
 - Approved command executes exactly once.
-- Denied command never executes.
-- Original arguments are preserved.
+- Denied or unapproved command never executes.
+- Original arguments are preserved, with no wrapper flags inserted.
 - Environment variables are handled as intended.
-- Exit status is propagated.
-- Signals are handled correctly.
+- The process exit code after a handoff is the AWS CLI's exit code.
+- A wrapper refusal uses the documented wrapper status, not an AWS CLI status.
+- A refusal does not read stdin.
+- Signals are handled correctly across process replacement.
 - The wrapper does not recursively execute itself.
 - The real executable cannot be confused with the wrapper.
-- Error output is understandable.
+- Error output is understandable and contains no secret material, raw argv, or a disabling environment variable.
+- Use of the profile named `default` writes the named-profile warning and still follows policy.
 
 ### Agent detection tests
 
@@ -892,34 +989,31 @@ The test suite should explicitly verify that no agent detector treats an absent 
 ### Phase 1: Minimum viable product
 
 - Go executable.
-- PATH-based wrapper.
-- Real AWS CLI discovery.
+- PATH-based wrapper with no wrapper flags on `aws`.
+- Real AWS CLI discovery and process replacement, preserving the AWS CLI exit code.
 - Profile argument parsing.
-- `AWS_PROFILE` and default-profile handling.
-- Local configuration.
-- `allow`, `prompt`, and `deny`.
-- Safe execution of approved commands.
-- Correct exit-status handling.
+- `AWS_PROFILE`, the profile named `default` (with the stderr warning), and environment credentials as a separate subject from any named profile.
+- On-disk layout, `aws-guard init`, corrupt-file diagnosis, and `aws-guard recover` (move the unusable file aside, never delete it).
+- Strict TOML policy with `allow`, `prompt`, and `deny`.
+- System-wide TTL grants, including the credential-source fingerprint. `prompt` without a current grant fails with guidance.
+- Credential-export commands blocked unless the policy file allows that class.
+- Safe execution of approved commands, arguments forwarded unchanged.
 - Unit tests and a fake AWS CLI for integration tests.
 - Clear documentation of bypass limitations.
 
 ### Phase 2: Better profile awareness
 
 - Support custom AWS configuration locations.
-- Recognize environment credential overrides.
-- Detect common credential-provider mechanisms.
+- Detect common credential-provider mechanisms beyond the environment-key case covered in phase 1.
 - Improve diagnostics for SSO profiles, role chaining, and `credential_process`.
 - Optionally display verified AWS account and identity information.
 - Add policy inspection and configuration-validation commands.
 
-### Phase 3: Approval management
+### Phase 3: Grant operations
 
-- One-invocation approvals.
-- Session-scoped approvals.
-- Timed approvals.
-- Expiration and invalidation behavior.
-- Clear display of existing approval state.
-- Explicit precedence of deny rules over approval state.
+- List current grants and show expiry and fingerprint mismatch.
+- Explicit migrate command for an older policy version the binary still understands.
+- Deny rules continue to beat grants. This is already required in phase 1; tests here cover reload and concurrent allow.
 
 ### Phase 4: AI-agent awareness
 
@@ -927,17 +1021,17 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Initial integrations for selected coding agents.
 - Optional parent-process detection.
 - Agent-specific profile rules.
-- Explicit behavior for unknown and ambiguous callers.
+- Unknown and uncertain callers follow the normal profile policy, as specified in [Agent-specific policy](#85-agent-specific-policy).
 - Tests against actual supported agent environments.
 
 ### Phase 5: Installation and portability
 
-- Install and uninstall commands or scripts.
-- PATH-based setup.
+- Install command or script. Uninstall stays out of scope.
+- PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits.
 - Optional shell integration.
 - Support for selected shells and operating systems.
 - Safe detection of the actual AWS CLI executable.
-- Upgrade and configuration-migration behavior.
+- Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
 
 ### Phase 6: Optional advanced features
 
@@ -967,15 +1061,15 @@ Questions to resolve during implementation:
 
 1. ~~Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?~~ **Resolved:** [ADR 0001](decisions/0001-linux-and-macos-first.md) — Linux and macOS first; cross-platform intent; Windows deferred.
 2. Which shells should receive first-class integration?
-3. Should YAML or TOML be the canonical configuration format?
+3. ~~Should YAML or TOML be the canonical configuration format?~~ **Resolved:** TOML for user policy, JSON for grants. See [Example configuration](#example-configuration) and [On-disk files](#on-disk-files).
 4. Should `aws sso login` be allowed by default, or should it have a separate policy?
 5. Should identity verification be optional, and when should it run?
-6. How should unresolved profile and credential-source cases be handled?
-7. How should session-scoped approval be tied to a terminal session?
+6. ~~How should unresolved profile and credential-source cases be handled?~~ **Resolved:** `AWS_ACCESS_KEY_ID` is not the named profile. Named profiles, environment credentials, other ambient sources, and unresolved subjects are different. A missing policy file asks for init. A corrupt policy or grants file uses the diagnosis flow and does not execute. See [Environment-based credentials](#64-environment-based-credentials), [Missing policy](#missing-policy), and [Corrupted files](#corrupted-files).
+7. ~~How should session-scoped approval be tied to a terminal session?~~ **Resolved:** grants are not session-scoped. A grant is system-wide for the installation until its TTL. Session identity is used only for session-off. See [Grants](#5-grants) and [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session).
 8. Which AI agents should be supported initially?
 9. Should agent detection be enabled by default or require explicit configuration?
-10. What should happen when the caller is unknown and the requested profile is ordinarily allowed?
-11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. A separate persistent control disables and re-enables it system-wide, including when a published build is broken. Mechanisms are not designed yet. See [Recorded operational criteria](#12-recorded-operational-criteria).
+10. ~~What should happen when the caller is unknown and the requested profile is ordinarily allowed?~~ **Resolved:** the normal profile policy. Only a positively recognized agent uses agent rules. A missing marker is not proof of a human and is not treated as an agent. See [Agent-specific policy](#85-agent-specific-policy).
+11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. The session-off mechanism is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). A separate persistent control disables and re-enables the installation system-wide, including when a published build is broken. The persistent-disable mechanism is still open. See [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable).
 12. What minimum AWS CLI versions and configuration features must be supported?
 
 ## 17. Initial Product Principle
