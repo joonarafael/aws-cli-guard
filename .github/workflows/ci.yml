@@ -1,10 +1,13 @@
-name: CI
+name: CI Pipeline
 
 on:
-    pull_request:
-    push:
-        branches:
-            - master
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +25,7 @@ env:
 
 jobs:
     check:
-        name: Go hygiene
+        name: Source Code Hygiene
         runs-on: ubuntu-24.04
         timeout-minutes: 15
 
@@ -39,16 +42,15 @@ jobs:
                   go-version: ${{ env.GO_VERSION }}
                   cache-dependency-path: go.sum
 
-            - name: Use readonly Go modules
+            - name: Use Readonly Go Modules
               run: echo 'GOFLAGS=-mod=readonly' >> "$GITHUB_ENV"
 
-            - name: make check
+            - name: Static Analysis
               env:
-                  # Annotations for rumdl, which make check runs via md-lint.
                   RUMDL_OUTPUT_FORMAT: github
               run: make check
 
-            - name: make build
+            - name: Check Build
               run: make build
 
             - name: Gitleaks
@@ -82,8 +84,8 @@ jobs:
                   echo "${install_dir}" >> "$GITHUB_PATH"
                   shellcheck --version
 
-            - name: ShellCheck
+            - name: Run ShellCheck
               run: shellcheck -S warning scripts/lint/*.sh
 
-            - name: govulncheck
+            - name: Run govulncheck
               run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
