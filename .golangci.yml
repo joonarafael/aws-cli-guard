@@ -1,0 +1,70 @@
+# Note: golangci-lint has no linter for maximum file length (funlen caps function length,
+# lll caps line length, but neither caps a whole file). Until one exists upstream, the
+# 300-line-per-file cap (including _test.go files) is enforced separately by
+# scripts/lint/go-file-length.sh, wired into CI. If golangci-lint ever adds this rule
+# natively, switch to it here and delete that script.
+version: '2'
+linters:
+    default: all
+    disable:
+        - cyclop # disabled, does not allow ignoring files or functions
+        - exhaustruct # deprecated in v2.13.0; replaced by exhaustruct_v5
+        - gomodguard # deprecated in v2.12.0; replaced by gomodguard_v2
+        - wsl # deprecated in v2.2.0; replaced by wsl_v5
+        - goheader # no license header template in this repo; MIT is in LICENSE only
+    exclusions:
+        rules:
+            - linters:
+                  - gosec
+              path: '_test\.go$'
+    settings:
+        depguard:
+            rules:
+                main:
+                    files:
+                        - $all
+                    allow:
+                        - $gostd
+                        - aws-cli-guard
+        exhaustruct_v5:
+            allow-empty: false
+            allow-empty-returns: false
+            allow-empty-declarations: true
+        funlen:
+            ignore-comments: true
+        ireturn:
+            allow:
+                - anon
+                - error
+                - empty
+                - stdlib
+                - generic
+        lll:
+            line-length: 100 # sync with gofmt
+        wsl_v5:
+            allow-first-in-block: true
+            allow-whole-block: false
+            branch-max-lines: 2
+formatters:
+    enable:
+        - gofmt
+        - gofumpt
+        - goimports
+        - golines
+    settings:
+        golines:
+            max-len: 100 # sync with lll
+issues:
+    max-issues-per-linter: 999
+    max-same-issues: 0
+run:
+    timeout: 5m
+    issues-exit-code: 1
+    tests: true
+    enable-build-vcs: false
+    allow-parallel-runners: true
+    allow-serial-runners: true
+    go: '1.26.3'
+    concurrency: 8
+severity:
+    default: error

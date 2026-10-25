@@ -20,6 +20,7 @@ func FindRealAWS() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("aws-cli-guard: cannot resolve wrapper executable: %w", err)
 	}
+
 	self, err = filepath.EvalSymlinks(self)
 	if err != nil {
 		return "", fmt.Errorf("aws-cli-guard: cannot resolve wrapper executable: %w", err)
@@ -30,41 +31,60 @@ func FindRealAWS() (string, error) {
 		if dir == "" {
 			continue
 		}
+
 		candidate := filepath.Join(dir, "aws")
+
+		//nolint:gosec // G703: PATH segments joined with fixed basename "aws".
 		info, err := os.Stat(candidate)
 		if err != nil {
 			continue
 		}
+
 		if info.IsDir() {
 			continue
 		}
+
 		if !isExecutable(info) {
 			continue
 		}
+
 		resolved, err := filepath.EvalSymlinks(candidate)
 		if err != nil {
 			resolved = candidate
 		}
+
 		if samePath(resolved, self) {
 			continue
 		}
+
 		return candidate, nil
 	}
 
-	return "", fmt.Errorf("aws-cli-guard: real AWS CLI not found in PATH (set %s to override)", RealAWSEnv)
+	return "", fmt.Errorf("%w (set %s to override)", ErrRealAWSNotFound, RealAWSEnv)
 }
 
 func isExecutable(info os.FileInfo) bool {
 	return info.Mode()&0o111 != 0
 }
 
-func samePath(a, b string) bool {
-	stA, errA := os.Stat(a)
-	stB, errB := os.Stat(b)
-	if errA == nil && errB == nil {
-		return os.SameFile(stA, stB)
+//nolint:gosec // G703: compares resolved PATH candidates for wrapper self-skip only.
+func samePath(leftPath, rightPath string) bool {
+	stLeft, errLeft := os.Stat(leftPath)
+
+	stRight, errRight := os.Stat(rightPath)
+	if errLeft == nil && errRight == nil {
+		return os.SameFile(stLeft, stRight)
 	}
-	cleanA, _ := filepath.Abs(a)
-	cleanB, _ := filepath.Abs(b)
-	return cleanA == cleanB
+
+	cleanLeft, err := filepath.Abs(leftPath)
+	if err != nil {
+		cleanLeft = leftPath
+	}
+
+	cleanRight, err := filepath.Abs(rightPath)
+	if err != nil {
+		cleanRight = rightPath
+	}
+
+	return cleanLeft == cleanRight
 }

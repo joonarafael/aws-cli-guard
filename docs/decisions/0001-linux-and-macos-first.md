@@ -18,7 +18,7 @@ Open question 1 in [DESIGN.md](../DESIGN.md) asked which operating systems to su
 
 2. **Initial supported targets.** Linux and macOS, on both amd64 and arm64. These are the only platforms we implement, test, and document for the first releases.
 
-3. **Development workflow.** Primary development and CI-style checks run on Linux. Before calling platform-sensitive changes done, run `go test ./...` on macOS as well (especially changes to process replacement or PATH discovery).
+3. **Development workflow.** Primary development and CI-style checks run on Linux via the GitHub Actions workflow in `.github/workflows/ci.yml` (`make check` and `make build`). Before calling platform-sensitive changes done, run `make check` on macOS as well (especially changes to process replacement or PATH discovery).
 
 4. **Windows.** Not implemented in the initial phase. Code may compile on other GOOS values via stub files (`//go:build !unix`) that return a clear error, but we do not claim Windows support, add Windows CI, or optimize for Windows UX until there is a way to test it.
 

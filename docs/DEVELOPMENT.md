@@ -5,7 +5,7 @@ This document describes how to build, test, and dogfood AWS CLI Guard on a devel
 ## Prerequisites
 
 - **Go** — same major version as the `go` line in [go.mod](../go.mod). Linux and macOS are supported development hosts.
-- **No C compiler** — the current code uses only the Go standard library.
+- **C compiler** — required for `make test` because tests run with the Go race detector (`CGO_ENABLED=1`). `make build` stays a pure Go binary (`CGO_ENABLED=0`).
 - **No AWS account required** — integration tests use a fake AWS executable; you do not need credentials to run the test suite.
 - **Windows** — not a supported development or runtime target yet. See ADR 0001.
 
@@ -14,11 +14,22 @@ This document describes how to build, test, and dogfood AWS CLI Guard on a devel
 From the repository root:
 
 ```bash
-go test ./...
-go build -o bin/aws ./cmd/aws
+make help
+make check    # lint, 300-line file cap, vet, race-enabled tests
+make build    # CGO_ENABLED=0 wrapper in bin/aws
+make lint-fix # auto-fix formatting when golangci-lint can
 ```
 
-Run tests after every change. Build when you want to try the wrapper in a shell.
+`golangci-lint` is pinned in [go.mod](../go.mod) as a Go `tool` dependency. Nothing needs to be installed globally; Make invokes `go tool golangci-lint`.
+
+To bump the pinned golangci-lint version:
+
+```bash
+go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@vX.Y.Z
+go mod tidy
+```
+
+Run `make check` before pushing. GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
 
 ### Dogfooding without installing
 
@@ -46,14 +57,14 @@ Integration tests always set `AWS_CLI_GUARD_REAL_AWS` so discovery is determinis
 
 ## Platform checks
 
-- **Linux** — primary development machine; run `go test ./...` here routinely.
-- **macOS** — run `go test ./...` on the laptop before merging changes that touch `internal/executor/exec_unix.go`, PATH lookup, or other platform-sensitive code.
+- **Linux** — primary development machine; run `make check` here routinely. CI runs on `ubuntu-24.04`.
+- **macOS** — run `make check` on the laptop before merging changes that touch `internal/executor/exec_unix.go`, PATH lookup, or other platform-sensitive code.
 
-There is no Windows CI or manual Windows testing in this phase.
+There is no Windows CI or manual Windows testing in this phase. `make lint` and `make vet` still typecheck the `//go:build !unix` stub under `GOOS=windows`.
 
 ## How integration tests work
 
-Tests live in [internal/executor/executor_test.go](../internal/executor/executor_test.go). They compile the wrapper and [testdata/fakeaws](../internal/executor/testdata/fakeaws), spawn the wrapper as a subprocess, and assert on exit codes and recorded arguments. `syscall.Exec` does not return in the wrapper process, so the wrapper cannot be exercised entirely in-process.
+Tests live in [internal/executor/executor_test.go](../internal/executor/executor_test.go). They compile the wrapper and [testdata/fakeaws](../internal/executor/testdata/fakeaws), spawn the wrapper as a subprocess, and assert on exit codes and recorded arguments. When the test binary is built with `-race`, those subprocess builds use `-race` as well. `syscall.Exec` does not return in the wrapper process, so the wrapper cannot be exercised entirely in-process.
 
 ## Architecture decisions
 

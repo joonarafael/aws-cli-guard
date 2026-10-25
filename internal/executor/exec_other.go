@@ -3,13 +3,12 @@
 package executor
 
 import (
-	"fmt"
 	"os"
 )
 
 // ExecRealAWS replaces the current process with the real AWS CLI.
-func ExecRealAWS(realPath string, args []string, env []string) error {
-	return fmt.Errorf("aws-cli-guard: process replacement is not supported on this platform yet")
+func ExecRealAWS(_ string, _ []string, _ []string) error {
+	return ErrPlatformUnsupported
 }
 
 // Environ returns the process environment for exec.

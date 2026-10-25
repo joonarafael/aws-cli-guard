@@ -11,9 +11,13 @@ import (
 // ExecRealAWS replaces the current process with the real AWS CLI.
 func ExecRealAWS(realPath string, args []string, env []string) error {
 	execArgv := append([]string{realPath}, args[1:]...)
-	if err := syscall.Exec(realPath, execArgv, env); err != nil {
+
+	//nolint:gosec // G204: deliberate exec of the resolved real AWS CLI.
+	err := syscall.Exec(realPath, execArgv, env)
+	if err != nil {
 		return fmt.Errorf("aws-cli-guard: failed to exec real AWS CLI: %w", err)
 	}
+
 	return nil
 }
 

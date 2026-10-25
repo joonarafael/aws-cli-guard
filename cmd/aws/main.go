@@ -1,20 +1,21 @@
+// Command aws is the AWS CLI Guard wrapper entrypoint.
 package main
 
 import (
+	"aws-cli-guard/internal/executor"
 	"fmt"
 	"os"
-
-	"aws-cli-guard/internal/executor"
 )
 
 func main() {
-	real, err := executor.FindRealAWS()
+	realAWSPath, err := executor.FindRealAWS()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	if err := executor.ExecRealAWS(real, os.Args, executor.Environ()); err != nil {
+	err = executor.ExecRealAWS(realAWSPath, os.Args, executor.Environ())
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
