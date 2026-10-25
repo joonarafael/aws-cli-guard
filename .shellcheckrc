@@ -1,0 +1,3 @@
+# Dialect and optional checks for ShellCheck. Severity is passed on the command line.
+shell=sh
+enable=all

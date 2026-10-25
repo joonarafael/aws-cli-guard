@@ -9,3 +9,7 @@ The primary value is the combination of profile-aware approval, persistent local
 AWS CLI Guard is not a strict security boundary or a watertight security mechanism. It's a local safety mechanism designed to make accidental misuse less likely. If needed, this wrapper can be bypassed by invoking the real AWS CLI executable through an absolute path or another PATH.
 
 Moreover, AWS CLI Guard does not check for what a profile can **actually** do, it has nothing to do with AWS IAM policies.
+
+## Developing
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS.

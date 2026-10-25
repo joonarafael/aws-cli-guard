@@ -1,0 +1,89 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches:
+            - master
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+env:
+    GO_VERSION: 1.26.3
+    GITLEAKS_VERSION: 8.24.2
+    ACTIONLINT_VERSION: 1.7.7
+    SHELLCHECK_VERSION: 0.11.0
+    GOVULNCHECK_VERSION: v1.1.4
+
+jobs:
+    check:
+        name: Go hygiene
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Setup Go
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+                  cache-dependency-path: go.sum
+
+            - name: Use readonly Go modules
+              run: echo 'GOFLAGS=-mod=readonly' >> "$GITHUB_ENV"
+
+            - name: make check
+              env:
+                  # Annotations for rumdl, which make check runs via md-lint.
+                  RUMDL_OUTPUT_FORMAT: github
+              run: make check
+
+            - name: make build
+              run: make build
+
+            - name: Gitleaks
+              uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITLEAKS_ENABLE_COMMENTS: false
+                  GITLEAKS_ENABLE_SUMMARY: true
+                  GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
+
+            - name: Install actionlint
+              run: |
+                  set -euo pipefail
+                  archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+                  url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+                  curl -fsSL "$url" | tar -xzf - actionlint
+                  sudo mv actionlint /usr/local/bin/actionlint
+                  actionlint -version
+
+            - name: Run actionlint
+              run: actionlint
+
+            - name: Install ShellCheck
+              run: |
+                  set -euo pipefail
+                  archive="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+                  url="https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/${archive}"
+                  install_dir="${RUNNER_TEMP}/shellcheck-v${SHELLCHECK_VERSION}"
+                  mkdir -p "$install_dir"
+                  curl -fsSL "$url" | tar -xJ -C "$install_dir" --strip-components=1
+                  echo "${install_dir}" >> "$GITHUB_PATH"
+                  shellcheck --version
+
+            - name: ShellCheck
+              run: shellcheck -S warning scripts/lint/*.sh
+
+            - name: govulncheck
+              run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...

@@ -1,4 +1,4 @@
-# AWS CLI Guard — Initial Design Document
+# Initial Design Document
 
 ## 1. Overview
 
@@ -85,29 +85,33 @@ The original arguments should be forwarded without unnecessary modification. The
 
 Two modes should be considered:
 
-**Mode A: PATH-based wrapper**
+#### Mode A: PATH-based wrapper
 
 The installer places the wrapper in a directory earlier in PATH than the real AWS CLI.
 
 Advantages:
+
 - Works across shells and with many child processes.
 - Requires little or no shell-specific code.
 - Is the preferred default for the initial implementation.
 
 Limitations:
+
 - Can be bypassed by invoking the real AWS executable through an absolute path or another PATH.
 - Does not intercept direct SDK usage or alternative credential access.
 - Does not guarantee that every subprocess inherits the intended PATH.
 
-**Mode B: Shell integration**
+#### Mode B: Shell integration
 
 An optional shell function or integration script forwards AWS invocations to AWS CLI Guard.
 
 Advantages:
+
 - Can provide additional shell-session context.
 - Can be useful for shell-specific UX or debugging.
 
 Limitations:
+
 - Functions are not universally inherited by subprocesses.
 - Behavior differs between Bash, Zsh, Fish, PowerShell, and other shells.
 - A child process can bypass the function.
@@ -219,15 +223,15 @@ Approval should be explicit and should not automatically grant unrestricted futu
 
 Initial approval scopes:
 
-**One invocation**
+### One invocation
 
 Approve only the current AWS CLI invocation. This should be the default for privileged profiles.
 
-**Current shell session**
+### Current shell session
 
 Allow subsequent invocations associated with the same recognized shell session, subject to expiry and policy changes.
 
-**Timed approval**
+### Timed approval
 
 Allow a profile for a specified period, such as five minutes.
 
@@ -273,11 +277,13 @@ The wrapper should distinguish between:
 
 Support both forms:
 
-    aws --profile production-admin ec2 describe-instances
+```text
+aws --profile production-admin ec2 describe-instances
 
-    aws ec2 describe-instances --profile production-admin
+aws ec2 describe-instances --profile production-admin
 
-    aws --profile=production-admin ec2 describe-instances
+aws --profile=production-admin ec2 describe-instances
+```
 
 The wrapper should recognize global options in their supported positions and must not mistake an unrelated command argument for a profile option.
 
@@ -845,7 +851,7 @@ The later phases should be driven by actual user needs rather than being prerequ
 
 Questions to resolve during implementation:
 
-1. Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?
+1. ~~Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?~~ **Resolved:** [ADR 0001](decisions/0001-linux-and-macos-first.md) — Linux and macOS first; cross-platform intent; Windows deferred.
 2. Which shells should receive first-class integration?
 3. Should YAML or TOML be the canonical configuration format?
 4. Should `aws sso login` be allowed by default, or should it have a separate policy?

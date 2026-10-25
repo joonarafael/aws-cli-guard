@@ -1,0 +1,12 @@
+/bin/
+.cache/
+.rumdl_cache/
+*.exe
+*.test
+coverage.out
+coverage.html
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
