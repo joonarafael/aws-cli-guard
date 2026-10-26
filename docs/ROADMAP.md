@@ -23,6 +23,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 | `GR` | Grants |
 | `MV` | MVP milestone |
 | `SS` | SSO |
+| `CI` | Continuous integration |
 | `AG` | Agent awareness |
 | `IN` | Installation |
 | `OP` | Operational criteria |
@@ -38,6 +39,8 @@ Ready now for the MVP:
 - `MV-2` Documentation of bypass limitations.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
+
+`CI-1` is unblocked too. Leave it until `AG-4`. The note on `CI-1` says why.
 
 ## Suggested order for the MVP
 
@@ -59,7 +62,7 @@ After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant o
 | MVP (Phase 1) | `FD-1`, `FD-2`, `FD-3`, `FD-4`, `PR-1`, `PR-2`, `PR-3`, `PR-4`, `FS-1`, `FS-2`, `FS-3`, `FS-4`, `PO-1`, `PO-2`, `PO-3`, `PO-4`, `GR-1`, `GR-2`, `GR-3`, `GR-4`, `MV-1`, `MV-2` |
 | Phase 2: Better profile awareness | `PR-5`, `PR-6`, `PO-5`, `SS-1` |
 | Phase 3: Grant operations | `FS-5`, `GR-5`, `GR-6` |
-| Phase 4: AI-agent awareness | `AG-1`, `AG-2`, `AG-3`, `AG-4`, `AG-5` |
+| Phase 4: AI-agent awareness | `AG-1`, `AG-2`, `AG-3`, `CI-1`, `AG-4`, `AG-5` |
 | Phase 5: Installation and portability | `IN-1`, `IN-2`, `IN-3` |
 | Backlog | `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5`, `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
 
@@ -156,6 +159,15 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 - The design describes SSO behavior in [AWS SSO Behavior](DESIGN.md#7-aws-sso-behavior) but does not assign it to a phase. Phase 2 is a placeholder.
 
+### CI: Continuous integration
+
+| ID | Title | Status | Milestone | Blocked by | Blocks |
+| --- | --- | --- | --- | --- | --- |
+| CI-1 | macOS runner for tests and the native build | To do | Phase 4 | — | `AG-4` |
+
+- Leave `CI-1` until `AG-4`. Ubuntu already runs the shared `unix` tests, and a `CGO_ENABLED=0` Darwin binary cross-compiles there. [ADR 0001](decisions/0001-linux-and-macos-first.md) covers platform-sensitive edits with a laptop `make check`. A standing `macos-15` job would add queue time on every pull request for that same source. Parent-process detection is the first planned code a green Ubuntu run will not compile: macOS has no `/proc`. Start `CI-1` as the first step of `AG-4`. If `OP-1` needs a Darwin-only session or terminal implementation sooner, start `CI-1` with that work instead.
+- The macOS job runs `make test` and `make build` on the standard `macos-15` runner. Gitleaks, actionlint, ShellCheck, and govulncheck stay on `ubuntu-24.04`. That runner is free while this repository is public.
+
 ### AG: Agent awareness
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
@@ -163,7 +175,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | AG-1 | Caller context, including whether a terminal is attached | To do | Phase 4 | — | `AG-2`, `AG-4`, `OP-1` |
 | AG-2 | Environment-variable markers for agents | To do | Phase 4 | `Q-5`, `AG-1` | `AG-3`, `AG-5` |
 | AG-3 | Agent-specific policy rules | To do | Phase 4 | `AG-2`, `PO-3` | `AD-3` |
-| AG-4 | Parent-process detection | To do | Phase 4 | `AG-1` | — |
+| AG-4 | Parent-process detection | To do | Phase 4 | `AG-1`, `CI-1` | — |
 | AG-5 | Tested integrations for selected agents | To do | Phase 4 | `Q-4`, `AG-2` | `AD-5` |
 
 ### IN: Installation
