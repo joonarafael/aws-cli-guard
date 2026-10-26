@@ -273,6 +273,8 @@ The tool reads and writes these paths as regular files. A symlink is a diagnosis
 
 Writes are atomic: a temporary file in the same directory, synced, then renamed into place. A crash leaves the previous file intact. Abandoned temporary files are kept and named as partials. They are not removed and they are not treated as the live file.
 
+A partial's name is the live file name plus `.partial.` and a UTC timestamp `YYYYMMDDThhmmss.nnnnnnnnnZ`. If that name is taken, a numeric suffix is added. Partials are never deleted and never selected as the live file. The grants lock is a sibling file, the live name plus `.lock`, in the same directory. The lock file is not versioned, is not a live data file, and stays on disk after the lock is released. The lock is held across the whole grants read-modify-write. The atomic replace itself does not lock.
+
 Grants are rewritten under a lock so two overlapping `aws-guard allow` commands cannot drop one update in a way that widens access. A lost update means the user runs allow again.
 
 ### Versions and schema changes

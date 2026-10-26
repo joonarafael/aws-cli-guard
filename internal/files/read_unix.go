@@ -1,0 +1,93 @@
+//go:build unix
+
+package files
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"syscall"
+)
+
+const readChunkSize = 32 * 1024
+
+// ReadRegular reads a regular file without following a symlink at the final path component.
+func ReadRegular(path string) ([]byte, error) {
+	fileFD, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		return nil, readOpenError(path, err)
+	}
+
+	defer func() {
+		_ = syscall.Close(fileFD)
+	}()
+
+	regErr := assertRegularFD(fileFD, path)
+	if regErr != nil {
+		return nil, regErr
+	}
+
+	data, err := readFromFD(fileFD)
+	if err != nil {
+		return nil, fmt.Errorf("aws-cli-guard: read %q: %w", path, err)
+	}
+
+	return data, nil
+}
+
+func readOpenError(path string, err error) error {
+	if errors.Is(err, syscall.ELOOP) {
+		return fmt.Errorf("aws-cli-guard: %w: %q", ErrSymlink, path)
+	}
+
+	if errors.Is(err, syscall.ENOENT) {
+		return fmt.Errorf("aws-cli-guard: open %q: %w", path, os.ErrNotExist)
+	}
+
+	if errors.Is(err, syscall.EISDIR) {
+		return fmt.Errorf("aws-cli-guard: %w: %q", ErrNotRegular, path)
+	}
+
+	return fmt.Errorf("aws-cli-guard: open %q: %w", path, err)
+}
+
+func assertRegularFD(fileFD int, path string) error {
+	var stat syscall.Stat_t
+
+	err := syscall.Fstat(fileFD, &stat)
+	if err != nil {
+		return fmt.Errorf("aws-cli-guard: fstat %q: %w", path, err)
+	}
+
+	if stat.Mode&syscall.S_IFMT != syscall.S_IFREG {
+		return fmt.Errorf("aws-cli-guard: %w: %q", ErrNotRegular, path)
+	}
+
+	return nil
+}
+
+func readFromFD(fileFD int) ([]byte, error) {
+	var out []byte
+
+	buf := make([]byte, readChunkSize)
+
+	for {
+		count, err := syscall.Read(fileFD, buf)
+		if count > 0 {
+			out = append(out, buf[:count]...)
+		}
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return out, nil
+			}
+
+			return nil, fmt.Errorf("syscall read: %w", err)
+		}
+
+		if count == 0 {
+			return out, nil
+		}
+	}
+}

@@ -34,7 +34,6 @@ Ready now for the MVP:
 
 - Decide `Q-6` and `Q-9`. They unblock profile parsing, AWS config reading, and the wrapper's messaging.
 - `FD-4` `aws-guard` command skeleton and terminal confirmation.
-- `FS-1` Safe file handling.
 - `FS-2` Strict, versioned file decoding.
 - `MV-2` Documentation of bypass limitations.
 
@@ -113,7 +112,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| FS-1 | Safe file handling: atomic writes, permissions, symlink refusal, locking | To do | MVP | `FD-2` | `FS-4`, `FS-5`, `PO-1`, `GR-1`, `OP-1` |
+| FS-1 | Safe file handling: atomic writes, permissions, symlink refusal, locking | Done | MVP | `FD-2` | `FS-4`, `FS-5`, `PO-1`, `GR-1`, `OP-1` |
 | FS-2 | Strict, versioned file decoding | To do | MVP | — | `FS-3`, `FS-5`, `PO-1`, `GR-1` |
 | FS-3 | Diagnosis of corrupted files | To do | MVP | `FS-2`, `FD-3` | `FS-4`, `MV-1` |
 | FS-4 | `aws-guard recover` | To do | MVP | `FS-1`, `FS-3`, `FD-4` | — |
