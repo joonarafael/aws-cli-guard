@@ -20,4 +20,4 @@ The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warn
 
 ## Developing
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS. Working agreements for changing the repo are in [AGENTS.md](AGENTS.md).

@@ -33,7 +33,7 @@ go mod tidy
 
 Markdown is checked with [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](../Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and verifies its SHA-256. Line length is disabled in [.rumdl.toml](../.rumdl.toml). Relative links and heading fragments are checked. `make md-fmt` rewrites fixable issues and still exits successfully when something has to be fixed by hand; `make md-lint` is the check CI runs.
 
-Run `make check` before pushing. GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
+Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
 
 ### Dogfooding without installing
 
