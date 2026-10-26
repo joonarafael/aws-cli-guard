@@ -10,6 +10,14 @@ AWS CLI Guard is not a strict security boundary or a watertight security mechani
 
 Moreover, AWS CLI Guard does not check for what a profile can **actually** do, it has nothing to do with AWS IAM policies.
 
+## When the wrapper stops a command
+
+A cancellation means AWS CLI Guard stopped the command. The wrapper exits with status **3** and writes the reason to stderr. Every one of those lines starts with `aws-cli-guard: error:` and says the command was not executed. Warnings that leave the command running start with `aws-cli-guard: warning:`.
+
+Status 3 is reserved for this. The real AWS CLI keeps its own codes, including 0, 1, 2, 130, 252, 253, 254, and 255. After an allowed command, the wrapper is gone and the exit code is the CLI's code. The CLI's own output is not prefixed.
+
+The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied. Login commands are also handed through. The decision records under [docs/decisions/](docs/decisions/) are the detail.
+
 ## Developing
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS.

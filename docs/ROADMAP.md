@@ -11,7 +11,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 - **Milestone** maps to the phases in the [Initial Roadmap](DESIGN.md#15-initial-roadmap). `MVP` is Phase 1. `Backlog` holds Phase 6 and the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria), which are intentionally not scheduled yet.
 - **Blocked by** lists what has to be done, or decided, first. **Blocks** is the reverse link. Keep both sides in sync when editing.
 - An epic is ready to start when everything in its **Blocked by** column is `Done` or answered.
-- `Q-n` items are open design decisions. They block epics just like other epics do.
+- `Q-n` items are design decisions. An open one blocks epics just like another epic does. An answered one points at an ADR and no longer blocks.
 
 | Prefix | Area |
 | --- | --- |
@@ -33,12 +33,16 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP:
 
-- Decide `Q-6` and `Q-9`. They unblock profile parsing, AWS config reading, and the wrapper's messaging.
+- `FD-3` Wrapper exit status and secret-safe error messages.
 - `FD-4` `aws-guard` command skeleton and terminal confirmation.
+- `PR-2` AWS CLI global option parsing.
+- `PR-4` Reading AWS config and credentials files, including custom locations.
 - `FS-2` Strict, versioned file decoding.
 - `MV-2` Documentation of bypass limitations.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
+
+`Q-6` and `Q-9` are answered, along with `Q-1`, `Q-2`, `Q-3`, and `Q-8`. Still open, and not in the way of the MVP: `Q-4`, `Q-5`, and `Q-7`.
 
 `CI-1` is unblocked too. Leave it until `AG-4`. The note on `CI-1` says why.
 
@@ -46,10 +50,10 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. Decide `Q-6` and `Q-9`. Build `FD-4`, `FS-1`, `FS-2`, `MV-2`.
-2. `FD-3`, `PR-2`, `PR-4`, `PO-1`, `GR-1`.
-3. `PR-1`, `FS-3`, `PO-2`, `GR-2`.
-4. `PR-3`, `PO-3`, `FS-4`, `GR-3`.
+1. `FD-3`, `FD-4`, `PR-2`, `PR-4`, `FS-2`, `MV-2`. `FS-1` is already done.
+2. `PR-1`, `FS-3`, `PO-1`, `GR-1`.
+3. `PR-3`, `PO-2`, `GR-2`.
+4. `PO-3`, `FS-4`, `GR-3`.
 5. `PO-4`, `GR-4`.
 6. `MV-1`.
 
@@ -64,7 +68,7 @@ After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant o
 | Phase 3: Grant operations | `FS-5`, `GR-5`, `GR-6` |
 | Phase 4: AI-agent awareness | `AG-1`, `AG-2`, `AG-3`, `CI-1`, `AG-4`, `AG-5` |
 | Phase 5: Installation and portability | `IN-1`, `IN-2`, `IN-3` |
-| Backlog | `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5`, `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
+| Backlog | `FS-6`, `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5`, `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
 
 The MVP is complete when every MVP epic is `Done`.
 
@@ -74,17 +78,17 @@ Most of these come from [Open Design Questions](DESIGN.md#16-open-design-questio
 
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
-| Q-1 | Which shells get first-class integration? | Open | `IN-2` |
-| Q-2 | Is `aws sso login` allowed by default, or does it get its own policy? | Open | `SS-1` |
-| Q-3 | Is identity verification optional, and when does it run? | Open | `AD-1` |
+| Q-1 | Which shells get first-class integration? | Answered in [ADR 0005](decisions/0005-bash-and-zsh.md) | — |
+| Q-2 | Is `aws sso login` allowed by default, or does it get its own policy? | Answered in [ADR 0004](decisions/0004-login-out-of-scope.md) | — |
+| Q-3 | Is identity verification optional, and when does it run? | Answered in [ADR 0006](decisions/0006-identity-verification-off-by-default.md) | — |
 | Q-4 | Which AI agents are supported initially? | Open | `AG-5` |
 | Q-5 | Is agent detection on by default, or opt-in? | Open | `AG-2` |
-| Q-6 | Which minimum AWS CLI version and configuration features are supported? | Open | `PR-2`, `PR-4` |
+| Q-6 | Which minimum AWS CLI version and configuration features are supported? | Answered in [ADR 0002](decisions/0002-aws-cli-version-floor.md) | — |
 | Q-7 | Which mechanism does persistent disable and enable use? | Open | `OP-2` |
-| Q-8 | Is auto-update on or off by default? | Open | `OP-4` |
-| Q-9 | Which exit status does the wrapper use for its own refusals? | Open | `FD-3` |
+| Q-8 | Is auto-update on or off by default? | Answered in [ADR 0007](decisions/0007-auto-update-asked-at-init.md) | — |
+| Q-9 | Which exit status does the wrapper use for its own refusals? | Answered in [ADR 0003](decisions/0003-wrapper-exit-status.md) | — |
 
-Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience).
+Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience). Q-4, Q-5, and Q-7 are the ones still open.
 
 ## Epics
 
@@ -94,7 +98,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | FD-1 | Wrapper entrypoint and real AWS CLI handoff | Done | MVP | — | — |
 | FD-2 | On-disk path resolution | Done | MVP | — | `FS-1` |
-| FD-3 | Wrapper exit status and secret-safe error messages | To do | MVP | `Q-9` | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
+| FD-3 | Wrapper exit status and secret-safe error messages | To do | MVP | — | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
 | FD-4 | `aws-guard` command skeleton and terminal confirmation | To do | MVP | — | `FS-4`, `PO-2`, `GR-3`, `OP-1` |
 
 ### PR: Profile resolution
@@ -102,9 +106,9 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | PR-1 | Credential subject classification | In progress | MVP | `PR-2` | `PR-3`, `PO-3` |
-| PR-2 | AWS CLI global option parsing | To do | MVP | `Q-6` | `PR-1`, `PO-4`, `SS-1` |
+| PR-2 | AWS CLI global option parsing | To do | MVP | — | `PR-1`, `PO-4`, `SS-1` |
 | PR-3 | Warning when the `default` profile is used | To do | MVP | `PR-1`, `FD-3` | `MV-1` |
-| PR-4 | Reading AWS config and credentials files, including custom locations | To do | MVP | `Q-6` | `PR-5`, `GR-2` |
+| PR-4 | Reading AWS config and credentials files, including custom locations | To do | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
@@ -115,11 +119,14 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| FS-1 | Safe file handling: atomic writes, permissions, symlink refusal, locking | Done | MVP | `FD-2` | `FS-4`, `FS-5`, `PO-1`, `GR-1`, `OP-1` |
-| FS-2 | Strict, versioned file decoding | To do | MVP | — | `FS-3`, `FS-5`, `PO-1`, `GR-1` |
+| FS-1 | Safe file handling: atomic writes, permissions, symlink refusal, locking | Done | MVP | `FD-2` | `FS-4`, `FS-5`, `FS-6`, `PO-1`, `GR-1`, `OP-1` |
+| FS-2 | Strict, versioned file decoding | To do | MVP | — | `FS-3`, `FS-5`, `FS-6`, `PO-1`, `GR-1` |
 | FS-3 | Diagnosis of corrupted files | To do | MVP | `FS-2`, `FD-3` | `FS-4`, `MV-1` |
 | FS-4 | `aws-guard recover` | To do | MVP | `FS-1`, `FS-3`, `FD-4` | — |
 | FS-5 | Migrate command for older file versions | To do | Phase 3 | `FS-1`, `FS-2` | `IN-3` |
+| FS-6 | Preference settings file | To do | Backlog | `FS-1`, `FS-2` | `AD-1`, `OP-4` |
+
+- `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md). Identity verification and the auto-update answer live there. `aws-guard recover settings` lands with that file. MVP `FS-4` covers policy, grants, and cache.
 
 ### PO: Policy
 
@@ -155,9 +162,9 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| SS-1 | How `aws sso login` is handled | To do | Phase 2 | `Q-2`, `PR-2`, `PO-3` | — |
+| SS-1 | How `aws sso login` is handled | To do | Phase 2 | `PR-2` | — |
 
-- The design describes SSO behavior in [AWS SSO Behavior](DESIGN.md#7-aws-sso-behavior) but does not assign it to a phase. Phase 2 is a placeholder.
+- [ADR 0004](decisions/0004-login-out-of-scope.md) decides the behavior: recognize login and hand it to the real CLI, with no policy and no grant. `SS-1` is that recognition. Phase 2 remains the placeholder milestone.
 
 ### CI: Continuous integration
 
@@ -183,10 +190,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | IN-1 | Installer with manifest and `PATH` setup | To do | Phase 5 | — | `IN-2`, `IN-3`, `OP-2` |
-| IN-2 | Shell integration | To do | Phase 5 | `Q-1`, `IN-1` | — |
+| IN-2 | Shell integration | To do | Phase 5 | `IN-1` | — |
 | IN-3 | Upgrade behavior | To do | Phase 5 | `IN-1`, `FS-5` | — |
 
 - `IN-1` overlaps with the `install.sh` that the release pipeline in `OP-3` ships, as described in [Publish pipeline](DESIGN.md#123-publish-pipeline). They are related and may end up as one epic.
+- `IN-2` is Bash and zsh, with shared POSIX `sh`, per [ADR 0005](decisions/0005-bash-and-zsh.md).
 
 ### OP: Operational criteria
 
@@ -195,7 +203,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | OP-1 | Turn the wrapper off for one terminal session | To do | Backlog | `AG-1`, `FS-1`, `FD-4` | — |
 | OP-2 | Persistent disable and enable | To do | Backlog | `Q-7`, `IN-1` | — |
 | OP-3 | GitHub Releases pipeline | To do | Backlog | — | `OP-4` |
-| OP-4 | Auto-update and update notices | To do | Backlog | `Q-8`, `OP-3` | — |
+| OP-4 | Auto-update and update notices | To do | Backlog | `FS-6`, `OP-3` | — |
 | OP-5 | Tight and verbose logging | To do | Backlog | `FD-3` | — |
 
 - These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). The design keeps them out of Phases 1 to 6 until a later pass pulls them into a phase.
@@ -204,7 +212,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| AD-1 | Identity verification through AWS STS | To do | Backlog | `Q-3`, `PR-5` | — |
+| AD-1 | Identity verification through AWS STS | To do | Backlog | `FS-6`, `PR-5` | — |
 | AD-2 | Audit logging | To do | Backlog | `FD-3` | — |
 | AD-3 | Integration with OS-level isolation | To do | Backlog | `AG-3` | — |
 | AD-4 | More detailed policy explanations | To do | Backlog | `PO-5` | — |

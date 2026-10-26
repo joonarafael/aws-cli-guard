@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-AWS CLI Guard is a lightweight, local-first wrapper around AWS CLI v2 that adds user-controlled authorization guardrails to AWS profile usage.
+AWS CLI Guard is a lightweight, local-first wrapper around AWS CLI v2 that adds user-controlled authorization guardrails to AWS profile usage. The supported CLI is 2.9.0 and newer ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 
 AWS IAM Identity Center (formerly AWS SSO) allows users to authenticate a session and obtain access to multiple AWS profiles associated with that session. While convenient, this behavior makes it easy to use a powerful profile simply because its credentials are already available.
 
@@ -25,7 +25,7 @@ The primary goals are:
 - Turn the wrapper fully off for the current terminal session only, with a dedicated command.
 - Disable and re-enable the wrapper persistently for the whole installation, including when a published build is broken.
 - Distribute builds through a cross-platform GitHub Releases pipeline, with an installer and direct downloads.
-- Offer auto-update that can be turned off, and suggest an update when a newer version is available.
+- Offer auto-update that the user turns on or off when they run `aws-guard init`, and suggest an update when a newer version is available and updates are off.
 - Log tightly by default, and support verbose logging for troubleshooting.
 
 Session off, persistent disable, GitHub Releases, auto-update, and logging are recorded operational criteria. [Section 12](#12-recorded-operational-criteria) specifies them so they are not forgotten. They are outside the current roadmap.
@@ -132,6 +132,8 @@ Limitations:
 
 The installation process may let users select either mode. PATH-based installation should be the initial implementation priority.
 
+First-class shell integration is Bash and zsh. Shared logic is POSIX `sh`, and shell-specific code stays in the startup snippet that shell must source. Other shells get PATH installation only. See [ADR 0005](decisions/0005-bash-and-zsh.md).
+
 Neither mode should be described as complete enforcement.
 
 ### Reversibility
@@ -141,8 +143,8 @@ Uninstall is out of scope. Anything the software changes on the machine still ha
 - The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI. Both files remain, which is also how the wrapper finds the real one.
 - Every path an installer creates or edits is recorded in a manifest next to the installation. A later uninstall reads that manifest.
 - Edits to shell startup files sit between marked begin and end comments, so only those lines need to be removed.
-- Policy, grants, cache, session-off records, and a disable sentinel live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files.
-- User policy is kept unless a future uninstall is explicitly asked to purge it. Grants, cache, and session records can be removed without removing policy.
+- Policy, settings, grants, cache, session-off records, and a disable sentinel live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files.
+- User policy and settings are kept unless a future uninstall is explicitly asked to purge them. Grants, cache, and session records can be removed without removing policy.
 - The manifest and the shell markers are plain files. Recovery does not depend on running the installed `aws` or `aws-guard` binary.
 
 ## 4. Policy Model
@@ -250,6 +252,7 @@ aws-guard policy explain production-admin
 aws-guard config validate
 aws-guard recover policy
 aws-guard recover grants
+aws-guard recover settings
 aws-guard recover cache
 ```
 
@@ -262,6 +265,7 @@ The same paths are used on Linux and macOS. The tool does not call `os.UserConfi
 | Role | Default path | Respects |
 | --- | --- | --- |
 | User policy | `~/.config/aws-cli-guard/config.toml` | `XDG_CONFIG_HOME`, then `AWS_CLI_GUARD_CONFIG_DIR` |
+| Preferences | `~/.config/aws-cli-guard/settings.toml` | `XDG_CONFIG_HOME`, then `AWS_CLI_GUARD_CONFIG_DIR` |
 | Grants | `~/.local/state/aws-cli-guard/grants.json` | `XDG_STATE_HOME`, then `AWS_CLI_GUARD_STATE_DIR` |
 | Cache | `~/.cache/aws-cli-guard/` | `XDG_CACHE_HOME`, then `AWS_CLI_GUARD_CACHE_DIR` |
 
@@ -279,7 +283,7 @@ Grants are rewritten under a lock so two overlapping `aws-guard allow` commands 
 
 ### Versions and schema changes
 
-The policy file and the grants file each carry their own integer `version`. The version is required. Cache files that are structured carry a version too.
+The policy file, the settings file, and the grants file each carry their own integer `version`. The version is required. Cache files that are structured carry a version too. Preferences that are not authorization, including identity verification and auto-update, live in `settings.toml` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)). A missing settings file means the defaults. It is not corruption.
 
 Decoding is strict. Unknown fields, duplicate keys, missing versions, and unknown action values are errors. The live `aws` path does not migrate or rewrite a file it does not understand.
 
@@ -293,7 +297,7 @@ Policy keys for behavior this build does not enforce are unknown fields. They fa
 
 A missing policy file means the user has not run init. `aws` does not create the file, does not execute the real CLI, and does not treat the absence as an allow. It exits with a wrapper status and tells the user to run `aws-guard init`.
 
-`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows. If the policy file already exists, init refuses to overwrite it.
+`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows. If the policy file already exists, init refuses to overwrite it. When `settings.toml` is missing, init creates it in that same directory without changing an existing policy file. A build that includes auto-update asks the question from [ADR 0007](decisions/0007-auto-update-asked-at-init.md) at that moment. Identity verification is written off unless the user turns it on.
 
 A missing grants file means there are no grants. That is normal before the first allow, and it is not corruption. A missing cache means there is nothing cached. Cache misses do not affect authorization.
 
@@ -308,11 +312,11 @@ The user has two choices:
 1. Exit and fix the file. The file stays where it is.
 2. Write a fresh file. The tool first moves the unusable file to a sibling name in the same directory, `config.toml.corrupt.<utc-timestamp>` or the equivalent for `grants.json` and cache files. If that name is taken, it picks another suffix. It never overwrites a preserved file and never deletes one. The fresh policy file is the init default. The fresh grants file is the current version with an empty grant list, which grants nothing. The fresh cache is empty.
 
-Those two choices apply to the policy file, the grants file, and the cache. Choice 2 always moves the previous file aside for later diagnosis. The tool does not delete user data from these directories.
+Those two choices apply to the policy file, the settings file, the grants file, and the cache. Choice 2 always moves the previous file aside for later diagnosis. The tool does not delete user data from these directories.
 
-An `aws` invocation that hits a corrupt policy file or a corrupt grants file takes choice 1. It prints the diagnosis, explains both choices, and exits without executing AWS and without modifying the file. Choice 2 is an explicit command (`aws-guard recover policy`, `aws-guard recover grants`, or `aws-guard recover cache`). That command requires a terminal and a confirmation, so a headless process cannot reset policy or grants.
+An `aws` invocation that hits a corrupt policy file, a corrupt settings file, or a corrupt grants file takes choice 1. It prints the diagnosis, explains both choices, and exits without executing AWS and without modifying the file. Choice 2 is an explicit command (`aws-guard recover policy`, `aws-guard recover settings`, `aws-guard recover grants`, or `aws-guard recover cache`). That command requires a terminal and a confirmation, so a headless process cannot reset policy, settings, or grants.
 
-While the policy file is corrupt, nothing is executed. While the grants file is corrupt, nothing is executed either: a half-read grant file must not become an implicit allow. Cache corruption does not block `aws`. The wrapper prints a short warning and continues. The same recover command is available when the user wants a fresh cache.
+While the policy file is corrupt, nothing is executed. While the settings file is corrupt, nothing is executed either: a half-read preferences file must not turn identity verification or auto-update on. While the grants file is corrupt, nothing is executed either: a half-read grant file must not become an implicit allow. Cache corruption does not block `aws`. The wrapper prints a short warning and continues. The same recover command is available when the user wants a fresh cache.
 
 ## 5. Grants
 
@@ -339,19 +343,14 @@ One-invocation prompts and per-shell prompts are not approval scopes. They would
 Illustrative failure:
 
 ```text
-AWS CLI Guard
-
-Profile: production-admin
-Command: ec2 describe-instances
-Policy: prompt
-
-Prompt failed. This profile is not approved on this machine.
-The command was not executed.
-
-Allow it first, for a limited time, then retry. The grant covers later
-invocations on this machine, including headless ones, until it expires:
-
-  aws-guard allow production-admin --ttl 5m
+aws-cli-guard: error: command was not executed
+aws-cli-guard: profile: production-admin
+aws-cli-guard: command: ec2 describe-instances
+aws-cli-guard: policy: prompt
+aws-cli-guard: reason: this profile is not approved on this machine
+aws-cli-guard: allow it first, for a limited time, then retry
+aws-cli-guard: the grant covers later invocations on this machine, including headless ones, until it expires
+aws-cli-guard: aws-guard allow production-admin --ttl 5m
 ```
 
 The command words are illustrative. The message must say that the call failed because the profile is not allowed yet, and that the user allows it on the system before invoking it headlessly. It must not include a bypass, an environment variable that disables the wrapper, or the path of the real AWS CLI. It shows the service and operation, not the raw argument list.
@@ -461,7 +460,7 @@ Profiles may use:
 - `credential_source`.
 - `credential_process`.
 - Web identity and container or instance metadata credentials.
-- Other credential providers supported by the AWS CLI version in use.
+- Other credential providers supported by AWS CLI 2.9.0 through the verified release in [Supported AWS CLI versions](#69-supported-aws-cli-versions).
 
 A profile can also reference another profile or lead to a different role through a chain of credential providers.
 
@@ -469,9 +468,9 @@ The wrapper should distinguish between the requested profile and the eventual AW
 
 At minimum, it should gate the requested profile before invoking the AWS CLI and make clear when the actual identity cannot be determined without further resolution.
 
-A later version may offer optional identity verification by querying AWS STS, for example through `GetCallerIdentity`, when appropriate credentials are available.
+Identity verification, such as an STS `GetCallerIdentity` call, is optional and off unless the user turns it on in `settings.toml` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)). While it is off, the wrapper does not contact AWS to decorate a message or to decide policy.
 
-This verification must be treated as an additional source of information, not as a prerequisite for every command. It introduces network access, latency, and additional credential-provider behavior.
+When the user turns it on, the result is an additional source of information, not a prerequisite for the command. It introduces network access, latency, and additional credential-provider behavior. The wrapper still must not invoke `credential_process` merely to inspect a profile.
 
 ### 6.7 `credential_process`
 
@@ -505,32 +504,25 @@ For useful denial and guidance messages, the tool may optionally display:
 
 Any displayed identity information must be grounded in configuration or actual verification. The tool should not infer account IDs or permissions from profile names.
 
+### 6.9 Supported AWS CLI versions
+
+The supported range starts at AWS CLI 2.9.0. The binary also carries the newest release this project has verified. [ADR 0002](decisions/0002-aws-cli-version-floor.md) is the record.
+
+- Older than 2.9.0, or a version the wrapper cannot read: warn with `aws-cli-guard: warning:`, then hand the original arguments to the real CLI. Policy and grants are not applied. The exit status is the CLI's status.
+- Newer than the verified release: warn, then continue the normal guarded path.
+- Inside the range, through the verified release: no version warning.
+
+The warning is printed before process replacement.
+
 ## 7. AWS SSO Behavior
 
-AWS CLI Guard does not replace or manage AWS SSO authentication.
+AWS CLI Guard does not manage login. Login is outside the wrapper ([ADR 0004](decisions/0004-login-out-of-scope.md)).
 
-The initial goal is to control use of profiles whose credentials may already be available after authentication.
+A login command establishes or refreshes authentication. `aws sso login` is one, whether it names a profile or an SSO session. Any other AWS CLI login form is the same kind of command. The wrapper recognizes the login forms of the CLI versions it knows and hands them to the real CLI with the original arguments. It does not load policy for that command.
 
-For example:
+A login does not create a grant and does not change policy. A later command that uses a profile or another credential subject still follows policy. Revoking a grant does not clear cached SSO credentials or other credentials the CLI already stored.
 
-```text
-    aws sso login --profile production-admin
-```
-
-may establish or refresh authentication state used by one or more configured profiles.
-
-AWS CLI Guard should treat authentication and subsequent use as separate actions.
-
-Possible behavior:
-
-- Allow `aws sso login` by default, while documenting that login does not authorize subsequent profile usage.
-- Optionally allow users to configure policies for login operations.
-- Apply the normal profile policy to subsequent commands using that profile.
-- Avoid assuming that a profile has no usable credentials just because the user has not explicitly approved it in AWS CLI Guard.
-
-A successful SSO login must not automatically create a grant.
-
-Likewise, revoking a grant does not revoke cached SSO credentials.
+A command this build does not recognize as login follows the normal guarded path.
 
 ## 8. AI Agent Detection
 
@@ -652,18 +644,14 @@ Messages should state the security-relevant facts without overwhelming the user,
 A denial:
 
 ```text
-AWS CLI Guard
-
-Requested profile: production-admin
-Account: 123456789012
-Role: AdministratorAccess
-Caller: recognized AI agent
-Command: ec2 describe-instances
-
-Policy: deny
-Reason: production-admin is denied for recognized agents.
-
-Command was not executed.
+aws-cli-guard: error: command was not executed
+aws-cli-guard: profile: production-admin
+aws-cli-guard: account: 123456789012
+aws-cli-guard: role: AdministratorAccess
+aws-cli-guard: caller: recognized AI agent
+aws-cli-guard: command: ec2 describe-instances
+aws-cli-guard: policy: deny
+aws-cli-guard: reason: production-admin is denied for recognized agents
 ```
 
 The account and role shown here are illustrative. They are included only when grounded in configuration or a real verification.
@@ -672,15 +660,15 @@ A `prompt` profile with no current grant fails the same way in a terminal and in
 
 A command that would print access keys fails until `[credential_export] action` is `allow` in the user policy. The message says so. It does not echo the key, the token, or the argument that would have selected it.
 
-When the effective profile is `default`, stderr gets one warning line that a named profile is better practice. The command still follows policy for `default`.
+When the effective profile is `default`, stderr gets one warning line that a named profile is better practice. The line starts with `aws-cli-guard: warning:`. The command still follows policy for `default`.
 
 Requirements:
 
 - Denials and refusals name the policy rule that fired.
 - Grants are created only by the explicit allow command, which confirms the profile name on a terminal.
-- Errors and warnings go to stderr.
+- Errors and warnings go to stderr. Every wrapper line starts with `aws-cli-guard:`. A cancellation uses `aws-cli-guard: error:`. A warning uses `aws-cli-guard: warning:`.
 - When execution is allowed, the real AWS CLI's stdout and stderr stay as that program writes them. The wrapper has been replaced and does not filter them.
-- The caller sees the real AWS CLI exit code. On Linux and macOS the wrapper replaces itself with that binary (`syscall.Exec`), so the code is the CLI's code, not a translation. Wrapper refusals, missing policy, corrupt policy, and corrupt grants exit with one documented wrapper status instead. That status must not be one of the AWS CLI's documented codes: 0, 1, 2, 130, 252, 253, 254, or 255. The stderr text identifies the failure as AWS CLI Guard's.
+- The caller sees the real AWS CLI exit code. On Linux and macOS the wrapper replaces itself with that binary (`syscall.Exec`), so the code is the CLI's code, not a translation. A cancellation exits 3 ([ADR 0003](decisions/0003-wrapper-exit-status.md)). That covers refusals, a missing policy, corrupt policy, corrupt settings, corrupt grants, and a failure to find or start the real CLI. Status 3 is outside the AWS CLI's documented codes: 0, 1, 2, 130, 252, 253, 254, and 255. The `aws-cli-guard: error:` line says the command was not executed and that AWS CLI Guard stopped it. After replacement, the wrapper cannot prefix the CLI's own stderr. A crash the wrapper did not catch is the same.
 - Guidance must not include a wrapper-disabling environment variable or the path of the real AWS CLI.
 - Displayed command text is the service and operation, not the raw argument vector. Profile names and other displayed fields are single-line and stripped of control characters.
 - Logs and crash text follow [Secret handling](#secret-handling) and [Logging](#125-logging).
@@ -700,6 +688,8 @@ Potential bypasses include:
 - Reading or reusing credentials from other accessible sources.
 - Removing or spoofing agent-detection markers.
 - Running another process with sufficient permissions to bypass local controls.
+- Using an AWS CLI older than 2.9.0. The wrapper warns and hands that command through with no policy ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
+- Refreshing credentials with a login command. Login is handed through ([ADR 0004](decisions/0004-login-out-of-scope.md)). Later use of a profile is still guarded.
 
 The project should clearly document these limitations.
 
@@ -835,7 +825,7 @@ install.sh
 
 ### 12.4 Auto-update and update notices
 
-- A setting turns automatic updates on or off. The default is not decided yet.
+- `aws-guard init` asks whether automatic updates are on and stores the answer in `settings.toml` ([ADR 0007](decisions/0007-auto-update-asked-at-init.md)). A missing answer means off. Init can write that file without replacing an existing policy file.
 - When a newer release exists and auto-update is off, the tool suggests the update.
 - When auto-update is on, the tool downloads that release, verifies it with the same checksums as the installer, replaces the installed binary, and tells the user that it did so.
 - The check and any suggestion leave the AWS command's stdout and exit code alone, and they do not stall the command. Suggestions are written to stderr.
@@ -846,7 +836,7 @@ install.sh
 
 - Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path. The exception is the `default` profile warning in [Default profile](#63-default-profile), which is always one stderr line when that profile is the subject.
 - Verbose logging is for troubleshooting. It records the decision path: how the profile was resolved, which policy rule matched, which caller-context signals were seen, which real AWS CLI binary was selected, and why the wrapper handed off or refused.
-- Both modes write to stderr, so AWS CLI stdout stays usable by scripts.
+- Both modes write to stderr, so AWS CLI stdout stays usable by scripts. Wrapper lines use the prefixes in [User Experience](#9-user-experience), so a log line is visibly from AWS CLI Guard.
 - Both modes omit passwords, secret access keys, session tokens, credential-process output, and other credential material. Verbose mode and any stack trace use the same redaction. Entire command lines stay out of the default log. See [Secret handling](#secret-handling).
 - The trigger is `AWS_CLI_GUARD_LOG` or a policy-file setting. It is not a flag on `aws`. See [Wrapper control plane](#wrapper-control-plane).
 
@@ -865,7 +855,7 @@ Go is a good fit for a portable, self-contained command-line tool.
 Potential implementation components:
 
 - Standard Go process execution APIs for replacing the current process with the real CLI.
-- A strict TOML decoder for user policy, and JSON for the grants file. Unknown fields and duplicate keys are errors.
+- A strict TOML decoder for user policy and for `settings.toml`, and JSON for the grants file. Unknown fields and duplicate keys are errors.
 - A robust parser for AWS CLI global options.
 - OS-specific process and session inspection behind platform-specific files or interfaces.
 - Unit tests for profile resolution, policy evaluation, and corrupt-file diagnosis.
@@ -920,7 +910,7 @@ The main execution path should be straightforward:
     executeRealAwsCli(originalArgs, originalEnvironment)
 ```
 
-`executeRealAwsCli` replaces the process. The caller sees the AWS CLI exit code. Wrapper exits use the documented wrapper status.
+`executeRealAwsCli` replaces the process. The caller sees the AWS CLI exit code. A cancellation exits 3 and writes `aws-cli-guard: error:` to stderr ([ADR 0003](decisions/0003-wrapper-exit-status.md)). Before that path, a CLI older than 2.9.0 is handed off with a warning and no policy ([ADR 0002](decisions/0002-aws-cli-version-floor.md)), and a recognized login command is handed off with no policy ([ADR 0004](decisions/0004-login-out-of-scope.md)).
 
 The actual implementation must handle unresolved subjects, credential-export commands, the `default` profile warning, corrupt-file recovery, and execution errors. This pseudocode is only the conceptual path. A `prompt` decision with a valid grant is an allow at the `decision != allow` check above. A `prompt` decision without one refuses.
 
@@ -966,7 +956,10 @@ The initial implementation should be tested without requiring access to a real A
 - Original arguments are preserved, with no wrapper flags inserted.
 - Environment variables are handled as intended.
 - The process exit code after a handoff is the AWS CLI's exit code.
-- A wrapper refusal uses the documented wrapper status, not an AWS CLI status.
+- A wrapper cancellation exits 3, and every stderr line of that cancellation starts with `aws-cli-guard: error:`.
+- An AWS CLI older than 2.9.0 is handed off after a warning, with no policy evaluation.
+- A CLI newer than the verified release warns and still follows policy.
+- A recognized login command is handed off with no policy evaluation and creates no grant.
 - A refusal does not read stdin.
 - Signals are handled correctly across process replacement.
 - The wrapper does not recursively execute itself.
@@ -1030,14 +1023,13 @@ The test suite should explicitly verify that no agent detector treats an absent 
 
 - Install command or script. Uninstall stays out of scope.
 - PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits.
-- Optional shell integration.
-- Support for selected shells and operating systems.
+- Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)).
 - Safe detection of the actual AWS CLI executable.
 - Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
 
 ### Phase 6: Optional advanced features
 
-- AWS identity verification.
+- Optional AWS identity verification, off unless `settings.toml` turns it on ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
 - More detailed policy explanations.
 - Additional agent integrations.
 - Optional audit logging with sensitive-data redaction. Day-to-day tight and verbose logging is a separate recorded criterion in [Logging](#125-logging).
@@ -1050,7 +1042,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - A command that turns the wrapper off for the current terminal session only.
 - A persistent system-wide disable and enable, usable when a published build is broken.
 - A cross-platform GitHub Releases pipeline with an installer and direct downloads.
-- Optional auto-update, with a suggestion when a newer version is available.
+- Optional auto-update, asked during `aws-guard init`, with a suggestion when a newer version is available and updates are off.
 - Tight default logging and verbose logging.
 
 Leave them unimplemented until a later pass pulls them into a phase.
@@ -1062,17 +1054,19 @@ The later phases should be driven by actual user needs rather than being prerequ
 Questions to resolve during implementation:
 
 1. ~~Which operating systems are supported initially: Linux, macOS, Windows, or Windows through WSL?~~ **Resolved:** [ADR 0001](decisions/0001-linux-and-macos-first.md) — Linux and macOS first; cross-platform intent; Windows deferred.
-2. Which shells should receive first-class integration?
+2. ~~Which shells should receive first-class integration?~~ **Resolved:** [ADR 0005](decisions/0005-bash-and-zsh.md) — Bash and zsh; shared logic in POSIX `sh`; other shells use PATH installation only.
 3. ~~Should YAML or TOML be the canonical configuration format?~~ **Resolved:** TOML for user policy, JSON for grants. See [Example configuration](#example-configuration) and [On-disk files](#on-disk-files).
-4. Should `aws sso login` be allowed by default, or should it have a separate policy?
-5. Should identity verification be optional, and when should it run?
+4. ~~Should `aws sso login` be allowed by default, or should it have a separate policy?~~ **Resolved:** [ADR 0004](decisions/0004-login-out-of-scope.md) — login is handed to the real CLI with no policy and no grant. Later use of a profile still follows policy.
+5. ~~Should identity verification be optional, and when should it run?~~ **Resolved:** [ADR 0006](decisions/0006-identity-verification-off-by-default.md) — off unless the user turns it on in `settings.toml`.
 6. ~~How should unresolved profile and credential-source cases be handled?~~ **Resolved:** `AWS_ACCESS_KEY_ID` is not the named profile. Named profiles, environment credentials, other ambient sources, and unresolved subjects are different. A missing policy file asks for init. A corrupt policy or grants file uses the diagnosis flow and does not execute. See [Environment-based credentials](#64-environment-based-credentials), [Missing policy](#missing-policy), and [Corrupted files](#corrupted-files).
 7. ~~How should session-scoped approval be tied to a terminal session?~~ **Resolved:** grants are not session-scoped. A grant is system-wide for the installation until its TTL. Session identity is used only for session-off. See [Grants](#5-grants) and [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session).
 8. Which AI agents should be supported initially?
 9. Should agent detection be enabled by default or require explicit configuration?
 10. ~~What should happen when the caller is unknown and the requested profile is ordinarily allowed?~~ **Resolved:** the normal profile policy. Only a positively recognized agent uses agent rules. A missing marker is not proof of a human and is not treated as an agent. See [Agent-specific policy](#85-agent-specific-policy).
 11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. The session-off mechanism is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). A separate persistent control disables and re-enables the installation system-wide, including when a published build is broken. The persistent-disable mechanism is still open. See [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable).
-12. What minimum AWS CLI versions and configuration features must be supported?
+12. ~~What minimum AWS CLI versions and configuration features must be supported?~~ **Resolved:** [ADR 0002](decisions/0002-aws-cli-version-floor.md) — 2.9.0 and newer. Older CLIs are warned and handed through with no policy. A CLI newer than the verified release is warned and still guarded.
+
+The exit status and the auto-update default sat outside this numbered list. Both are resolved. Cancellations exit 3 and stderr lines from the wrapper start with `aws-cli-guard:` ([ADR 0003](decisions/0003-wrapper-exit-status.md)). `aws-guard init` asks whether auto-update is on ([ADR 0007](decisions/0007-auto-update-asked-at-init.md)).
 
 ## 17. Initial Product Principle
 
