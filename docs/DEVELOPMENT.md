@@ -33,7 +33,7 @@ go mod tidy
 
 Markdown is checked with [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](../Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and verifies its SHA-256. Line length is disabled in [.rumdl.toml](../.rumdl.toml). Relative links and heading fragments are checked. `make md-fmt` rewrites fixable issues and still exits successfully when something has to be fixed by hand; `make md-lint` is the check CI runs.
 
-Run `make check` before pushing. GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
+Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
 
 ### Dogfooding without installing
 
@@ -70,6 +70,8 @@ There is no Windows CI or manual Windows testing in this phase. `make lint` and 
 
 Tests live in [internal/executor/executor_test.go](../internal/executor/executor_test.go). They compile the wrapper and [testdata/fakeaws](../internal/executor/testdata/fakeaws), spawn the wrapper as a subprocess, and assert on exit codes and recorded arguments. When the test binary is built with `-race`, those subprocess builds use `-race` as well. `syscall.Exec` does not return in the wrapper process, so the wrapper cannot be exercised entirely in-process.
 
+A cancellation exits 3, and its stderr lines start with `aws-cli-guard: error:`. That contract is [ADR 0003](decisions/0003-wrapper-exit-status.md). Tests for wrapper failures should assert both the status and the prefix.
+
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially (`0002-...`, etc.).
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0008`.
