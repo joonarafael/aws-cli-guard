@@ -388,6 +388,8 @@ Do not assume the profile argument is always the first argument.
 
 If conflicting profile selections are supplied, behavior should be determined by the actual AWS CLI semantics rather than by an arbitrary wrapper rule. If the wrapper cannot safely determine which profile will be used, it should deny or require a safe resolution instead of guessing.
 
+The wrapper implements the AWS CLI 2.9.0 top-level global-option parser from `awscli/data/cli.json`. Duplicate `--profile` values follow argparse last-wins semantics. Unambiguous long-option prefixes are accepted; ambiguous prefixes, a missing value, an empty profile name, or an invalid choice or integer make the credential subject unresolved. A bare `--` ends option recognition. An unknown long option does not consume the next token. Command and operation are the first two positional arguments under those rules. Raising the verified CLI ceiling in [ADR 0002](decisions/0002-aws-cli-version-floor.md) includes rechecking this option table.
+
 ### 6.2 AWS_PROFILE
 
 When no explicit `--profile` option is supplied, account for `AWS_PROFILE`.
