@@ -54,14 +54,10 @@ func profileFlagValidCases() []resolveCase {
 func profileFlagErrorCases() []resolveCase {
 	return []resolveCase{
 		{
-			name: "conflicting profile flags",
+			name: "last profile flag wins",
 			args: []string{awsBin, profileOpt, "a", profileOpt, "b", "s3", "ls"},
 			env:  nil,
-			want: subject.Subject{
-				Kind:   subject.Unresolved,
-				Name:   "",
-				Reason: "conflicting-profiles",
-			},
+			want: subject.Subject{Kind: subject.NamedProfile, Name: "b", Reason: ""},
 		},
 		{
 			name: "dangling profile flag",
@@ -70,7 +66,7 @@ func profileFlagErrorCases() []resolveCase {
 			want: subject.Subject{
 				Kind:   subject.Unresolved,
 				Name:   "",
-				Reason: "profile-flag-missing-value",
+				Reason: reasonProfileFlagMissingValue,
 			},
 		},
 		{
@@ -85,12 +81,12 @@ func profileFlagErrorCases() []resolveCase {
 		},
 		{
 			name: "profile flag value looks like option",
-			args: []string{awsBin, profileOpt, "--region", "us-east-1", "s3", "ls"},
+			args: []string{awsBin, profileOpt, regionOpt, "us-east-1", "s3", "ls"},
 			env:  nil,
 			want: subject.Subject{
 				Kind:   subject.Unresolved,
 				Name:   "",
-				Reason: "profile-flag-missing-value",
+				Reason: reasonProfileFlagMissingValue,
 			},
 		},
 	}
@@ -168,7 +164,7 @@ func credentialResolveCases() []resolveCase {
 		},
 		{
 			name: "broken flag beats environment keys",
-			args: []string{awsBin, profileOpt, "a", profileOpt, "b", "s3", "ls"},
+			args: []string{awsBin, "s3", "ls", profileOpt},
 			env: []string{
 				"AWS_ACCESS_KEY_ID=" + fixtureAccessKey,
 				"AWS_SECRET_ACCESS_KEY=" + fixtureSecretKey,
@@ -176,9 +172,23 @@ func credentialResolveCases() []resolveCase {
 			want: subject.Subject{
 				Kind:   subject.Unresolved,
 				Name:   "",
-				Reason: "conflicting-profiles",
+				Reason: reasonProfileFlagMissingValue,
 			},
 		},
+		{
+			name: "last profile with environment keys uses environment",
+			args: []string{awsBin, profileOpt, "a", profileOpt, "b", "s3", "ls"},
+			env: []string{
+				"AWS_ACCESS_KEY_ID=" + fixtureAccessKey,
+				"AWS_SECRET_ACCESS_KEY=" + fixtureSecretKey,
+			},
+			want: subject.Subject{Kind: subject.Environment, Name: "", Reason: ""},
+		},
+	}
+}
+
+func credentialEnvOrderCases() []resolveCase {
+	return []resolveCase{
 		{
 			name: "env first wins for access key",
 			args: []string{awsBin, "s3", "ls"},

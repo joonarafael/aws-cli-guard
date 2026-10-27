@@ -35,7 +35,6 @@ Ready now for the MVP:
 
 - `FD-3` Wrapper exit status and secret-safe error messages.
 - `FD-4` `aws-guard` command skeleton and terminal confirmation.
-- `PR-2` AWS CLI global option parsing.
 - `PR-4` Reading AWS config and credentials files, including custom locations.
 - `FS-2` Strict, versioned file decoding.
 - `MV-2` Documentation of bypass limitations.
@@ -50,8 +49,8 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. `FD-3`, `FD-4`, `PR-2`, `PR-4`, `FS-2`, `MV-2`. `FS-1` is already done.
-2. `PR-1`, `FS-3`, `PO-1`, `GR-1`.
+1. `FD-3`, `FD-4`, `PR-4`, `FS-2`, `MV-2`. `FS-1` is already done.
+2. `FS-3`, `PO-1`, `GR-1`.
 3. `PR-3`, `PO-2`, `GR-2`.
 4. `PO-3`, `FS-4`, `GR-3`.
 5. `PO-4`, `GR-4`.
@@ -105,14 +104,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| PR-1 | Credential subject classification | In progress | MVP | `PR-2` | `PR-3`, `PO-3` |
-| PR-2 | AWS CLI global option parsing | To do | MVP | — | `PR-1`, `PO-4`, `SS-1` |
+| PR-1 | Credential subject classification | Done | MVP | `PR-2` | `PR-3`, `PO-3` |
+| PR-2 | AWS CLI global option parsing | Done | MVP | — | `PR-1`, `PO-4`, `SS-1` |
 | PR-3 | Warning when the `default` profile is used | To do | MVP | `PR-1`, `FD-3` | `MV-1` |
 | PR-4 | Reading AWS config and credentials files, including custom locations | To do | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
-- `PR-1` is partly done. It classifies `--profile`, `AWS_PROFILE`, and environment credentials, but finishing it needs proper global option parsing from `PR-2`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
 
 ### FS: File storage and recovery

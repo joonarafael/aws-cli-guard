@@ -14,11 +14,17 @@ func TestResolveProfileFlags(t *testing.T) {
 func TestResolveCredentials(t *testing.T) {
 	t.Parallel()
 	runResolveCases(t, credentialResolveCases())
+	runResolveCases(t, credentialEnvOrderCases())
 }
 
 func TestResolveAmbient(t *testing.T) {
 	t.Parallel()
 	runResolveCases(t, ambientResolveCases())
+}
+
+func TestResolveGlobalOptions(t *testing.T) {
+	t.Parallel()
+	runResolveCases(t, globalOptionResolveCases())
 }
 
 func runResolveCases(t *testing.T, cases []resolveCase) {
