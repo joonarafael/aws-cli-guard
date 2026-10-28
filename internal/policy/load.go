@@ -21,7 +21,7 @@ func Load(env []string) (Policy, error) {
 		return Policy{}, mapPathError(err)
 	}
 
-	data, err := files.ReadRegular(path)
+	data, mode, err := files.ReadRegular(path)
 	if err != nil {
 		return Policy{}, mapReadError(path, err)
 	}
@@ -37,7 +37,14 @@ func Load(env []string) (Policy, error) {
 		return Policy{}, mapDecodeError(path, decodeErr)
 	}
 
-	return validatePolicy(path, doc)
+	out, valErr := validatePolicy(path, doc)
+	if valErr != nil {
+		return Policy{}, stampInvalidError(valErr, path, doc.Version)
+	}
+
+	out.Mode = mode
+
+	return out, nil
 }
 
 func mapPathError(err error) error {
@@ -64,12 +71,12 @@ func mapReadError(path string, err error) error {
 		return newError(KindRead, path, "", 0, 0, err)
 	}
 
-	return fmt.Errorf("aws-cli-guard: policy: read %q: %w", path, err)
+	return newError(KindRead, path, "", 0, 0, err)
 }
 
 func mapDecodeError(path string, err error) error {
 	if decErr, ok := errors.AsType[*decode.Error](err); ok {
-		return newError(
+		polErr := newError(
 			KindDecode,
 			path,
 			decErr.Key,
@@ -77,7 +84,29 @@ func mapDecodeError(path string, err error) error {
 			decErr.Column,
 			decErr,
 		)
+		polErr.Version = decErr.Version
+		polErr.HasVersion = decErr.HasVersion
+		polErr.Supported = append([]int(nil), decErr.Supported...)
+
+		return polErr
 	}
 
 	return newError(KindDecode, path, "", 0, 0, err)
+}
+
+func stampInvalidError(err error, path string, version int) error {
+	polErr, ok := errors.AsType[*Error](err)
+	if !ok {
+		return err
+	}
+
+	if polErr.Path == "" {
+		polErr.Path = stripControls(path)
+	}
+
+	polErr.Version = version
+	polErr.HasVersion = true
+	polErr.Supported = []int{supportedVersion}
+
+	return polErr
 }

@@ -6,7 +6,7 @@
 //	lock, err := files.OpenLock(grantsPath)
 //	// check err before Release; Release is not nil-safe
 //	defer lock.Release()
-//	current, err := files.ReadRegular(grantsPath) // missing file means no grants
+//	current, _, err := files.ReadRegular(grantsPath) // missing file means no grants
 //	// modify current
 //	err = files.WriteAtomic(grantsPath, next)
 package files

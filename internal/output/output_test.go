@@ -90,3 +90,18 @@ func TestErrorPrefixAndStripping(t *testing.T) {
 		t.Fatalf("got %q want %q", line, want)
 	}
 }
+
+func TestDetailPrefixAndStripping(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	output.Detail(&buf, "path\x0a/home")
+
+	line := strings.TrimSuffix(buf.String(), "\n")
+
+	want := "aws-cli-guard: path/home"
+	if line != want {
+		t.Fatalf("got %q want %q", line, want)
+	}
+}

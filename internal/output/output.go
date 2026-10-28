@@ -13,6 +13,7 @@ const CancelStatus = 3
 const (
 	errorPrefix   = "aws-cli-guard: error:"
 	warningPrefix = "aws-cli-guard: warning:"
+	detailPrefix  = "aws-cli-guard:"
 )
 
 // Cancel writes the two-line cancellation message to w.
@@ -32,6 +33,12 @@ func Error(w io.Writer, text string) {
 func Warning(w io.Writer, text string) {
 	safe := stripControls(text)
 	_, _ = fmt.Fprintln(w, warningPrefix, safe)
+}
+
+// Detail writes one aws-cli-guard detail line to w.
+func Detail(w io.Writer, text string) {
+	safe := stripControls(text)
+	_, _ = fmt.Fprintln(w, detailPrefix, safe)
 }
 
 func stripControls(text string) string {

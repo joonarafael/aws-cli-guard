@@ -27,22 +27,28 @@ const (
 
 // Error is a secret-safe policy load failure.
 type Error struct {
-	Kind    Kind
-	Path    string
-	Key     string
-	Line    int
-	Column  int
-	wrapped error
+	Kind       Kind
+	Path       string
+	Key        string
+	Line       int
+	Column     int
+	Version    int
+	HasVersion bool
+	Supported  []int
+	wrapped    error
 }
 
 func newError(kind Kind, path, key string, line, column int, wrapped error) *Error {
 	return &Error{
-		Kind:    kind,
-		Path:    stripControls(path),
-		Key:     stripControls(key),
-		Line:    line,
-		Column:  column,
-		wrapped: wrapped,
+		Kind:       kind,
+		Path:       stripControls(path),
+		Key:        stripControls(key),
+		Line:       line,
+		Column:     column,
+		Version:    0,
+		HasVersion: false,
+		Supported:  nil,
+		wrapped:    wrapped,
 	}
 }
 

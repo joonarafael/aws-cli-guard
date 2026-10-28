@@ -1,6 +1,9 @@
 package policy
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 // Action is a profile or defaults policy action.
 type Action string
@@ -18,6 +21,7 @@ const (
 type Policy struct {
 	Path             string
 	Version          int
+	Mode             os.FileMode
 	DefaultAction    Action
 	CredentialExport Action
 	Profiles         map[string]Profile

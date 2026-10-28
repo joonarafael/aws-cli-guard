@@ -2,6 +2,8 @@
 
 package files
 
+import "os"
+
 // Lock is a placeholder on unsupported platforms.
 type Lock struct{}
 
@@ -16,8 +18,8 @@ func WriteAtomic(_ string, _ []byte) error {
 }
 
 // ReadRegular reads a regular file.
-func ReadRegular(_ string) ([]byte, error) {
-	return nil, ErrPlatformUnsupported
+func ReadRegular(_ string) ([]byte, os.FileMode, error) {
+	return nil, 0, ErrPlatformUnsupported
 }
 
 // OpenLock acquires an advisory lock.
