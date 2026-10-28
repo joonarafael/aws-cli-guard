@@ -26,6 +26,7 @@ linters:
                     allow:
                         - $gostd
                         - aws-cli-guard
+                        - github.com/pelletier/go-toml/v2
         exhaustruct_v5:
             allow-empty: false
             allow-empty-returns: false
