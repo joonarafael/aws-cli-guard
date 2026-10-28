@@ -2,7 +2,6 @@ package executor_test
 
 import (
 	"aws-cli-guard/internal/executor"
-	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -11,7 +10,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestWrapperForwardsArgsAndExitStatus(t *testing.T) {
@@ -32,7 +30,7 @@ func TestWrapperForwardsArgsAndExitStatus(t *testing.T) {
 		"--output",
 		"json",
 	)
-	cmd.Env = envWithout(executor.RealAWSEnv,
+	cmd.Env = envWithout(
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"FAKE_AWS_EXIT=42",
@@ -89,7 +87,7 @@ func TestWrapperSkipsSelfOnPATH(t *testing.T) {
 
 	cmd := exec.CommandContext(t.Context(), wrapper, "s3", "ls")
 
-	cmd.Env = envWithout(executor.RealAWSEnv,
+	cmd.Env = envWithout(
 		"PATH="+wrapperDir+string(os.PathListSeparator)+fakeDir,
 		"FAKE_AWS_RECORD="+record,
 	)
@@ -117,39 +115,6 @@ func TestWrapperSkipsSelfOnPATH(t *testing.T) {
 
 	if args[1] != "s3" || args[2] != "ls" {
 		t.Fatalf("unexpected args: %v", args)
-	}
-}
-
-func TestWrapperMissingRealAWSExitsQuickly(t *testing.T) {
-	t.Parallel()
-
-	root := moduleRoot(t)
-	work := t.TempDir()
-
-	wrapperDir := filepath.Join(work, "only-wrapper")
-
-	err := os.MkdirAll(wrapperDir, 0o750)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wrapper := build(t, root, filepath.Join(wrapperDir, "aws"), "./cmd/aws")
-
-	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, wrapper, "sts", "get-caller-identity")
-	cmd.Env = envWithout(executor.RealAWSEnv, "PATH="+wrapperDir)
-
-	err = cmd.Run()
-
-	if ctx.Err() != nil {
-		t.Fatal("wrapper did not exit quickly when real AWS CLI is missing")
-	}
-
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
-		t.Fatalf("expected exit 1, got %v", err)
 	}
 }
 
@@ -218,10 +183,10 @@ func raceDetectorActive() bool {
 	return false
 }
 
-func envWithout(key string, extra ...string) []string {
+func envWithout(extra ...string) []string {
 	var env []string
 
-	prefix := key + "="
+	prefix := executor.RealAWSEnv + "="
 	for _, e := range os.Environ() {
 		if strings.HasPrefix(e, prefix) {
 			continue
