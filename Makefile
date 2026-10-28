@@ -12,12 +12,15 @@ export RUMDL_VERSION
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-build: ## Build the wrapper binary (no cgo)
+build: ## Build the wrapper and aws-guard binaries (no cgo)
+	mkdir -p bin
 	CGO_ENABLED=0 go build -o bin/aws ./cmd/aws
+	CGO_ENABLED=0 go build -o bin/aws-guard ./cmd/aws-guard
 
-build-race: ## Build the wrapper binary with the race detector
+build-race: ## Build the wrapper and aws-guard binaries with the race detector
 	mkdir -p bin
 	CGO_ENABLED=1 go build -race -o bin/aws ./cmd/aws
+	CGO_ENABLED=1 go build -race -o bin/aws-guard ./cmd/aws-guard
 
 test: ## Run unit tests with race detector
 	CGO_ENABLED=1 go test ./... -race -count=1
@@ -52,6 +55,6 @@ md-fmt: ## Auto-fix Markdown with pinned rumdl
 	./scripts/lint/rumdl.sh fmt --deny-config-warnings .
 
 clean: ## Remove build artifacts
-	rm -f bin/aws
+	rm -f bin/aws bin/aws-guard
 
 check: lint file-length md-lint vet test ## Run Go lint, file-length, Markdown lint, vet, and tests

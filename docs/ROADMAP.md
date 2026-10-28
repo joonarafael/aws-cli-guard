@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP:
 
-- `FD-4` `aws-guard` command skeleton and terminal confirmation.
 - `PR-4` Reading AWS config and credentials files, including custom locations.
 - `MV-2` Documentation of bypass limitations.
 
@@ -47,7 +46,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. `FD-4`, `PR-4`, `MV-2`. `FS-1`, `FD-3`, and `FS-2` are already done.
+1. `PR-4`, `MV-2`. `FS-1`, `FD-3`, `FS-2`, and `FD-4` are already done.
 2. `FS-3`, `PO-1`, `GR-1`.
 3. `PR-3`, `PO-2`, `GR-2`.
 4. `PO-3`, `FS-4`, `GR-3`.
@@ -96,7 +95,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FD-1 | Wrapper entrypoint and real AWS CLI handoff | Done | MVP | — | — |
 | FD-2 | On-disk path resolution | Done | MVP | — | `FS-1` |
 | FD-3 | Wrapper exit status and secret-safe error messages | Done | MVP | — | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
-| FD-4 | `aws-guard` command skeleton and terminal confirmation | To do | MVP | — | `FS-4`, `PO-2`, `GR-3`, `OP-1` |
+| FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `OP-1` |
 
 ### PR: Profile resolution
 

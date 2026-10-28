@@ -20,7 +20,7 @@ You can talk with the user in any language they prefer. The codebase, documentat
 
 | Area | Location | Contents |
 | --- | --- | --- |
-| Entrypoint | `cmd/aws` | Wrapper `main` |
+| Entrypoints | `cmd/aws`, `cmd/aws-guard` | Wrapper and control-plane `main` |
 | Libraries | `internal/` | Packages that exist today |
 | Docs | `docs/` | Design, development, roadmap, ADRs |
 | Lint scripts | `scripts/lint/` | Go file length, rumdl, golangci-lint config check |

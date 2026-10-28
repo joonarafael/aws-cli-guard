@@ -22,6 +22,12 @@ func Cancel(w io.Writer, reason string) {
 	_, _ = fmt.Fprintln(w, errorPrefix, "AWS CLI Guard stopped it:", safe)
 }
 
+// Error writes one error line to w for aws-guard control-plane failures.
+func Error(w io.Writer, text string) {
+	safe := stripControls(text)
+	_, _ = fmt.Fprintln(w, errorPrefix, safe)
+}
+
 // Warning writes one warning line to w.
 func Warning(w io.Writer, text string) {
 	safe := stripControls(text)
