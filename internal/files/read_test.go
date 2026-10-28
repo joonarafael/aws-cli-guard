@@ -13,7 +13,7 @@ func TestReadRegularMissing(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "missing.toml")
 
-	_, err := files.ReadRegular(path)
+	_, _, err := files.ReadRegular(path)
 	assertErrorIs(t, err, os.ErrNotExist)
 }
 
@@ -27,7 +27,7 @@ func TestReadRegularSymlink(t *testing.T) {
 	link := filepath.Join(dir, "config.toml")
 	mustSymlink(t, target, link)
 
-	_, err := files.ReadRegular(link)
+	_, _, err := files.ReadRegular(link)
 	assertErrorIs(t, err, files.ErrSymlink)
 	assertNoSecretInError(t, err)
 }
@@ -38,7 +38,7 @@ func TestReadRegularDirectory(t *testing.T) {
 	dir := t.TempDir()
 	mustMkdirPrivate(t, dir)
 
-	_, err := files.ReadRegular(dir)
+	_, _, err := files.ReadRegular(dir)
 	assertErrorIs(t, err, files.ErrNotRegular)
 }
 
@@ -50,8 +50,16 @@ func TestReadRegularLoosePermissions(t *testing.T) {
 	body := []byte(fixtureSecret + "-readable")
 	writeRegularFile(t, path, body, 0o644)
 
-	got := mustReadRegular(t, path)
+	got, mode, err := files.ReadRegular(path)
+	if err != nil {
+		t.Fatalf("ReadRegular: %v", err)
+	}
+
 	if string(got) != string(body) {
 		t.Fatalf("got %q, want %q", got, body)
+	}
+
+	if mode.Perm() != 0o644 {
+		t.Fatalf("mode = %o, want 0644", mode.Perm())
 	}
 }

@@ -9,6 +9,7 @@ func validatePolicy(path string, doc document) (Policy, error) {
 	out := Policy{
 		Path:             path,
 		Version:          doc.Version,
+		Mode:             0,
 		DefaultAction:    ActionPrompt,
 		CredentialExport: ActionPrompt,
 		Profiles:         map[string]Profile{},

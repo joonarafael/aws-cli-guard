@@ -69,7 +69,7 @@ func mustWriteAtomic(t *testing.T, path string, data []byte) {
 func mustReadRegular(t *testing.T, path string) []byte {
 	t.Helper()
 
-	data, err := files.ReadRegular(path)
+	data, _, err := files.ReadRegular(path)
 	if err != nil {
 		t.Fatalf("ReadRegular %q: %v", path, err)
 	}
