@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP:
 
-- `PR-4` Reading AWS config and credentials files, including custom locations.
 - `MV-2` Documentation of bypass limitations.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
@@ -46,7 +45,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. `PR-4`, `MV-2`. `FS-1`, `FD-3`, `FS-2`, and `FD-4` are already done.
+1. `MV-2`. `FS-1`, `FD-3`, `FS-2`, `FD-4`, and `PR-4` are already done.
 2. `FS-3`, `PO-1`, `GR-1`.
 3. `PR-3`, `PO-2`, `GR-2`.
 4. `PO-3`, `FS-4`, `GR-3`.
@@ -104,7 +103,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-1 | Credential subject classification | Done | MVP | `PR-2` | `PR-3`, `PO-3` |
 | PR-2 | AWS CLI global option parsing | Done | MVP | — | `PR-1`, `PO-4`, `SS-1` |
 | PR-3 | Warning when the `default` profile is used | To do | MVP | `PR-1`, `FD-3` | `MV-1` |
-| PR-4 | Reading AWS config and credentials files, including custom locations | To do | MVP | — | `PR-5`, `GR-2` |
+| PR-4 | Reading AWS config and credentials files, including custom locations | Done | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
