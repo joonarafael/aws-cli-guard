@@ -33,7 +33,8 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP:
 
-- `MV-2` Documentation of bypass limitations.
+- `FS-3` Diagnosis of corrupted files.
+- `GR-1` Grants file store.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -45,12 +46,11 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. `MV-2`. `FS-1`, `FD-3`, `FS-2`, `FD-4`, and `PR-4` are already done.
-2. `FS-3`, `GR-1`.
-3. `PR-3`, `PO-2`, `GR-2`.
-4. `PO-3`, `FS-4`, `GR-3`.
-5. `PO-4`, `GR-4`.
-6. `MV-1`.
+1. `FS-3`, `GR-1`. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FD-4`, and `PR-4` are already done.
+2. `PR-3`, `PO-2`, `GR-2`.
+3. `PO-3`, `FS-4`, `GR-3`.
+4. `PO-4`, `GR-4`.
+5. `MV-1`.
 
 After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant operations), Phase 4 (agent awareness), and Phase 5 (installation), in that order. The design also says later phases should follow actual user needs, so that order is a default rather than a commitment.
 
@@ -150,7 +150,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | MV-1 | Wrapper enforces policy end to end | To do | MVP | `PO-2`, `PO-4`, `GR-4`, `FS-3`, `PR-3` | — |
-| MV-2 | Documentation of bypass limitations | To do | MVP | — | — |
+| MV-2 | Documentation of bypass limitations | Done | MVP | — | — |
 
 ### SS: SSO
 

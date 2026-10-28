@@ -693,7 +693,7 @@ Potential bypasses include:
 - Using an AWS CLI older than 2.9.0. The wrapper warns and hands that command through with no policy ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 - Refreshing credentials with a login command. Login is handed through ([ADR 0004](decisions/0004-login-out-of-scope.md)). Later use of a profile is still guarded.
 
-The project should clearly document these limitations.
+User-facing documentation is in [README.md](../README.md#limitations).
 
 Intentional operator controls for turning the wrapper off are specified in [Recorded operational criteria](#12-recorded-operational-criteria). Those controls are separate from the bypasses above.
 
