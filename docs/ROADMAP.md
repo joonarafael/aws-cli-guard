@@ -46,7 +46,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
 1. `MV-2`. `FS-1`, `FD-3`, `FS-2`, `FD-4`, and `PR-4` are already done.
-2. `FS-3`, `PO-1`, `GR-1`.
+2. `FS-3`, `GR-1`.
 3. `PR-3`, `PO-2`, `GR-2`.
 4. `PO-3`, `FS-4`, `GR-3`.
 5. `PO-4`, `GR-4`.
@@ -126,7 +126,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| PO-1 | Policy schema and loading | To do | MVP | `FS-1`, `FS-2` | `PO-2`, `PO-3` |
+| PO-1 | Policy schema and loading | Done | MVP | `FS-1`, `FS-2` | `PO-2`, `PO-3` |
 | PO-2 | `aws-guard init` and the missing-policy flow | To do | MVP | `PO-1`, `FD-4` | `MV-1` |
 | PO-3 | Policy evaluation engine | To do | MVP | `PO-1`, `PR-1` | `PO-4`, `PO-5`, `GR-4`, `SS-1`, `AG-3` |
 | PO-4 | Rule for commands that print access keys | To do | MVP | `PR-2`, `PO-3` | `MV-1` |

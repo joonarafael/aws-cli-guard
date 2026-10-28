@@ -176,7 +176,7 @@ The exact precedence between global and profile-specific rules should be documen
 
 ### Example configuration
 
-User policy is TOML. Illustrative, not a finalized schema:
+User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). The block below is illustrative; `[agents]` is not part of version 1 and is rejected until a later schema version enforces it:
 
 ```toml
 version = 1
