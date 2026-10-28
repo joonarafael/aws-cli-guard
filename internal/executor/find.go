@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -18,12 +17,12 @@ func FindRealAWS() (string, error) {
 
 	self, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("aws-cli-guard: cannot resolve wrapper executable: %w", err)
+		return "", ErrResolveWrapper
 	}
 
 	self, err = filepath.EvalSymlinks(self)
 	if err != nil {
-		return "", fmt.Errorf("aws-cli-guard: cannot resolve wrapper executable: %w", err)
+		return "", ErrResolveWrapper
 	}
 
 	pathEnv := os.Getenv("PATH")
@@ -60,7 +59,7 @@ func FindRealAWS() (string, error) {
 		return candidate, nil
 	}
 
-	return "", fmt.Errorf("%w (set %s to override)", ErrRealAWSNotFound, RealAWSEnv)
+	return "", ErrRealAWSNotFound
 }
 
 func isExecutable(info os.FileInfo) bool {

@@ -3,20 +3,20 @@ package main
 
 import (
 	"aws-cli-guard/internal/executor"
-	"fmt"
+	"aws-cli-guard/internal/output"
 	"os"
 )
 
 func main() {
 	realAWSPath, err := executor.FindRealAWS()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		output.Cancel(os.Stderr, executor.CancellationReason(err))
+		os.Exit(output.CancelStatus)
 	}
 
 	err = executor.ExecRealAWS(realAWSPath, os.Args, executor.Environ())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		output.Cancel(os.Stderr, executor.CancellationReason(err))
+		os.Exit(output.CancelStatus)
 	}
 }

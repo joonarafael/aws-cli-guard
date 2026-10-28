@@ -3,7 +3,6 @@
 package executor
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 )
@@ -15,7 +14,7 @@ func ExecRealAWS(realPath string, args []string, env []string) error {
 	//nolint:gosec // G204: deliberate exec of the resolved real AWS CLI.
 	err := syscall.Exec(realPath, execArgv, env)
 	if err != nil {
-		return fmt.Errorf("aws-cli-guard: failed to exec real AWS CLI: %w", err)
+		return ErrStartFailed
 	}
 
 	return nil
