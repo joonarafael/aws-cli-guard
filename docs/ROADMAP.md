@@ -31,9 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Ready now for the MVP:
+Ready now for the MVP (wave 2, parallel):
 
-- `GR-1` Grants file store.
+- `PR-3` Warning when the `default` profile is used.
+- `PO-2` `aws-guard init` and the missing-policy flow.
+- `GR-2` Credential-source fingerprint.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -45,7 +47,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
-1. `GR-1`. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` are already done.
+1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
 2. `PR-3`, `PO-2`, `GR-2`.
 3. `PO-3`, `FS-4`, `GR-3`.
 4. `PO-4`, `GR-4`.
@@ -138,12 +140,14 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| GR-1 | Grants file store | To do | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5` |
+| GR-1 | Grants file store | Done | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5` |
 | GR-2 | Credential-source fingerprint | To do | MVP | `PR-4` | `GR-3`, `GR-4`, `GR-5` |
 | GR-3 | `aws-guard allow` | To do | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | To do | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
+
+- `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper does not call it until evaluation exists.
 
 ### MV: MVP milestone
 
