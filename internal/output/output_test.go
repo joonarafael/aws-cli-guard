@@ -75,3 +75,18 @@ func TestCancelStatusConstant(t *testing.T) {
 		t.Fatalf("CancelStatus = %d, want 3", output.CancelStatus)
 	}
 }
+
+func TestErrorPrefixAndStripping(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	output.Error(&buf, "usage\x0aline")
+
+	line := strings.TrimSuffix(buf.String(), "\n")
+
+	want := "aws-cli-guard: error: usageline"
+	if line != want {
+		t.Fatalf("got %q want %q", line, want)
+	}
+}

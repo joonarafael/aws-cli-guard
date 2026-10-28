@@ -16,7 +16,7 @@ From the repository root:
 ```bash
 make help
 make check    # Go lint, 300-line file cap, Markdown lint, vet, race-enabled tests
-make build    # CGO_ENABLED=0 wrapper in bin/aws
+make build    # CGO_ENABLED=0 binaries in bin/aws and bin/aws-guard
 make lint-fix # auto-fix Go formatting when golangci-lint can
 make md-fmt   # auto-fix Markdown
 make md-lint  # Markdown check only

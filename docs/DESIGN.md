@@ -863,6 +863,7 @@ Potential implementation components:
 - Unit tests for profile resolution, policy evaluation, and corrupt-file diagnosis.
 - Integration tests using a fake AWS executable.
 - Terminal confirmation for `aws-guard allow`, `aws-guard off`, and `aws-guard recover`. The `aws` path does not prompt.
+  Confirmation opens the controlling terminal (`/dev/tty` on Linux and macOS), writes the prompt there, and reads one line from that device. It does not read standard input, so a piped payload cannot satisfy the check. A mismatch, a missing terminal, or a headless caller fails closed.
 
 The policy engine should be independent of process execution and terminal interaction.
 
