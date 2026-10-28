@@ -42,6 +42,12 @@ linters:
                 - generic
         lll:
             line-length: 100 # sync with gofmt
+        tagliatelle:
+            case:
+                overrides:
+                    - pkg: internal/grants
+                      rules:
+                          json: snake # ADR 0011 grants.json wire format
         wsl_v5:
             allow-first-in-block: true
             allow-whole-block: false

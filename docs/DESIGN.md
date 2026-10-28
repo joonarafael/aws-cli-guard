@@ -334,7 +334,26 @@ The command requires a controlling terminal. The user confirms by typing the pro
 
 `approval_ttl` in the profile's policy is the default duration when `--ttl` is omitted. It does not grant access on its own.
 
-A grant record stores the profile name, the expiry, and a fingerprint of the credential source visible in the AWS config: account, role ARN, SSO account and role, and whether `credential_process` is set. The fingerprint does not include secrets or the credential-process command. If those source fields change, or if they cannot be read, the grant does not apply and the profile has to be allowed again.
+A grant record stores the profile name, the expiry, and a fingerprint of the credential source visible in the AWS config: account, role ARN, SSO account and role, and whether `credential_process` is set. The fingerprint does not include secrets or the credential-process command. If those source fields change, or if they cannot be read, the grant does not apply and the profile has to be allowed again. Version 1 is defined in [ADR 0011](decisions/0011-grants-schema.md):
+
+```json
+{
+  "version": 1,
+  "grants": [
+    {
+      "profile": "production-admin",
+      "expires": "2026-10-28T18:00:00Z",
+      "source": {
+        "account_id": "123456789012",
+        "role_arn": "arn:aws:iam::123456789012:role/Admin",
+        "sso_account_id": "",
+        "sso_role_name": "",
+        "credential_process": false
+      }
+    }
+  ]
+}
+```
 
 Every invocation evaluates policy again. The grants file only answers a `prompt` action. Deny rules, including agent denials, beat a grant.
 

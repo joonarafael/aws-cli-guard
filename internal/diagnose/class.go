@@ -13,3 +13,11 @@ func ClassPolicy() Class {
 		Recover: "aws-guard recover policy",
 	}
 }
+
+// ClassGrants returns the grants file at grants.json.
+func ClassGrants() Class {
+	return Class{
+		Name:    "grants",
+		Recover: "aws-guard recover grants",
+	}
+}
