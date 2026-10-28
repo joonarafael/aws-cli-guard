@@ -26,7 +26,7 @@ Compare versions as numeric components. The warning is a wrapper warning, as spe
 
 ## Consequences
 
-- Users on a CLI older than 2.9.0 get the real CLI with no guardrails from this tool, after a warning. That limit belongs in the bypass documentation.
+- Users on a CLI older than 2.9.0 get the real CLI with no guardrails from this tool, after a warning. That limit is documented in [README.md](../../README.md#limitations).
 - A current CLI will warn on every command until the known-supported constant is raised past it. The guarded path still runs.
 - Config and global-option behavior are the behavior of the 2.9.0 line through the known-supported release. Features this build does not understand follow the fail-closed rule already in the design: an unresolved subject is not treated as an allow.
 - The version is read from the real AWS CLI the wrapper already found, so the check does not invoke the wrapper again.

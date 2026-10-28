@@ -22,6 +22,6 @@ The CLI has more than one way to log in. `aws sso login` can take `--profile` or
 
 ## Consequences
 
-- An agent, or any other caller, can refresh cached credentials without a grant. Anything that then calls AWS outside this wrapper can use those credentials. That limit is the same class of bypass already documented for absolute paths and SDKs.
+- An agent, or any other caller, can refresh cached credentials without a grant. Anything that then calls AWS outside this wrapper can use those credentials. That limit is documented in [README.md](../../README.md#limitations).
 - `SS-1` is the work of recognizing login and handing it off. It does not add a login policy.
 - A CLI newer than the known-supported release may add a login form this build does not recognize. That invocation is guarded like any other command, and the version warning from ADR 0002 still applies.
