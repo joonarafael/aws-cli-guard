@@ -11,7 +11,6 @@ type grantDocument struct {
 	Source  *sourceDocument `json:"source"`
 }
 
-//nolint:tagliatelle // ADR 0011 snake_case JSON keys in grants.json.
 type sourceDocument struct {
 	AccountID         *string `json:"account_id"`
 	RoleARN           *string `json:"role_arn"`
@@ -31,7 +30,6 @@ type encodeGrant struct {
 	Source  encodeSource `json:"source"`
 }
 
-//nolint:tagliatelle // ADR 0011 snake_case JSON keys in grants.json.
 type encodeSource struct {
 	AccountID         string `json:"account_id"`
 	RoleARN           string `json:"role_arn"`
