@@ -74,4 +74,4 @@ A cancellation exits 3, and its stderr lines start with `aws-cli-guard: error:`.
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0012`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0013`.
