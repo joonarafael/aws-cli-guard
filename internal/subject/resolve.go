@@ -43,7 +43,7 @@ func Resolve(args []string, env []string) Subject {
 		if profile, ok := environ.Lookup("AWS_PROFILE", env); ok && profile != "" {
 			name = profile
 		} else {
-			name = "default"
+			name = defaultProfileName
 		}
 	}
 

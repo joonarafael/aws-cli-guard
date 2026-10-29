@@ -71,7 +71,10 @@ func TestWrapperExecFailureCancelsWithStatus3(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envWithout(executor.RealAWSEnv + "=" + missingReal)
+	cmd.Env = envHandoff(
+		executor.RealAWSEnv+"="+missingReal,
+		"AWS_PROFILE="+handoffProfileName,
+	)
 
 	err := cmd.Run()
 	assertExitCode(t, err, output.CancelStatus)
@@ -101,9 +104,10 @@ func TestWrapperSuccessfulHandoffWritesNoWrapperStderr(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envWithout(
+	cmd.Env = envHandoff(
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
+		"AWS_PROFILE="+handoffProfileName,
 	)
 
 	err := cmd.Run()
@@ -113,6 +117,55 @@ func TestWrapperSuccessfulHandoffWritesNoWrapperStderr(t *testing.T) {
 
 	if stderr.Len() != 0 {
 		t.Fatalf("expected empty wrapper stderr on handoff, got %q", stderr.String())
+	}
+}
+
+func TestWrapperDefaultProfileHandoffWritesWarning(t *testing.T) {
+	t.Parallel()
+
+	root := moduleRoot(t)
+	work := t.TempDir()
+
+	wrapper := build(t, root, filepath.Join(work, "aws"), "./cmd/aws")
+	fake := build(t, root, filepath.Join(work, "fake-aws"), "./internal/executor/testdata/fakeaws")
+	record := filepath.Join(work, "record.json")
+
+	cmd := exec.CommandContext(t.Context(), wrapper, "s3", "ls")
+
+	var stderr bytes.Buffer
+
+	cmd.Stderr = &stderr
+	cmd.Env = envHandoff(
+		executor.RealAWSEnv+"="+fake,
+		"FAKE_AWS_RECORD="+record,
+		"FAKE_AWS_EXIT=7",
+	)
+
+	err := cmd.Run()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 7 {
+			t.Fatalf("run wrapper: %v", err)
+		}
+	} else {
+		t.Fatal("expected exit status 7")
+	}
+
+	wantLine := "aws-cli-guard: warning: " +
+		"using the default profile; a named profile is better practice"
+
+	got := strings.TrimSuffix(stderr.String(), "\n")
+	if got != wantLine {
+		t.Fatalf("stderr = %q want %q", got, wantLine)
+	}
+
+	if strings.Contains(stderr.String(), "aws-cli-guard: error:") {
+		t.Fatalf("handoff must not cancel: %q", stderr.String())
+	}
+
+	args := readRecordedArgs(t, record)
+	if args[1] != "s3" || args[2] != "ls" {
+		t.Fatalf("unexpected forwarded args: %v", args)
 	}
 }
 
