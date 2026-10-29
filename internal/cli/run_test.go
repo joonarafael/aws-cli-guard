@@ -13,47 +13,47 @@ const progName = "aws-guard"
 func TestRunNoArgs(t *testing.T) {
 	t.Parallel()
 
-	var buf bytes.Buffer
+	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName}, &buf)
+	status := cli.Run([]string{progName}, nil, &bytes.Buffer{}, &stderr)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
 	}
 
-	assertUsageLine(t, buf.String())
+	assertUsageLine(t, stderr.String())
 }
 
 func TestRunUnknownCommand(t *testing.T) {
 	t.Parallel()
 
-	var buf bytes.Buffer
+	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, "init"}, &buf)
+	status := cli.Run([]string{progName, "allow"}, nil, &bytes.Buffer{}, &stderr)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
 	}
 
-	assertUsageLine(t, buf.String())
+	assertUsageLine(t, stderr.String())
 
-	if strings.Contains(buf.String(), "init") {
-		t.Fatalf("stderr must not echo argv: %q", buf.String())
+	if strings.Contains(stderr.String(), "allow") {
+		t.Fatalf("stderr must not echo argv: %q", stderr.String())
 	}
 }
 
 func TestRunFlagLikeCommand(t *testing.T) {
 	t.Parallel()
 
-	var buf bytes.Buffer
+	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, "--help"}, &buf)
+	status := cli.Run([]string{progName, "--help"}, nil, &bytes.Buffer{}, &stderr)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
 	}
 
-	assertUsageLine(t, buf.String())
+	assertUsageLine(t, stderr.String())
 
-	if strings.Contains(buf.String(), "--help") {
-		t.Fatalf("stderr must not echo argv: %q", buf.String())
+	if strings.Contains(stderr.String(), "--help") {
+		t.Fatalf("stderr must not echo argv: %q", stderr.String())
 	}
 }
 

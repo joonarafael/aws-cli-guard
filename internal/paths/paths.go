@@ -26,6 +26,16 @@ func ConfigFile(env []string) (string, error) {
 	return abs(filepath.Join(dir, "config.toml"))
 }
 
+// SettingsFile returns the absolute path to the preferences file.
+func SettingsFile(env []string) (string, error) {
+	dir, err := configDir(env)
+	if err != nil {
+		return "", err
+	}
+
+	return abs(filepath.Join(dir, "settings.toml"))
+}
+
 // GrantsFile returns the absolute path to the grants file.
 func GrantsFile(env []string) (string, error) {
 	dir, err := stateDir(env)

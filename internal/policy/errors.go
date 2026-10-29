@@ -23,6 +23,7 @@ const (
 	KindPath
 	KindDecode
 	KindInvalid
+	KindWrite
 )
 
 // Error is a secret-safe policy load failure.
@@ -66,6 +67,8 @@ func (e *Error) Error() string {
 		builder.WriteString("aws-cli-guard: policy: invalid document")
 	case KindInvalid:
 		builder.WriteString("aws-cli-guard: policy: invalid value")
+	case KindWrite:
+		builder.WriteString("aws-cli-guard: policy: write failed")
 	default:
 		builder.WriteString("aws-cli-guard: policy: error")
 	}
