@@ -31,9 +31,10 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Ready now for the MVP (wave 3):
+Ready now for the MVP (wave 4):
 
-- `GR-3` `aws-guard allow`.
+- `PO-4` credential-export rule.
+- `GR-4` grant checking during policy evaluation.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -47,7 +48,7 @@ Each wave only depends on earlier waves. Items within a wave can run in parallel
 
 1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
 2. `PO-2`. Done. `PR-3` and `GR-2` were already done.
-3. `PO-3` and `FS-4`. Done. `GR-3`.
+3. `PO-3`, `FS-4`, and `GR-3`. Done.
 4. `PO-4`, `GR-4`.
 5. `MV-1`.
 
@@ -143,13 +144,14 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | GR-1 | Grants file store | Done | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5` |
 | GR-2 | Credential-source fingerprint | Done | MVP | `PR-4` | `GR-3`, `GR-4`, `GR-5` |
-| GR-3 | `aws-guard allow` | To do | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
+| GR-3 | `aws-guard allow` | Done | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | To do | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
 
 - `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper does not call it until evaluation exists.
-- `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). The wrapper does not call them until `GR-3` and `GR-4`.
+- `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). `GR-3` `aws-guard allow` calls `Fingerprint` and `Update`. The `aws` wrapper does not call them until `GR-4`.
+- `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant. It does not change `cmd/aws`; grants take effect when `GR-4` and `MV-1` land.
 
 ### MV: MVP milestone
 
