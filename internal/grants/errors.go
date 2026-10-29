@@ -7,6 +7,9 @@ import (
 	"unicode"
 )
 
+// ErrMissing is returned when the grants file does not exist.
+var ErrMissing = errors.New("aws-cli-guard: grants: file missing")
+
 // ErrTooLarge is returned when the grants file exceeds the size limit.
 var ErrTooLarge = errors.New("aws-cli-guard: grants: file too large")
 
@@ -15,7 +18,8 @@ type Kind int
 
 // Failure kinds returned in grants.Error.
 const (
-	KindRead Kind = iota + 1
+	KindMissing Kind = iota + 1
+	KindRead
 	KindPath
 	KindDecode
 	KindInvalid
@@ -53,6 +57,8 @@ func (e *Error) Error() string {
 	var builder strings.Builder
 
 	switch e.Kind {
+	case KindMissing:
+		builder.WriteString("aws-cli-guard: grants: file missing")
 	case KindRead:
 		builder.WriteString("aws-cli-guard: grants: read failed")
 	case KindPath:

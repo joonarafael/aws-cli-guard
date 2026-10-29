@@ -21,3 +21,6 @@ var ErrLockAlreadyReleased = errors.New("aws-cli-guard: lock already released")
 
 // ErrNoPartialName is returned when no unused partial filename can be chosen.
 var ErrNoPartialName = errors.New("aws-cli-guard: no free partial name")
+
+// ErrNoCorruptName is returned when no unused corrupt aside filename can be chosen.
+var ErrNoCorruptName = errors.New("aws-cli-guard: no free corrupt name")
