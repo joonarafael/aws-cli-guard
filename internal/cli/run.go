@@ -29,6 +29,8 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runInit(args, env, stdout, stderr)
 	case recoverCommand:
 		return runRecover(args, env, stdout, stderr, confirm)
+	case allowCommand:
+		return runAllow(args, env, stdout, stderr, confirm)
 	default:
 		output.Error(stderr, usageLine)
 

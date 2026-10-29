@@ -28,14 +28,14 @@ func TestRunUnknownCommand(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, "allow"}, nil, &bytes.Buffer{}, &stderr)
+	status := cli.Run([]string{progName, "unknown-cmd"}, nil, &bytes.Buffer{}, &stderr)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
 	}
 
 	assertUsageLine(t, stderr.String())
 
-	if strings.Contains(stderr.String(), "allow") {
+	if strings.Contains(stderr.String(), "unknown-cmd") {
 		t.Fatalf("stderr must not echo argv: %q", stderr.String())
 	}
 }
