@@ -32,6 +32,8 @@ func Corruption(err error) (diagnose.Note, bool) {
 		}
 
 		return noteFromPolicyError(polErr, decodeFailurePhrase(decErr)), true
+	case KindWrite:
+		return emptyDiagnoseNote(), false
 	default:
 		return emptyDiagnoseNote(), false
 	}

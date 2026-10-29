@@ -56,6 +56,22 @@ func assertConfigFileError(t *testing.T, err error) {
 	}
 }
 
+func TestSettingsFile(t *testing.T) {
+	t.Parallel()
+
+	env := copyEnv([]string{envXDGConfig, envHomeUser})
+
+	got, err := paths.SettingsFile(env)
+	if err != nil {
+		t.Fatalf("SettingsFile: %v", err)
+	}
+
+	want := rootJoin("xdg", "config", "aws-cli-guard", "settings.toml")
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
 func TestGrantsFile(t *testing.T) {
 	t.Parallel()
 

@@ -32,13 +32,15 @@ func TestWrapperMissingRealAWSCancelsWithStatus3(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 
-	secretArg := "SECRET_ARG_TOKEN_must_not_leak"
-	cmd := exec.CommandContext(ctx, wrapper, "sts", secretArg)
+	cmd := exec.CommandContext(ctx, wrapper, "sts", cancellationSecretArg)
 
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envWithout("PATH=" + wrapperDir)
+	cmd.Env = envHandoff(
+		policyConfigEnv(t, work),
+		"PATH="+wrapperDir,
+	)
 
 	err = cmd.Run()
 
@@ -46,8 +48,8 @@ func TestWrapperMissingRealAWSCancelsWithStatus3(t *testing.T) {
 		t.Fatal("wrapper did not exit quickly when real AWS CLI is missing")
 	}
 
-	assertExitCode(t, err, output.CancelStatus)
-	assertCancellationStderr(t, stderr.String(), secretArg)
+	assertExitCode(t, err)
+	assertCancellationStderr(t, stderr.String())
 
 	if strings.Contains(stderr.String(), executor.RealAWSEnv) {
 		t.Fatalf("stderr must not mention %s", executor.RealAWSEnv)
@@ -65,20 +67,20 @@ func TestWrapperExecFailureCancelsWithStatus3(t *testing.T) {
 
 	wrapper := build(t, root, filepath.Join(work, "aws"), "./cmd/aws")
 
-	secretArg := "SECRET_ARG_TOKEN_must_not_leak"
-	cmd := exec.CommandContext(t.Context(), wrapper, "sts", secretArg)
+	cmd := exec.CommandContext(t.Context(), wrapper, "sts", cancellationSecretArg)
 
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
 	cmd.Env = envHandoff(
+		policyConfigEnv(t, work),
 		executor.RealAWSEnv+"="+missingReal,
 		"AWS_PROFILE="+handoffProfileName,
 	)
 
 	err := cmd.Run()
-	assertExitCode(t, err, output.CancelStatus)
-	assertCancellationStderr(t, stderr.String(), secretArg)
+	assertExitCode(t, err)
+	assertCancellationStderr(t, stderr.String())
 
 	if strings.Contains(stderr.String(), marker) {
 		t.Fatalf("stderr must not contain real CLI path marker %q", marker)
@@ -105,6 +107,7 @@ func TestWrapperSuccessfulHandoffWritesNoWrapperStderr(t *testing.T) {
 
 	cmd.Stderr = &stderr
 	cmd.Env = envHandoff(
+		policyConfigEnv(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"AWS_PROFILE="+handoffProfileName,
@@ -136,6 +139,7 @@ func TestWrapperDefaultProfileHandoffWritesWarning(t *testing.T) {
 
 	cmd.Stderr = &stderr
 	cmd.Env = envHandoff(
+		policyConfigEnv(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"FAKE_AWS_EXIT=7",
@@ -169,16 +173,16 @@ func TestWrapperDefaultProfileHandoffWritesWarning(t *testing.T) {
 	}
 }
 
-func assertExitCode(t *testing.T, err error, want int) {
+func assertExitCode(t *testing.T, err error) {
 	t.Helper()
 
 	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) || exitErr.ExitCode() != want {
-		t.Fatalf("expected exit %d, got %v", want, err)
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != output.CancelStatus {
+		t.Fatalf("expected exit %d, got %v", output.CancelStatus, err)
 	}
 }
 
-func assertCancellationStderr(t *testing.T, stderr, secretArg string) {
+func assertCancellationStderr(t *testing.T, stderr string) {
 	t.Helper()
 
 	if !strings.Contains(stderr, "aws-cli-guard: error: command was not executed") {
@@ -189,7 +193,7 @@ func assertCancellationStderr(t *testing.T, stderr, secretArg string) {
 		t.Fatalf("missing stopped-it line in stderr: %q", stderr)
 	}
 
-	if strings.Contains(stderr, secretArg) {
+	if strings.Contains(stderr, cancellationSecretArg) {
 		t.Fatalf("stderr must not contain argv token")
 	}
 

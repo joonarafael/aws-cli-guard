@@ -11,14 +11,19 @@ const (
 )
 
 // Run dispatches aws-guard subcommands. args[0] is the program name and is ignored.
-func Run(args []string, stderr io.Writer) int {
+func Run(args []string, env []string, stdout, stderr io.Writer) int {
 	if len(args) < minArgsWithCommand {
 		output.Error(stderr, usageLine)
 
 		return output.CancelStatus
 	}
 
-	output.Error(stderr, usageLine)
+	switch args[1] {
+	case initCommand:
+		return runInit(args, env, stdout, stderr)
+	default:
+		output.Error(stderr, usageLine)
 
-	return output.CancelStatus
+		return output.CancelStatus
+	}
 }

@@ -31,9 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Ready now for the MVP (wave 2):
+Ready now for the MVP (wave 3):
 
-- `PO-2` `aws-guard init` and the missing-policy flow.
+- `PO-3` policy evaluation engine.
+- `FS-4` `aws-guard recover`.
+- `GR-3` `aws-guard allow`.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -46,7 +48,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
 1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
-2. `PO-2`. `PR-3` and `GR-2` are done.
+2. `PO-2`. Done. `PR-3` and `GR-2` were already done.
 3. `PO-3`, `FS-4`, `GR-3`.
 4. `PO-4`, `GR-4`.
 5. `MV-1`.
@@ -128,12 +130,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | PO-1 | Policy schema and loading | Done | MVP | `FS-1`, `FS-2` | `PO-2`, `PO-3` |
-| PO-2 | `aws-guard init` and the missing-policy flow | To do | MVP | `PO-1`, `FD-4` | `MV-1` |
+| PO-2 | `aws-guard init` and the missing-policy flow | Done | MVP | `PO-1`, `FD-4` | `MV-1` |
 | PO-3 | Policy evaluation engine | To do | MVP | `PO-1`, `PR-1` | `PO-4`, `PO-5`, `GR-4`, `SS-1`, `AG-3` |
 | PO-4 | Rule for commands that print access keys | To do | MVP | `PR-2`, `PO-3` | `MV-1` |
 | PO-5 | Inspect, explain, and validate policy | To do | Phase 2 | `PO-3` | `AD-4` |
 
 - Configuration validation shows up twice in the design. Validating on every load is part of `PO-1`. The standalone validate command is `PO-5`, which the design places in Phase 2.
+- `PO-2` adds `aws-guard init` (default `config.toml` via `policy.DefaultFileBody`, optional `settings.toml` without loading it), and the wrapper cancels only when the policy file is absent (`policy.Present`). Invalid policy still hands off until `MV-1`.
 
 ### GR: Grants
 
