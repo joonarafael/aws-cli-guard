@@ -10,6 +10,8 @@ const (
 	BasisProfile Basis = iota + 1
 	// BasisDefault is [defaults] action for an unspecified profile or non-profile subject.
 	BasisDefault
+	// BasisCredentialExport is [credential_export] action.
+	BasisCredentialExport
 )
 
 // Decision is the profile-policy outcome for one credential subject.
@@ -19,7 +21,7 @@ type Decision struct {
 }
 
 // Evaluate returns the profile action for subj under pol. It does not check grants
-// or [credential_export]; callers apply those in later evaluation steps.
+// or [credential_export]; callers apply EvaluateExport and grant checks in later steps.
 func Evaluate(pol Policy, subj subject.Subject) Decision {
 	switch subj.Kind {
 	case subject.NamedProfile:
