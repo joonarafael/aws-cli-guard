@@ -35,7 +35,6 @@ Ready now for the MVP (wave 2, parallel):
 
 - `PR-3` Warning when the `default` profile is used.
 - `PO-2` `aws-guard init` and the missing-policy flow.
-- `GR-2` Credential-source fingerprint.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -48,7 +47,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
 1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
-2. `PR-3`, `PO-2`, `GR-2`.
+2. `PR-3`, `PO-2`. `GR-2` is done.
 3. `PO-3`, `FS-4`, `GR-3`.
 4. `PO-4`, `GR-4`.
 5. `MV-1`.
@@ -141,13 +140,14 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | GR-1 | Grants file store | Done | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5` |
-| GR-2 | Credential-source fingerprint | To do | MVP | `PR-4` | `GR-3`, `GR-4`, `GR-5` |
+| GR-2 | Credential-source fingerprint | Done | MVP | `PR-4` | `GR-3`, `GR-4`, `GR-5` |
 | GR-3 | `aws-guard allow` | To do | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | To do | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
 
 - `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper does not call it until evaluation exists.
+- `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). The wrapper does not call them until `GR-3` and `GR-4`.
 
 ### MV: MVP milestone
 
