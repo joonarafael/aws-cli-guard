@@ -4,6 +4,7 @@ package main
 import (
 	"aws-cli-guard/internal/executor"
 	"aws-cli-guard/internal/output"
+	"aws-cli-guard/internal/subject"
 	"os"
 )
 
@@ -14,7 +15,10 @@ func main() {
 		os.Exit(output.CancelStatus)
 	}
 
-	err = executor.ExecRealAWS(realAWSPath, os.Args, executor.Environ())
+	env := executor.Environ()
+	subject.WarnDefaultProfile(os.Stderr, subject.Resolve(os.Args, env))
+
+	err = executor.ExecRealAWS(realAWSPath, os.Args, env)
 	if err != nil {
 		output.Cancel(os.Stderr, executor.CancellationReason(err))
 		os.Exit(output.CancelStatus)

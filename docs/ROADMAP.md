@@ -31,9 +31,8 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Ready now for the MVP (wave 2, parallel):
+Ready now for the MVP (wave 2):
 
-- `PR-3` Warning when the `default` profile is used.
 - `PO-2` `aws-guard init` and the missing-policy flow.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
@@ -47,7 +46,7 @@ Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 Each wave only depends on earlier waves. Items within a wave can run in parallel.
 
 1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
-2. `PR-3`, `PO-2`. `GR-2` is done.
+2. `PO-2`. `PR-3` and `GR-2` are done.
 3. `PO-3`, `FS-4`, `GR-3`.
 4. `PO-4`, `GR-4`.
 5. `MV-1`.
@@ -102,11 +101,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | PR-1 | Credential subject classification | Done | MVP | `PR-2` | `PR-3`, `PO-3` |
 | PR-2 | AWS CLI global option parsing | Done | MVP | — | `PR-1`, `PO-4`, `SS-1` |
-| PR-3 | Warning when the `default` profile is used | To do | MVP | `PR-1`, `FD-3` | `MV-1` |
+| PR-3 | Warning when the `default` profile is used | Done | MVP | `PR-1`, `FD-3` | `MV-1` |
 | PR-4 | Reading AWS config and credentials files, including custom locations | Done | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
+- `PR-3` warns on stderr when the credential subject is the named profile `default`, then hands off to the real AWS CLI. Policy is not evaluated yet.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
 
 ### FS: File storage and recovery

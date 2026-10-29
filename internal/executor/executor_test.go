@@ -30,10 +30,11 @@ func TestWrapperForwardsArgsAndExitStatus(t *testing.T) {
 		"--output",
 		"json",
 	)
-	cmd.Env = envWithout(
+	cmd.Env = envHandoff(
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"FAKE_AWS_EXIT=42",
+		"AWS_PROFILE="+handoffProfileName,
 	)
 
 	err := cmd.Run()
@@ -87,9 +88,10 @@ func TestWrapperSkipsSelfOnPATH(t *testing.T) {
 
 	cmd := exec.CommandContext(t.Context(), wrapper, "s3", "ls")
 
-	cmd.Env = envWithout(
+	cmd.Env = envHandoff(
 		"PATH="+wrapperDir+string(os.PathListSeparator)+fakeDir,
 		"FAKE_AWS_RECORD="+record,
+		"AWS_PROFILE="+handoffProfileName,
 	)
 
 	err = cmd.Run()
@@ -183,6 +185,8 @@ func raceDetectorActive() bool {
 	return false
 }
 
+const handoffProfileName = "staging-handoff-test"
+
 func envWithout(extra ...string) []string {
 	var env []string
 
@@ -196,4 +200,38 @@ func envWithout(extra ...string) []string {
 	}
 
 	return append(env, extra...)
+}
+
+func envHandoff(extra ...string) []string {
+	base := envWithout()
+
+	var cleaned []string
+
+	stripPrefixes := []string{
+		"AWS_ACCESS_KEY_ID=",
+		"AWS_SECRET_ACCESS_KEY=",
+		"AWS_SESSION_TOKEN=",
+		"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=",
+		"AWS_CONTAINER_CREDENTIALS_FULL_URI=",
+		"AWS_WEB_IDENTITY_TOKEN_FILE=",
+		"AWS_PROFILE=",
+	}
+
+	for _, entry := range base {
+		skip := false
+
+		for _, prefix := range stripPrefixes {
+			if strings.HasPrefix(entry, prefix) {
+				skip = true
+
+				break
+			}
+		}
+
+		if !skip {
+			cleaned = append(cleaned, entry)
+		}
+	}
+
+	return append(cleaned, extra...)
 }
