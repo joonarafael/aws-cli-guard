@@ -19,47 +19,26 @@ var negativeNumberPattern = regexp.MustCompile(`^-\d+$|^-\d*\.\d+$`)
 
 // Invocation is the result of parsing top-level AWS CLI global options from argv.
 type Invocation struct {
-	Command    string
-	Operation  string
-	Profile    string
-	HasProfile bool
-	OK         bool
-	Reason     string
+	Command          string
+	Operation        string
+	Profile          string
+	HasProfile       bool
+	OK               bool
+	Reason           string
+	PrintsAccessKeys bool
 }
 
 // Parse interprets args in the AWS CLI 2.9.0 top-level global-option grammar.
 // args[0] is the program name and is ignored.
 func Parse(args []string) Invocation {
 	if len(args) == 0 {
-		return successInvocation("", "", "", false)
+		return successInvocation("", "", "", false, false)
 	}
 
 	state := parseState{}
 	positional := state.walkArgs(args)
 
 	return state.finish(positional)
-}
-
-func successInvocation(command, operation, profile string, hasProfile bool) Invocation {
-	return Invocation{
-		Command:    command,
-		Operation:  operation,
-		Profile:    profile,
-		HasProfile: hasProfile,
-		OK:         true,
-		Reason:     "",
-	}
-}
-
-func failedInvocation(reason string) Invocation {
-	return Invocation{
-		Command:    "",
-		Operation:  "",
-		Profile:    "",
-		HasProfile: false,
-		OK:         false,
-		Reason:     reason,
-	}
 }
 
 type parseState struct {
@@ -266,7 +245,20 @@ func (s *parseState) finish(positional []string) Invocation {
 		operation = positional[1]
 	}
 
-	return successInvocation(command, operation, s.profile, s.hasProfile)
+	rest := positionalRest(positional)
+	printsKeys := printsAccessKeys(command, operation, rest)
+
+	return successInvocation(command, operation, s.profile, s.hasProfile, printsKeys)
+}
+
+const positionalAfterOperation = 2
+
+func positionalRest(positional []string) []string {
+	if len(positional) <= positionalAfterOperation {
+		return nil
+	}
+
+	return positional[positionalAfterOperation:]
 }
 
 func isOptionToken(arg string) bool {

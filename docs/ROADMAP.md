@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP (wave 4):
 
-- `PO-4` credential-export rule.
 - `GR-4` grant checking during policy evaluation.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
@@ -131,12 +130,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PO-1 | Policy schema and loading | Done | MVP | `FS-1`, `FS-2` | `PO-2`, `PO-3` |
 | PO-2 | `aws-guard init` and the missing-policy flow | Done | MVP | `PO-1`, `FD-4` | `MV-1` |
 | PO-3 | Policy evaluation engine | Done | MVP | `PO-1`, `PR-1` | `PO-4`, `PO-5`, `GR-4`, `SS-1`, `AG-3` |
-| PO-4 | Rule for commands that print access keys | To do | MVP | `PR-2`, `PO-3` | `MV-1` |
+| PO-4 | Rule for commands that print access keys | Done | MVP | `PR-2`, `PO-3` | `MV-1` |
 | PO-5 | Inspect, explain, and validate policy | To do | Phase 2 | `PO-3` | `AD-4` |
 
 - Configuration validation shows up twice in the design. Validating on every load is part of `PO-1`. The standalone validate command is `PO-5`, which the design places in Phase 2.
 - `PO-2` adds `aws-guard init` (default `config.toml` via `policy.DefaultFileBody`, optional `settings.toml` without loading it), and the wrapper cancels only when the policy file is absent (`policy.Present`). Invalid policy still hands off until `MV-1`.
 - `PO-3` adds `Evaluate` for profile policy: named profiles use `[profiles]` or `[defaults]`, and environment or unresolved subjects use `[defaults]` only. It returns the action and basis; it does not check grants or `[credential_export]`. The wrapper does not call it yet.
+- `PO-4` adds `Invocation.PrintsAccessKeys` and `EvaluateExport` for `[credential_export]`. The wrapper does not call them until `MV-1`.
 
 ### GR: Grants
 

@@ -222,7 +222,7 @@ Some AWS CLI commands print credential material. The initial set is explicit:
 - `aws configure export-credentials`
 - `aws configure get` when the requested setting is `aws_access_key_id`, `aws_secret_access_key`, or `aws_session_token`
 
-If `configure get` is invoked and the wrapper cannot tell whether the setting is one of those, it treats the command as secret-printing. The set grows only by an intentional change. Ordinary API calls are not in it. `aws configure list-profiles`, `aws configure set`, and SSO login are not in it.
+If `configure get` is invoked and the wrapper cannot tell whether the setting is one of those, it treats the command as secret-printing. The argv token rule for `configure get` is [ADR 0013](decisions/0013-credential-export-commands.md). The set grows only by an intentional change. Ordinary API calls are not in it. `aws configure list-profiles`, `aws configure set`, and SSO login are not in it.
 
 The default action is `prompt`, including when the `[credential_export]` section is omitted. The invocation fails and the message points at that setting in the policy file. Setting it to `allow` is the override. Setting it to `deny` refuses the commands even for an otherwise allowed profile. A profile `allow` and a system-wide grant do not permit these commands.
 

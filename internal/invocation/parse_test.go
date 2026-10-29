@@ -67,6 +67,51 @@ func TestParseDoesNotRetainNonProfileValues(t *testing.T) {
 	}
 }
 
+func TestParseDoesNotRetainConfigureSettingNames(t *testing.T) {
+	t.Parallel()
+
+	const sentinel = "SecretSettingNameMustNotAppearInStruct"
+
+	t.Run("configure set", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{awsBin, configureCmd, "set", sentinel, "value"}
+
+		got := invocation.Parse(args)
+		if !got.OK {
+			t.Fatalf("Parse() OK = false, reason %q", got.Reason)
+		}
+
+		assertNoSentinelInInvocation(t, got, sentinel)
+
+		if got.PrintsAccessKeys {
+			t.Fatal("PrintsAccessKeys = true, want false for configure set")
+		}
+	})
+
+	t.Run("configure get secret setting", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{awsBin, configureCmd, operationGet, sentinel}
+
+		got := invocation.Parse(args)
+		if !got.OK {
+			t.Fatalf("Parse() OK = false, reason %q", got.Reason)
+		}
+
+		assertNoSentinelInInvocation(t, got, sentinel)
+	})
+}
+
+func assertNoSentinelInInvocation(t *testing.T, got invocation.Invocation, sentinel string) {
+	t.Helper()
+
+	blob := got.Command + got.Operation + got.Profile + got.Reason
+	if strings.Contains(blob, sentinel) {
+		t.Fatal("setting or value leaked into Invocation fields")
+	}
+}
+
 type parseCase struct {
 	name string
 	args []string
@@ -89,24 +134,33 @@ func runParseCases(t *testing.T, cases []parseCase) {
 }
 
 func invOK(command, operation, profile string, hasProfile bool) invocation.Invocation {
+	return invOKExport(command, operation, profile, hasProfile, false)
+}
+
+func invOKExport(
+	command, operation, profile string,
+	hasProfile, printsAccessKeys bool,
+) invocation.Invocation {
 	return invocation.Invocation{
-		Command:    command,
-		Operation:  operation,
-		Profile:    profile,
-		HasProfile: hasProfile,
-		OK:         true,
-		Reason:     "",
+		Command:          command,
+		Operation:        operation,
+		Profile:          profile,
+		HasProfile:       hasProfile,
+		OK:               true,
+		Reason:           "",
+		PrintsAccessKeys: printsAccessKeys,
 	}
 }
 
 func invFail(reason string) invocation.Invocation {
 	return invocation.Invocation{
-		Command:    "",
-		Operation:  "",
-		Profile:    "",
-		HasProfile: false,
-		OK:         false,
-		Reason:     reason,
+		Command:          "",
+		Operation:        "",
+		Profile:          "",
+		HasProfile:       false,
+		OK:               false,
+		Reason:           reason,
+		PrintsAccessKeys: false,
 	}
 }
 
@@ -134,8 +188,8 @@ func commandOperationCases() []parseCase {
 		},
 		{
 			name: "configure export credentials",
-			args: []string{awsBin, "configure", "export-credentials"},
-			want: invOK("configure", "export-credentials", "", false),
+			args: []string{awsBin, configureCmd, operationExportCreds},
+			want: invOKExport(configureCmd, operationExportCreds, "", false, true),
 		},
 		{
 			name: "unknown service param before profile",
