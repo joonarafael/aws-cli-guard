@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Ready now for the MVP (wave 3):
 
-- `FS-4` `aws-guard recover`.
 - `GR-3` `aws-guard allow`.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
@@ -48,7 +47,7 @@ Each wave only depends on earlier waves. Items within a wave can run in parallel
 
 1. `GR-1`. Done. `MV-2`, `FS-1`, `FD-3`, `FS-2`, `FS-3`, `FD-4`, and `PR-4` were already done.
 2. `PO-2`. Done. `PR-3` and `GR-2` were already done.
-3. `PO-3`. Done. `FS-4`, `GR-3`.
+3. `PO-3` and `FS-4`. Done. `GR-3`.
 4. `PO-4`, `GR-4`.
 5. `MV-1`.
 
@@ -117,12 +116,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FS-1 | Safe file handling: atomic writes, permissions, symlink refusal, locking | Done | MVP | `FD-2` | `FS-4`, `FS-5`, `FS-6`, `PO-1`, `GR-1`, `OP-1` |
 | FS-2 | Strict, versioned file decoding | Done | MVP | — | `FS-3`, `FS-5`, `FS-6`, `PO-1`, `GR-1` |
 | FS-3 | Diagnosis of corrupted files | Done | MVP | `FS-2`, `FD-3` | `FS-4`, `MV-1` |
-| FS-4 | `aws-guard recover` | To do | MVP | `FS-1`, `FS-3`, `FD-4` | — |
+| FS-4 | `aws-guard recover` | Done | MVP | `FS-1`, `FS-3`, `FD-4` | — |
 | FS-5 | Migrate command for older file versions | To do | Phase 3 | `FS-1`, `FS-2` | `IN-3` |
 | FS-6 | Preference settings file | To do | Backlog | `FS-1`, `FS-2` | `AD-1`, `OP-4` |
 
 - `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md). Identity verification and the auto-update answer live there. `aws-guard recover settings` lands with that file. MVP `FS-4` covers policy, grants, and cache.
-- `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper still does not call `policy.Load` until evaluation exists (`MV-1` will print the note after `output.Cancel`). `FS-4` implements the `aws-guard recover` command named in the note.
+- `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper still does not call `policy.Load` until evaluation exists (`MV-1` will print the note after `output.Cancel`). `FS-4` adds `aws-guard recover policy`, `recover grants`, and `recover cache`. `aws-guard recover settings` stays with `FS-6`.
 
 ### PO: Policy
 

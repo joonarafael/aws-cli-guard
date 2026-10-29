@@ -19,7 +19,7 @@ func Corruption(err error) (diagnose.Note, bool) {
 	}
 
 	switch grErr.Kind {
-	case KindPath:
+	case KindMissing, KindPath:
 		return emptyDiagnoseNote(), false
 	case KindInvalid:
 		return noteFromGrantsError(grErr, "invalid value"), true
