@@ -4,9 +4,9 @@
 // Load reads through paths.ConfigFile and files.ReadRegular, then decodes
 // strictly with internal/decode. Evaluate maps a loaded policy and a credential
 // subject to allow, prompt, or deny for profile policy. EvaluateExport applies
-// [credential_export]; neither checks grants. The wrapper calls Present before handoff;
-// it does not call Load, Evaluate, or EvaluateExport until MV-1. Recover moves a broken
-// policy file aside and writes
+// [credential_export]; EvaluateGrant applies grant checking for prompt. The wrapper
+// calls Present before handoff; it does not call Load, Evaluate, EvaluateExport,
+// or EvaluateGrant until MV-1. Recover moves a broken policy file aside and writes
 // the init default. Corruption builds the corrupt-file note that MV-1 will print; it
 // does not write stderr itself.
 package policy
