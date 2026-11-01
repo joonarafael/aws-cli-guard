@@ -23,6 +23,11 @@ const (
 
 // Decide reports whether the wrapper may exec the real AWS CLI for args and env.
 func Decide(args []string, env []string, stderr io.Writer) bool {
+	inv := invocation.Parse(args)
+	if inv.IsLogin() {
+		return true
+	}
+
 	err := policy.Present(env)
 	if err != nil {
 		output.Cancel(stderr, policy.PresentReason(err))
@@ -48,8 +53,6 @@ func Decide(args []string, env []string, stderr io.Writer) bool {
 	if grantFile.Mode != 0 {
 		diagnose.WriteLooseMode(stderr, diagnose.ClassGrants(), grantFile.Path, grantFile.Mode)
 	}
-
-	inv := invocation.Parse(args)
 
 	export := policy.EvaluateExport(pol, inv.PrintsAccessKeys)
 	if export.Refuses() {

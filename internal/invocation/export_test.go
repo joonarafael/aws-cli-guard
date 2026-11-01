@@ -250,7 +250,7 @@ func otherInvocationPrintsCases() []printsAccessKeysCase {
 		},
 		{
 			name:       "sso login",
-			args:       []string{awsBin, "sso", "login"},
+			args:       []string{awsBin, ssoCmd, loginOp},
 			wantOK:     true,
 			wantPrints: false,
 		},

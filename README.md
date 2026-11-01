@@ -21,7 +21,7 @@ AWS CLI Guard is a PATH-based local wrapper. It makes accidental misuse less lik
 - Agent detection is best-effort. Omitting or spoofing its signals defeats it, and a missing signal does not prove the caller is a person.
 - A process that can change the installation, `PATH`, or local files can step around the wrapper.
 - An AWS CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning, with no policy ([ADR 0002](docs/decisions/0002-aws-cli-version-floor.md)).
-- Login commands, including `aws sso login`, are handed through with no policy and no grant. A later command that uses a profile is still subject to policy ([ADR 0004](docs/decisions/0004-login-out-of-scope.md)).
+- This build recognizes `aws sso login`, including with `--profile` or `--sso-session`, and hands it through with no policy and no grant. A login form this build does not recognize follows the normal guarded path. A later command that uses a profile is still subject to policy ([ADR 0004](docs/decisions/0004-login-out-of-scope.md)).
 
 Purposeful off switches are separate operator controls. They are specified in the design and are not part of this list. For actual authorization, AWS-side controls remain authoritative.
 
@@ -31,7 +31,7 @@ A cancellation means AWS CLI Guard stopped the command. The wrapper exits with s
 
 Status 3 is reserved for this. The real AWS CLI keeps its own codes, including 0, 1, 2, 130, 252, 253, 254, and 255. After an allowed command, the wrapper is gone and the exit code is the CLI's code. The CLI's own output is not prefixed.
 
-The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Login commands are also handed through ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
+The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Recognized `aws sso login` is handed through without policy ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
 
 ## Developing
 

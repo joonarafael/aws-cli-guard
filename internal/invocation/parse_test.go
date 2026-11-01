@@ -12,6 +12,9 @@ const (
 	profileNameProd = "prod"
 	serviceEC2      = "ec2"
 	opDescribe      = "describe-instances"
+	ssoCmd          = "sso"
+	loginOp         = "login"
+	logoutOp        = "logout"
 	secretQuery     = "SecretValueMustNotAppearInStruct"
 
 	reasonAmbiguousGlobalOption    = "ambiguous-global-option"

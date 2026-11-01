@@ -15,6 +15,9 @@ const (
 	gateProfileFlag         = "--profile"
 	gateSTSService          = "sts"
 	gateGetCallerIdentityOp = "get-caller-identity"
+	gateSSOCommand          = "sso"
+	gateLoginOperation      = "login"
+	gateLogoutOperation     = "logout"
 )
 
 func gateEnv(t *testing.T) []string {
