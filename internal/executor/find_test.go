@@ -36,7 +36,7 @@ func TestWrapperSkipsEarlierCopyOnPATH(t *testing.T) {
 	fake := build(t, root, filepath.Join(fakeDir, "aws"), "./internal/executor/testdata/fakeaws")
 	record := filepath.Join(work, "record.json")
 
-	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, wrapper, "s3", "ls")

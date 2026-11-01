@@ -11,13 +11,18 @@ import (
 func main() {
 	env := executor.Environ()
 
-	if !gate.Decide(os.Args, env, os.Stderr) {
-		os.Exit(output.CancelStatus)
-	}
-
 	realAWSPath, err := executor.FindRealAWS()
 	if err != nil {
 		output.Cancel(os.Stderr, executor.CancellationReason(err))
+		os.Exit(output.CancelStatus)
+	}
+
+	guard, ok := executor.PolicyGate(realAWSPath, env, os.Stderr)
+	if !ok {
+		os.Exit(output.CancelStatus)
+	}
+
+	if guard && !gate.Decide(os.Args, env, os.Stderr) {
 		os.Exit(output.CancelStatus)
 	}
 

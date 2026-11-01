@@ -48,6 +48,9 @@ linters:
                     - pkg: internal/grants
                       rules:
                           json: snake # ADR 0011 grants.json wire format
+                    - pkg: internal/cache
+                      rules:
+                          json: snake
         wsl_v5:
             allow-first-in-block: true
             allow-whole-block: false

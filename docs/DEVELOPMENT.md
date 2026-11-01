@@ -47,6 +47,8 @@ aws --version   # should run the real AWS CLI if it appears later on PATH
 
 The wrapper walks `PATH`, skips every AWS CLI Guard wrapper copy (including a second build earlier on `PATH`), and execs the next real `aws` it finds.
 
+Before policy runs, the wrapper checks that binary's version against the 2.9.0 floor and verified ceiling ([ADR 0002](decisions/0002-aws-cli-version-floor.md)). The check is cached per terminal session in `cli-version.json` under the cache directory (`~/.cache/aws-cli-guard/` in a normal install). A CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning with no policy. A CLI newer than the verified ceiling warns once per session and still applies policy. User-facing `aws --version` still reaches the real CLI; the wrapper's own `--version` probe does not replace that stdout.
+
 A `make build` binary resolves policy, settings, grants, and cache under the user-database home directory ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). It ignores `XDG_*` and the `AWS_CLI_GUARD_*_DIR` variables. To dogfood against a scratch policy without touching your live files, build with the test-path tag:
 
 ```bash

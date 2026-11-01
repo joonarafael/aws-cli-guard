@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 The MVP is complete. Phase 2 starts here:
 
-- `FD-7` checking the real AWS CLI version against the 2.9.0 floor and verified ceiling, with per-session caching ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 - `FS-6` loading and validating `settings.toml`, plus `aws-guard recover settings` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
 - `GR-7` revoking grants (`aws-guard revoke <profile>` and `aws-guard revoke --all`).
 - `PR-5` detecting credential providers beyond the environment-key case and bumping `grants.json` to version 2, followed by `PR-6` showing account and role in messages.
@@ -100,7 +99,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `GR-7`, `OP-1` |
 | FD-5 | Guard-owned paths from the user database | Done | Phase 2 | `FD-2` | — |
 | FD-6 | Skip every wrapper copy during real AWS CLI discovery | Done | Phase 2 | `FD-1` | `FD-7` |
-| FD-7 | AWS CLI version check and session-cached warning | To do | Phase 2 | `FD-1`, `FD-6`, `FS-1`, `FS-2` | — |
+| FD-7 | AWS CLI version check and session-cached warning | Done | Phase 2 | `FD-1`, `FD-6`, `FS-1`, `FS-2` | — |
 
 - `FD-5` implements [ADR 0014](decisions/0014-guard-paths-from-user-database.md) in `internal/paths`:
   - The home directory comes from `os/user.Current()`. `HOME` is the fallback when the lookup fails or returns an empty or non-absolute directory. The fallback is supported, prints no warning, and does not cancel.
@@ -115,11 +114,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
   - In tests, `./cmd/aws` has `Path == "aws-cli-guard/cmd/aws"` while `fakeaws` has `Path == "aws-cli-guard/internal/executor/testdata/fakeaws"`, so comparing `BuildInfo.Path` naturally distinguishes the wrapper from `fakeaws`.
   - Tests: a second wrapper copy earlier on `PATH` is skipped and the fake AWS runs once; the override naming the wrapper, or a copy of it, exits 3 and the fake does not run; the fake AWS, which is a different Go main package, is not treated as a wrapper.
   - Roughly 30 lines of code plus tests. It implements part of the Phase 5 safe-detection item early, the same way `PR-4` was pulled ahead.
-- `FD-7` implements [ADR 0002](decisions/0002-aws-cli-version-floor.md):
-  - Checks the resolved real AWS CLI's version against the `2.9.0` floor and the verified ceiling constant.
-  - Older than `2.9.0`, or an unreadable version, logs a `aws-cli-guard: warning:` line and hands off to the real CLI with no policy evaluation. Newer than the verified ceiling logs a warning and continues into the normal guarded path.
-  - Caches the detected version and whether the current terminal session (`getsid(0)` on Linux and macOS, with parent-PID fallback when `getsid` is unavailable) has already been warned in a versioned file under `~/.cache/aws-cli-guard/`, keyed by the resolved binary's metadata (`path`, `device`, `inode`, `size`, `mtime`). Subsequent invocations in the same session reuse the cached version without spawning `<real-aws> --version` and emit the warning at most once per session. Cache misses or corrupt cache files do not block `aws`.
-  - Updates `internal/executor/testdata/fakeaws` to report a supported version on `--version` by default, with an environment override for testing `<2.9.0`, `>ceiling`, unreadable output, and per-session caching.
+- `FD-7` implements [ADR 0002](decisions/0002-aws-cli-version-floor.md) in `internal/cliversion`, `internal/session`, `internal/cache`, and `internal/executor`:
+  - After `FindRealAWS`, `PolicyGate` compares the resolved binary's version to the `2.9.0` floor and verified ceiling before `gate.Decide`.
+  - Older than `2.9.0`, or an unreadable version, logs `aws-cli-guard: warning:` and hands off with no policy. Newer than the ceiling logs a warning and still runs policy.
+  - Per-session results live in `cli-version.json` under the cache directory, keyed by `getsid(0)` (parent-PID fallback) and the binary's path, device, inode, size, and mtime. A corrupt cache file is not rewritten; the wrapper warns once and continues.
+  - `internal/executor/testdata/fakeaws` reports `aws-cli/2.9.0` on `--version` by default; tests override with `FAKE_AWS_VERSION` and related variables.
 
 ### PR: Profile resolution
 
