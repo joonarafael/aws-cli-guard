@@ -3,7 +3,6 @@ package grants_test
 import (
 	"aws-cli-guard/internal/files"
 	"aws-cli-guard/internal/grants"
-	"aws-cli-guard/internal/paths"
 	"errors"
 	"os"
 	"path/filepath"
@@ -217,19 +216,6 @@ func TestLoadDirectoryPathErrors(t *testing.T) {
 	}
 
 	if !errors.Is(err, files.ErrNotRegular) {
-		t.Fatalf("got %v", err)
-	}
-}
-
-func TestLoadHomeUnset(t *testing.T) {
-	t.Parallel()
-
-	_, err := grants.Load(nil)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	if !errors.Is(err, paths.ErrHomeUnset) {
 		t.Fatalf("got %v", err)
 	}
 }

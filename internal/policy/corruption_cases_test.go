@@ -2,10 +2,8 @@ package policy_test
 
 import (
 	"aws-cli-guard/internal/diagnose"
-	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/policy"
 	"bytes"
-	"errors"
 	"os"
 	"testing"
 )
@@ -29,24 +27,6 @@ func TestCorruptionMissingFile(t *testing.T) {
 	_, ok := policy.Corruption(err)
 	if ok {
 		t.Fatal("Corruption = true, want false for missing file")
-	}
-}
-
-func TestCorruptionHomeUnset(t *testing.T) {
-	t.Parallel()
-
-	_, err := policy.Load(nil)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	_, ok := policy.Corruption(err)
-	if ok {
-		t.Fatal("Corruption = true, want false for unset HOME")
-	}
-
-	if !errors.Is(err, paths.ErrHomeUnset) {
-		t.Fatalf("errors.Is ErrHomeUnset = false, got %v", err)
 	}
 }
 

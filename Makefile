@@ -22,11 +22,16 @@ build-race: ## Build the wrapper and aws-guard binaries with the race detector
 	CGO_ENABLED=1 go build -race -o bin/aws ./cmd/aws
 	CGO_ENABLED=1 go build -race -o bin/aws-guard ./cmd/aws-guard
 
+TESTPATHS_GO_TAGS := -tags=awsguard_testpaths
+TESTPATHS_LINT_TAGS := --build-tags=awsguard_testpaths
+
 test: ## Run unit tests with race detector
-	CGO_ENABLED=1 go test ./... -race -count=1
+	CGO_ENABLED=1 go test $(TESTPATHS_GO_TAGS) ./... -race -count=1
+	CGO_ENABLED=1 go test ./internal/paths -race -count=1
 
 vet: ## Run go vet (unix and windows build tags)
 	go vet ./...
+	go vet $(TESTPATHS_GO_TAGS) ./...
 	GOOS=windows go vet ./...
 
 tidy: ## Tidy go.mod / go.sum
@@ -39,10 +44,12 @@ GOLANGCI_LINT := $(shell go tool -n golangci-lint)
 
 lint: lint-config ## Run golangci-lint (check only)
 	go tool golangci-lint run ./...
+	go tool golangci-lint run $(TESTPATHS_LINT_TAGS) ./...
 	GOOS=windows GOARCH=amd64 $(GOLANGCI_LINT) run ./internal/...
 
 lint-fix: lint-config ## Run golangci-lint with --fix
 	go tool golangci-lint run ./... --fix
+	go tool golangci-lint run $(TESTPATHS_LINT_TAGS) ./... --fix
 	GOOS=windows GOARCH=amd64 $(GOLANGCI_LINT) run ./internal/... --fix
 
 file-length: ## Fail if any .go file exceeds 300 lines

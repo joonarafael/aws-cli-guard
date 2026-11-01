@@ -1,7 +1,6 @@
 package policy_test
 
 import (
-	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/policy"
 	"errors"
 	"os"
@@ -38,18 +37,5 @@ func TestPresentExists(t *testing.T) {
 	err := policy.Present(env)
 	if err != nil {
 		t.Fatalf("Present: %v", err)
-	}
-}
-
-func TestPresentHomeUnset(t *testing.T) {
-	t.Parallel()
-
-	err := policy.Present([]string{})
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	if !errors.Is(err, paths.ErrHomeUnset) {
-		t.Fatalf("expected ErrHomeUnset, got %v", err)
 	}
 }

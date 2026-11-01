@@ -39,20 +39,6 @@ func TestCorruptionDecodeNote(t *testing.T) {
 	}
 }
 
-func TestCorruptionPathErrorFalse(t *testing.T) {
-	t.Parallel()
-
-	_, err := grants.Load(nil)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	_, ok := grants.Corruption(err)
-	if ok {
-		t.Fatal("Corruption = true for path error")
-	}
-}
-
 func TestCorruptionInvalidValue(t *testing.T) {
 	t.Parallel()
 

@@ -154,9 +154,9 @@ func moduleRoot(t *testing.T) string {
 func build(t *testing.T, dir, out, pkg string) string {
 	t.Helper()
 
-	buildArgs := []string{"build", "-o", out, pkg}
+	buildArgs := []string{"build", "-tags=awsguard_testpaths", "-o", out, pkg}
 	if raceDetectorActive() {
-		buildArgs = []string{"build", "-race", "-o", out, pkg}
+		buildArgs = []string{"build", "-tags=awsguard_testpaths", "-race", "-o", out, pkg}
 	}
 
 	cmd := exec.CommandContext(t.Context(), "go", buildArgs...)
