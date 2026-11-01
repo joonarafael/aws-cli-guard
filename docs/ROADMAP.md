@@ -44,7 +44,7 @@ Then the rest of Phase 2:
 
 Also unblocked, but in later milestones: `GR-7`, `AG-1`, `IN-1`, `OP-3`.
 
-`Q-4`, `Q-5`, `Q-6`, and `Q-9` are answered, along with `Q-1`, `Q-2`, `Q-3`, and `Q-8`. Still open, and not in the way of the MVP: `Q-7`.
+`Q-1` through `Q-9` are answered. None of them block current work.
 
 `CI-1` is unblocked too. Leave it until `AG-4`. The note on `CI-1` says why.
 
@@ -85,11 +85,11 @@ Most of these come from [Open Design Questions](DESIGN.md#16-open-design-questio
 | Q-4 | Which AI agents are supported initially? | Answered in [ADR 0015](decisions/0015-initial-agent-integrations.md) | — |
 | Q-5 | Is agent detection on by default, or opt-in? | Answered in [ADR 0016](decisions/0016-agent-detection-switches.md) | — |
 | Q-6 | Which minimum AWS CLI version and configuration features are supported? | Answered in [ADR 0002](decisions/0002-aws-cli-version-floor.md) | — |
-| Q-7 | Which mechanism does persistent disable and enable use? | Open | `OP-2` |
+| Q-7 | Which mechanism does persistent disable and enable use? | Answered in [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md) | — |
 | Q-8 | Is auto-update on or off by default? | Answered in [ADR 0007](decisions/0007-auto-update-asked-at-init.md) | — |
 | Q-9 | Which exit status does the wrapper use for its own refusals? | Answered in [ADR 0003](decisions/0003-wrapper-exit-status.md) | — |
 
-Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience). `Q-7` is the one still open.
+Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience). All of them are answered.
 
 ## Epics
 
@@ -230,6 +230,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | IN-3 | Upgrade behavior | To do | Phase 5 | `IN-1`, `FS-5` | — |
 
 - `IN-1` overlaps with the `install.sh` that the release pipeline in `OP-3` ships, as described in [Publish pipeline](DESIGN.md#123-publish-pipeline). They are related and may end up as one epic.
+- `IN-1` records the Go wrapper path, the `aws` path, and the real AWS CLI path, and installs the POSIX disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The enabled `aws` is the Go wrapper.
 - `IN-2` is Bash and zsh, with shared POSIX `sh`, per [ADR 0005](decisions/0005-bash-and-zsh.md).
 
 ### OP: Operational criteria
@@ -237,12 +238,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | OP-1 | Turn the wrapper off for one terminal session | To do | Backlog | `AG-1`, `FS-1`, `FD-4` | — |
-| OP-2 | Persistent disable and enable | To do | Backlog | `Q-7`, `IN-1` | — |
+| OP-2 | Persistent disable and enable | To do | Backlog | `IN-1` | — |
 | OP-3 | GitHub Releases pipeline | To do | Backlog | — | `OP-4` |
 | OP-4 | Auto-update and update notices | To do | Backlog | `FS-6`, `OP-3` | — |
 | OP-5 | Tight and verbose logging | To do | Backlog | `FD-3` | — |
 
 - These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). The design keeps them out of Phases 1 to 6 until a later pass pulls them into a phase.
+- `OP-2` is the swap in [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md): disable, enable, the stand-in `aws`, and the marker file. `IN-1` has to lay down the script and the manifest fields first.
 
 ### AD: Advanced features
 

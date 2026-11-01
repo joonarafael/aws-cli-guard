@@ -146,12 +146,12 @@ Neither mode should be described as complete enforcement.
 
 Uninstall is out of scope. Anything the software changes on the machine still has to be reversible later, without guessing and without a working wrapper binary.
 
-- The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI. Both files remain, which is also how the wrapper finds the real one.
+- The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI. Both files remain, which is also how the wrapper finds the real one. Disabling the installation moves that wrapper aside and leaves the real AWS CLI in place ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
 - Every path an installer creates or edits is recorded in a manifest next to the installation. A later uninstall reads that manifest.
 - Edits to shell startup files sit between marked begin and end comments, so only those lines need to be removed.
-- Policy, settings, grants, cache, session-off records, and a disable sentinel live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files.
+- Policy, settings, grants, cache, and session-off records live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files. The persistent-disable marker and the aside copy of the wrapper live in the installation, next to the manifest.
 - User policy and settings are kept unless a future uninstall is explicitly asked to purge them. Grants, cache, and session records can be removed without removing policy.
-- The manifest and the shell markers are plain files. Recovery does not depend on running the installed `aws` or `aws-guard` binary.
+- The manifest, the shell markers, and the persistent-disable script are plain files. Recovery does not depend on running the installed `aws` or `aws-guard` binary.
 
 ## 4. Policy Model
 
@@ -742,6 +742,7 @@ Potential bypasses include:
 - Refreshing credentials with a login command. Login is handed through ([ADR 0004](decisions/0004-login-out-of-scope.md)). Later use of a profile is still guarded.
 - Redirecting `HOME` for a user whose account the user-database lookup cannot see. Guard paths then fall back to `HOME` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
 - Editing the policy or grants file directly. That change is persistent and visible, unlike an environment variable on one command.
+- Replacing the installed `aws` entry. A caller that can write the install directory can do that. The supported swap is persistent disable ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
 - Pointing discovery at a script that runs the wrapper again. Discovery recognizes wrapper binaries, not scripts that call them ([Core Architecture](#3-core-architecture)).
 
 User-facing documentation is in [README.md](../README.md#limitations).
@@ -803,7 +804,7 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. They sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). The other items are not designed in detail yet.
+These behaviors are part of the intended product. They sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline, auto-update, and logging are not designed in detail yet.
 
 ### 12.1 Turn the wrapper off for one terminal session
 
@@ -835,17 +836,28 @@ aws-guard on
 
 The user can disable the wrapper for the whole installation and enable it again later. The disabled state persists across terminal sessions, logins, and reboots until enable. System-wide means every session that uses this installation. A per-user install covers that user's sessions. A machine-wide install covers the machine.
 
-This is for troubleshooting, and for recovery when a published build is broken or corrupted.
+This is for troubleshooting, and for recovery when a published build is broken or corrupted. The mechanism is [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md).
 
-- Disable and enable work when the installed wrapper binary does not run. The recovery path is documented and does not depend on executing that binary. The mechanism is still open. Candidates are a sentinel file that shell integration checks before invoking the wrapper, a small control script installed beside the binary, and invoking the real AWS CLI by absolute path.
+- While the installation is enabled, the `aws` on `PATH` is the Go wrapper. An enabled command does not pass through a shell.
+- The installer records three absolute paths in the manifest: the Go wrapper, the `aws` path it occupies, and the real AWS CLI found at install time. It also installs one POSIX `sh` script beside the installation. That script is not named `aws`. The manifest and the install documentation name it.
+- `aws-guard disable` and `aws-guard enable` call that script when the Go binary runs. When the Go binary does not run, the user runs the script by the documented path. Recovery does not execute `aws` or `aws-guard`.
+- Disable and enable require a controlling terminal and an explicit confirmation, the same rule as `aws-guard off`. A headless caller cannot complete them. A refused confirmation leaves the installation unchanged and exits 3.
+- Disable moves the Go binary aside under a stable name recorded in the manifest, and puts a short script at the `aws` path. The swap writes the stand-in under a temporary name first, so a crash leaves the aside name in the manifest and the wrapper findable without guessing.
+- The stand-in prints one `aws-cli-guard: warning:` line that this installation is disabled and policy is not applied. The line does not include the real AWS CLI path. It then executes that CLI at the absolute path from the manifest, with the original arguments. The caller's exit code is that program's. If the recorded file is missing, the stand-in prints `aws-cli-guard: error:`, does not search `PATH`, and exits 3.
+- Disable writes a marker file in the installation. The marker, the aside binary, and the stand-in live there, recorded in the manifest. They do not live under the directories in [On-disk files](#on-disk-files).
+- Enable removes the stand-in and the marker, and moves the aside binary back to the `aws` path.
+- There is no environment variable whose presence disables the installation.
 - Earlier GitHub Release assets stay available, so a known-good build can be installed again by direct download. See [Publish pipeline](#123-publish-pipeline).
-- The disabled state is explicit and visible.
+- The disabled state is explicit and visible: the marker file, and the warning line on each `aws` while disabled.
 - Persistent disable keeps every session off until enable, including a session that had been turned back on.
 - Session off ([above](#121-turn-the-wrapper-off-for-one-terminal-session)) applies only in the session that requested it, and only while the installation is enabled.
+- A machine-wide install is disabled by someone who can write that install directory. A per-user install is the user's own directory.
+- While the installation is enabled, the Go wrapper keeps its existing discovery rules. The manifest path is what the disabled stand-in executes.
+- When the install directory itself cannot be used, the documented last resort is to invoke the real AWS CLI by absolute path. That recovers one command. It is not the disable mechanism.
 
 This is an operator control for the person who administers the machine. [Bypass Limitations](#10-bypass-limitations) still describes what a determined local user can already do. While the wrapper is enabled, [fail-closed policy evaluation](#fail-closed-policy-evaluation) still refuses a command when policy cannot be evaluated.
 
-Illustrative commands, not a final interface:
+Illustrative commands, not a final interface. When the Go binary does not run, the same two words go to the sibling script named in the install documentation.
 
 ```text
 aws-guard disable
@@ -1084,7 +1096,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 ### Phase 5: Installation and portability
 
 - Install command or script. Uninstall stays out of scope.
-- PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits.
+- PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
 - Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)).
 - Safe detection of the actual AWS CLI executable.
 - Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
@@ -1125,7 +1137,7 @@ Questions to resolve during implementation:
 8. ~~Which AI agents should be supported initially?~~ **Resolved:** [ADR 0015](decisions/0015-initial-agent-integrations.md) — Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI. The set is a starting point and is expected to change.
 9. ~~Should agent detection be enabled by default or require explicit configuration?~~ **Resolved:** [ADR 0016](decisions/0016-agent-detection-switches.md) — three explicit switches. Built-in environment markers are opt-in. Agent authorization is opt-in by the presence of `[agents]` actions. Parent-process detection is off unless `parent_process` is true. Nothing changes until the user turns a switch on.
 10. ~~What should happen when the caller is unknown and the requested profile is ordinarily allowed?~~ **Resolved:** the normal profile policy. Only a positively recognized agent uses agent rules. A missing marker is not proof of a human and is not treated as an agent. See [Agent-specific policy](#85-agent-specific-policy).
-11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. The session-off mechanism is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). A separate persistent control disables and re-enables the installation system-wide, including when a published build is broken. The persistent-disable mechanism is still open. See [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable).
+11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Resolved:** yes. A dedicated command turns the wrapper off for the current terminal session only. The session-off mechanism is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable swaps the installed `aws` for a stand-in script, including when the Go binary does not run ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). See [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable).
 12. ~~What minimum AWS CLI versions and configuration features must be supported?~~ **Resolved:** [ADR 0002](decisions/0002-aws-cli-version-floor.md) — 2.9.0 and newer. Older CLIs are warned and handed through with no policy. A CLI newer than the verified release is warned and still guarded.
 
 The exit status and the auto-update default sat outside this numbered list. Both are resolved. Cancellations exit 3 and stderr lines from the wrapper start with `aws-cli-guard:` ([ADR 0003](decisions/0003-wrapper-exit-status.md)). `aws-guard init` asks whether auto-update is on ([ADR 0007](decisions/0007-auto-update-asked-at-init.md)).
