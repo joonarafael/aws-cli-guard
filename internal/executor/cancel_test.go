@@ -37,10 +37,11 @@ func TestWrapperMissingRealAWSCancelsWithStatus3(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		"PATH="+wrapperDir,
-	)
+		"AWS_PROFILE="+handoffProfileName,
+	)...)
 
 	err = cmd.Run()
 
@@ -72,11 +73,11 @@ func TestWrapperExecFailureCancelsWithStatus3(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		executor.RealAWSEnv+"="+missingReal,
 		"AWS_PROFILE="+handoffProfileName,
-	)
+	)...)
 
 	err := cmd.Run()
 	assertExitCode(t, err)
@@ -106,12 +107,12 @@ func TestWrapperSuccessfulHandoffWritesNoWrapperStderr(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"AWS_PROFILE="+handoffProfileName,
-	)
+	)...)
 
 	err := cmd.Run()
 	if err != nil {
@@ -138,12 +139,12 @@ func TestWrapperDefaultProfileHandoffWritesWarning(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"FAKE_AWS_EXIT=7",
-	)
+	)...)
 
 	err := cmd.Run()
 	if err != nil {

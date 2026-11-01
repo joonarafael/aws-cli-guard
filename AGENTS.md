@@ -57,7 +57,7 @@ The linter configuration is the style guide. Match the code around your change. 
 
 **Debug problems yourself.** Trace the failure through to a cause.
 
-1. Read the output. A cancellation exits with status **3**, and every stderr line starts with `aws-cli-guard: error:` and says the command was not executed. A warning that leaves the command running starts with `aws-cli-guard: warning:`. After an allowed command, the process is the real AWS CLI and the exit code is the CLI's.
+1. Read the output. A cancellation exits with status **3**. The two cancellation lines start with `aws-cli-guard: error:`; further guidance (diagnosis, allow hints) uses `aws-cli-guard:` detail lines. A `default` profile warning may appear on stderr before a cancellation. A warning that leaves the command running starts with `aws-cli-guard: warning:`. After an allowed command, the process is the real AWS CLI and the exit code is the CLI's.
 2. Reproduce with `make test`, or with `go test` in the package you changed.
 3. For a behavior question, read the design and the ADRs before editing.
 4. Confirm `go version` matches `go.mod`. A sandbox may have different tools than the user's machine.

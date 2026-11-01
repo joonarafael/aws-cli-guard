@@ -3,18 +3,15 @@ package main
 
 import (
 	"aws-cli-guard/internal/executor"
+	"aws-cli-guard/internal/gate"
 	"aws-cli-guard/internal/output"
-	"aws-cli-guard/internal/policy"
-	"aws-cli-guard/internal/subject"
 	"os"
 )
 
 func main() {
 	env := executor.Environ()
 
-	err := policy.Present(env)
-	if err != nil {
-		output.Cancel(os.Stderr, policy.PresentReason(err))
+	if !gate.Decide(os.Args, env, os.Stderr) {
 		os.Exit(output.CancelStatus)
 	}
 
@@ -23,8 +20,6 @@ func main() {
 		output.Cancel(os.Stderr, executor.CancellationReason(err))
 		os.Exit(output.CancelStatus)
 	}
-
-	subject.WarnDefaultProfile(os.Stderr, subject.Resolve(os.Args, env))
 
 	err = executor.ExecRealAWS(realAWSPath, os.Args, env)
 	if err != nil {

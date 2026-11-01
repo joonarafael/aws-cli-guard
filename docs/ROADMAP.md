@@ -31,9 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Ready now for the MVP (wave 5):
+The MVP is complete. Phase 2 is the default next milestone:
 
-- `MV-1` wrapper enforces policy end to end.
+- `PR-5` detecting credential providers beyond the environment-key case.
+- `SS-1` login handoff ([ADR 0004](decisions/0004-login-out-of-scope.md)).
+- `PO-5` inspect, explain, and validate policy.
 
 Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
 
@@ -49,7 +51,7 @@ Each wave only depends on earlier waves. Items within a wave can run in parallel
 2. `PO-2`. Done. `PR-3` and `GR-2` were already done.
 3. `PO-3`, `FS-4`, and `GR-3`. Done.
 4. `PO-4`, `GR-4`. Done.
-5. `MV-1`.
+5. `MV-1`. Done.
 
 After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant operations), Phase 4 (agent awareness), and Phase 5 (installation), in that order. The design also says later phases should follow actual user needs, so that order is a default rather than a commitment.
 
@@ -121,7 +123,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FS-6 | Preference settings file | To do | Backlog | `FS-1`, `FS-2` | `AD-1`, `OP-4` |
 
 - `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md). Identity verification and the auto-update answer live there. `aws-guard recover settings` lands with that file. MVP `FS-4` covers policy, grants, and cache.
-- `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper still does not call `policy.Load` until evaluation exists (`MV-1` will print the note after `output.Cancel`). `FS-4` adds `aws-guard recover policy`, `recover grants`, and `recover cache`. `aws-guard recover settings` stays with `FS-6`.
+- `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper prints the note after `output.Cancel` when a load is corrupt. `FS-4` adds `aws-guard recover policy`, `recover grants`, and `recover cache`. `aws-guard recover settings` stays with `FS-6`.
 
 ### PO: Policy
 
@@ -134,9 +136,9 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PO-5 | Inspect, explain, and validate policy | To do | Phase 2 | `PO-3` | `AD-4` |
 
 - Configuration validation shows up twice in the design. Validating on every load is part of `PO-1`. The standalone validate command is `PO-5`, which the design places in Phase 2.
-- `PO-2` adds `aws-guard init` (default `config.toml` via `policy.DefaultFileBody`, optional `settings.toml` without loading it), and the wrapper cancels only when the policy file is absent (`policy.Present`). Invalid policy still hands off until `MV-1`.
-- `PO-3` adds `Evaluate` for profile policy: named profiles use `[profiles]` or `[defaults]`, and environment or unresolved subjects use `[defaults]` only. It returns the action and basis; it does not check grants or `[credential_export]`. The wrapper does not call it yet.
-- `PO-4` adds `Invocation.PrintsAccessKeys` and `EvaluateExport` for `[credential_export]`. The wrapper does not call them until `MV-1`.
+- `PO-2` adds `aws-guard init` (default `config.toml` via `policy.DefaultFileBody`, optional `settings.toml` without loading it), and the wrapper cancels when the policy file is absent (`policy.Present` in `internal/gate`).
+- `PO-3` adds `Evaluate` for profile policy: named profiles use `[profiles]` or `[defaults]`, and environment or unresolved subjects use `[defaults]` only. It returns the action and basis; grant and export checks are separate steps in `internal/gate`.
+- `PO-4` adds `Invocation.PrintsAccessKeys` and `EvaluateExport` for `[credential_export]`. The wrapper applies export evaluation before profile policy and grants.
 
 ### GR: Grants
 
@@ -149,16 +151,16 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
 
-- `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper does not call it until evaluation exists.
+- `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper loads grants on every guarded invocation.
 - `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). `GR-3` `aws-guard allow` calls `Fingerprint` and `Update`.
-- `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant. It does not change `cmd/aws`; grants take effect when `MV-1` lands.
-- `GR-4` adds `grants.Current` and `policy.EvaluateGrant`. A `prompt` action runs only when a grant for that named profile is unexpired and the stored source matches the current fingerprint. The `aws` wrapper does not call them until `MV-1`.
+- `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant.
+- `GR-4` adds `grants.Current` and `policy.EvaluateGrant`. A `prompt` action runs only when a grant for that named profile is unexpired and the stored source matches the current fingerprint. `internal/gate` applies grant checking on every guarded invocation.
 
 ### MV: MVP milestone
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| MV-1 | Wrapper enforces policy end to end | To do | MVP | `PO-2`, `PO-4`, `GR-4`, `FS-3`, `PR-3` | — |
+| MV-1 | Wrapper enforces policy end to end | Done | MVP | `PO-2`, `PO-4`, `GR-4`, `FS-3`, `PR-3` | — |
 | MV-2 | Documentation of bypass limitations | Done | MVP | — | — |
 
 ### SS: SSO
