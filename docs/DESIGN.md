@@ -569,7 +569,7 @@ The supported range starts at AWS CLI 2.9.0. The binary also carries the newest 
 - Newer than the verified release: warn, then continue the normal guarded path.
 - Inside the range, through the verified release: no version warning.
 
-The warning is printed before process replacement.
+The warning is printed before process replacement. To avoid running `<real-aws> --version` and repeating the warning on every command, the wrapper caches the detected version and whether the current terminal session (`getsid` on Linux and macOS) has already been warned in `~/.cache/aws-cli-guard/`, keyed by the real binary's file metadata. Within a session, the version check runs and warns at most once unless the real binary changes on disk.
 
 ## 7. AWS SSO Behavior
 
@@ -1070,18 +1070,20 @@ The test suite should explicitly verify that no agent detector treats an absent 
 ### Phase 2: Better profile awareness
 
 - Support custom AWS configuration locations.
-- Detect common credential-provider mechanisms beyond the environment-key case covered in phase 1.
+- Detect common credential-provider mechanisms beyond the environment-key case covered in phase 1, and bump `grants.json` to version 2 so grant fingerprints bind role chains and `sso-session` settings.
+- Add a dedicated policy key for environment credentials outside `[profiles]`.
 - Improve diagnostics for SSO profiles, role chaining, and `credential_process`.
 - Optionally display verified AWS account and identity information.
 - Add policy inspection and configuration-validation commands.
+- Load and validate `settings.toml` and support `aws-guard recover settings` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
+- Revoke one profile's grants, or all grants, before they expire, pulled ahead of Phase 3. See [Revoking grants](#revoking-grants).
 - Resolve guard-owned paths from the user database, with the `HOME` fallback ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
 - Skip every copy of the wrapper during real AWS CLI discovery. This part of safe executable detection is pulled ahead of Phase 5.
+- Check the real AWS CLI version against the 2.9.0 floor and verified ceiling, caching the check and warning per terminal session ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 
 ### Phase 3: Grant operations
 
 - List current grants and show expiry and fingerprint mismatch.
-- Revoke one profile's grants, or all grants, before they expire. See [Revoking grants](#revoking-grants).
-- Explicit migrate command for an older policy version the binary still understands.
 - Deny rules continue to beat grants. This is already required in phase 1; tests here cover reload and concurrent allow.
 
 ### Phase 4: AI-agent awareness
@@ -1091,6 +1093,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Parent-process detection only when `[agents.detection] parent_process = true`.
 - Agent-specific profile rules, opt-in by the presence of `[agents]` actions, applied only to a positively recognized caller.
 - Unknown and uncertain callers follow the normal profile policy, as specified in [Agent-specific policy](#85-agent-specific-policy).
+- Explicit migrate command for older policy and grants file versions the binary still understands.
 - Tests against pinned versions of the initial products.
 
 ### Phase 5: Installation and portability
