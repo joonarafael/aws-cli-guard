@@ -1,4 +1,4 @@
-// Package cache manages the disposable cache directory under the XDG cache path.
+// Package cache manages the disposable cache directory and the cli-version.json session cache.
 //
 // Live cache entries are immediate children of the cache directory. Names containing
 // ".corrupt." or ".partial." are preserved aside data from recovery or atomic writes,

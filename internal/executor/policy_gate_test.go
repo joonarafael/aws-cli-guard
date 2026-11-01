@@ -26,12 +26,12 @@ func TestWrapperMissingPolicyCancelsWithStatus3(t *testing.T) {
 	var stderr bytes.Buffer
 
 	cmd.Stderr = &stderr
-	cmd.Env = envHandoff(
-		emptyPolicyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		emptyPolicyConfigEnvEntries(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"AWS_PROFILE="+handoffProfileName,
-	)
+	)...)
 
 	err := cmd.Run()
 	assertExitCode(t, err)

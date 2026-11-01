@@ -18,6 +18,7 @@ func policyConfigEnv(t *testing.T, work string) string {
 
 	dir := filepath.Join(work, "guard-config")
 	stateDir := filepath.Join(work, "guard-state")
+	cacheDir := filepath.Join(work, "guard-cache")
 
 	err := os.MkdirAll(dir, 0o700)
 	if err != nil {
@@ -29,12 +30,18 @@ func policyConfigEnv(t *testing.T, work string) string {
 		t.Fatal(err)
 	}
 
+	err = os.MkdirAll(cacheDir, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = os.WriteFile(filepath.Join(dir, "config.toml"), []byte(handoffPolicyBody), 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return "AWS_CLI_GUARD_CONFIG_DIR=" + dir + "\x00AWS_CLI_GUARD_STATE_DIR=" + stateDir
+	return "AWS_CLI_GUARD_CONFIG_DIR=" + dir + "\x00AWS_CLI_GUARD_STATE_DIR=" + stateDir +
+		"\x00AWS_CLI_GUARD_CACHE_DIR=" + cacheDir
 }
 
 func policyConfigEnvEntries(t *testing.T, work string) []string {
@@ -50,8 +57,14 @@ func guardDirEnvEntries(t *testing.T, work string) []string {
 
 	configDir := filepath.Join(work, "guard-config")
 	stateDir := filepath.Join(work, "guard-state")
+	cacheDir := filepath.Join(work, "guard-cache")
 
 	err := os.MkdirAll(stateDir, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.MkdirAll(cacheDir, 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,18 +72,28 @@ func guardDirEnvEntries(t *testing.T, work string) []string {
 	return []string{
 		"AWS_CLI_GUARD_CONFIG_DIR=" + configDir,
 		"AWS_CLI_GUARD_STATE_DIR=" + stateDir,
+		"AWS_CLI_GUARD_CACHE_DIR=" + cacheDir,
 	}
 }
 
-func emptyPolicyConfigEnv(t *testing.T, work string) string {
+func emptyPolicyConfigEnvEntries(t *testing.T, work string) []string {
 	t.Helper()
 
 	dir := filepath.Join(work, "empty-guard-config")
+	cacheDir := filepath.Join(work, "empty-guard-cache")
 
 	err := os.MkdirAll(dir, 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return "AWS_CLI_GUARD_CONFIG_DIR=" + dir
+	err = os.MkdirAll(cacheDir, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return []string{
+		"AWS_CLI_GUARD_CONFIG_DIR=" + dir,
+		"AWS_CLI_GUARD_CACHE_DIR=" + cacheDir,
+	}
 }

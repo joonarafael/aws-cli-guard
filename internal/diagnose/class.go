@@ -21,3 +21,11 @@ func ClassGrants() Class {
 		Recover: "aws-guard recover grants",
 	}
 }
+
+// ClassCache returns the disposable cache directory.
+func ClassCache() Class {
+	return Class{
+		Name:    "cache",
+		Recover: "aws-guard recover cache",
+	}
+}

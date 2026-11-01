@@ -219,6 +219,7 @@ func envHandoff(extra ...string) []string {
 		"AWS_PROFILE=",
 		"AWS_CLI_GUARD_CONFIG_DIR=",
 		"AWS_CLI_GUARD_STATE_DIR=",
+		"AWS_CLI_GUARD_CACHE_DIR=",
 		"XDG_CONFIG_HOME=",
 		"XDG_STATE_HOME=",
 		"AWS_CONFIG_FILE=",
