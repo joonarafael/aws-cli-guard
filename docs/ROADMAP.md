@@ -31,10 +31,9 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-The MVP is complete. Two fixes to shipped behavior come first. Both are small, unblocked, and filed under Phase 2:
+The MVP is complete. Phase 2 starts with one fix to shipped behavior, then the rest of the milestone:
 
 - `FD-6` skipping every copy of the wrapper during real AWS CLI discovery, so two copies cannot hand off to each other forever.
-- `FD-5` resolving guard-owned paths from the user database, so an environment variable cannot point the wrapper at a forged policy or grants file ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
 
 Then the rest of Phase 2:
 
@@ -104,7 +103,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FD-2 | On-disk path resolution | Done | MVP | — | `FS-1`, `FD-5` |
 | FD-3 | Wrapper exit status and secret-safe error messages | Done | MVP | — | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
 | FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `GR-7`, `OP-1` |
-| FD-5 | Guard-owned paths from the user database | To do | Phase 2 | `FD-2` | — |
+| FD-5 | Guard-owned paths from the user database | Done | Phase 2 | `FD-2` | — |
 | FD-6 | Skip every wrapper copy during real AWS CLI discovery | To do | Phase 2 | `FD-1` | `FD-7` |
 | FD-7 | AWS CLI version check and session-cached warning | To do | Phase 2 | `FD-1`, `FD-6`, `FS-1`, `FS-2` | — |
 

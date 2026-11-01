@@ -47,6 +47,16 @@ aws --version   # should run the real AWS CLI if it appears later on PATH
 
 The wrapper walks `PATH`, skips its own executable, and execs the next `aws` it finds.
 
+A `make build` binary resolves policy, settings, grants, and cache under the user-database home directory ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). It ignores `XDG_*` and the `AWS_CLI_GUARD_*_DIR` variables. To dogfood against a scratch policy without touching your live files, build with the test-path tag:
+
+```bash
+CGO_ENABLED=0 go build -tags=awsguard_testpaths -o bin/aws ./cmd/aws
+CGO_ENABLED=0 go build -tags=awsguard_testpaths -o bin/aws-guard ./cmd/aws-guard
+export AWS_CLI_GUARD_CONFIG_DIR=/path/to/scratch/config
+export AWS_CLI_GUARD_STATE_DIR=/path/to/scratch/state
+export PATH="$PWD/bin:$PATH"
+```
+
 ### When the real CLI is not on PATH
 
 Point at the real binary explicitly:
@@ -59,10 +69,14 @@ aws sts get-caller-identity
 
 Integration tests always set `AWS_CLI_GUARD_REAL_AWS` so discovery is deterministic.
 
+## Tests and build tags
+
+`make test` runs the suite with `-tags=awsguard_testpaths`, then runs `go test ./internal/paths` again without that tag so production path resolution is covered. Do not run `go test ./...` without the tag: most tests rely on `AWS_CLI_GUARD_*_DIR`, and an untagged wrapper subprocess would read your real home directory. The executor integration-test helper builds `./cmd/aws` with `-tags=awsguard_testpaths` for the same reason.
+
 ## Platform checks
 
 - **Linux** — primary development machine; run `make check` here routinely. CI runs on `ubuntu-24.04`.
-- **macOS** — run `make check` on the laptop before merging changes that touch `internal/executor/exec_unix.go`, PATH lookup, or other platform-sensitive code.
+- **macOS** — run `make check` on the laptop before merging changes that touch `internal/paths`, `internal/executor/exec_unix.go`, PATH lookup, or other platform-sensitive code.
 
 There is no Windows CI or manual Windows testing in this phase. `make lint` and `make vet` still typecheck the `//go:build !unix` stub under `GOOS=windows`.
 

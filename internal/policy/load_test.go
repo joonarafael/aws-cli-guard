@@ -2,7 +2,6 @@ package policy_test
 
 import (
 	"aws-cli-guard/internal/files"
-	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/policy"
 	"errors"
 	"os"
@@ -166,19 +165,6 @@ func TestLoadDirectoryPathErrors(t *testing.T) {
 
 	if !errors.Is(err, files.ErrNotRegular) {
 		t.Fatalf("errors.Is ErrNotRegular = false, got %v", err)
-	}
-}
-
-func TestLoadHomeUnset(t *testing.T) {
-	t.Parallel()
-
-	_, err := policy.Load(nil)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
-	if !errors.Is(err, paths.ErrHomeUnset) {
-		t.Fatalf("errors.Is ErrHomeUnset = false, got %v", err)
 	}
 }
 
