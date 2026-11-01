@@ -87,13 +87,19 @@ When a process executes `aws`, the wrapper:
 
 The wrapper must locate the real AWS CLI without accidentally invoking itself recursively.
 
+Discovery skips every AWS CLI Guard wrapper, not only the running executable. Two copies on `PATH`, for example an installed one and a dogfooding build, would otherwise hand off to each other forever: each skips itself and finds the other first. A candidate is a wrapper when it is the same file as the running executable (`os.SameFile` after resolving symlinks, which also catches hard links), or when its embedded Go build information names the same main package as the running wrapper. The wrapper reads its own main package path with `debug.ReadBuildInfo` and a candidate's with `debug/buildinfo.ReadFile`, which reads only file headers and the build-information section. A file with no Go build information, such as the official AWS CLI binary or a Python launcher script, is not a wrapper. When the running binary has no build information, only the file-identity check applies.
+
+`AWS_CLI_GUARD_REAL_AWS` gets the same check. If it names a wrapper, the command is cancelled with status 3. The wrapper does not fall back to `PATH` discovery, because the user asked for that file explicitly. The message says the configured AWS CLI is an AWS CLI Guard wrapper and does not print the path.
+
+A script that runs the wrapper again is not detected. The wrapper does not export a marker variable to catch that case: the marker would reach the real AWS CLI and its children, and a legitimate nested `aws` call, for example from a `credential_process`, would be refused.
+
 The original arguments are forwarded unchanged. The wrapper does not add, remove, or reorder them, and it does not construct a shell command from them.
 
 ### Wrapper control plane
 
 The `aws` entrypoint has no flags of its own. Guard behavior is controlled by the `aws-guard` binary and by `AWS_CLI_GUARD_*` environment variables. A flag on `aws` would collide with AWS CLI global options and would break the rule that arguments are forwarded unchanged.
 
-`AWS_CLI_GUARD_REAL_AWS` overrides discovery of the real binary. Other `AWS_CLI_GUARD_*` variables are defined with the feature that reads them. The wrapper does not invent a flag form of the same control.
+`AWS_CLI_GUARD_REAL_AWS` overrides discovery of the real binary. Other `AWS_CLI_GUARD_*` variables are defined with the feature that reads them. The wrapper does not invent a flag form of the same control. No variable in a production build selects where policy, settings, grants, or cache live. See [On-disk files](#on-disk-files).
 
 ### Installation modes
 
@@ -247,6 +253,8 @@ Example commands, not a final interface:
 ```text
 aws-guard init
 aws-guard allow production-admin --ttl 5m
+aws-guard revoke production-admin
+aws-guard revoke --all
 aws-guard policy list
 aws-guard policy explain production-admin
 aws-guard config validate
@@ -262,16 +270,22 @@ Three directories, because the files have different lifetimes. User policy is so
 
 The same paths are used on Linux and macOS. The tool does not call `os.UserConfigDir()`, which on macOS points at `~/Library/Application Support`.
 
-| Role | Default path | Respects |
+| Role | Path | Test-build override |
 | --- | --- | --- |
-| User policy | `~/.config/aws-cli-guard/config.toml` | `XDG_CONFIG_HOME`, then `AWS_CLI_GUARD_CONFIG_DIR` |
-| Preferences | `~/.config/aws-cli-guard/settings.toml` | `XDG_CONFIG_HOME`, then `AWS_CLI_GUARD_CONFIG_DIR` |
-| Grants | `~/.local/state/aws-cli-guard/grants.json` | `XDG_STATE_HOME`, then `AWS_CLI_GUARD_STATE_DIR` |
-| Cache | `~/.cache/aws-cli-guard/` | `XDG_CACHE_HOME`, then `AWS_CLI_GUARD_CACHE_DIR` |
+| User policy | `~/.config/aws-cli-guard/config.toml` | `AWS_CLI_GUARD_CONFIG_DIR` |
+| Preferences | `~/.config/aws-cli-guard/settings.toml` | `AWS_CLI_GUARD_CONFIG_DIR` |
+| Grants | `~/.local/state/aws-cli-guard/grants.json` | `AWS_CLI_GUARD_STATE_DIR` |
+| Cache | `~/.cache/aws-cli-guard/` | `AWS_CLI_GUARD_CACHE_DIR` |
 
-`AWS_CLI_GUARD_CONFIG_DIR`, `AWS_CLI_GUARD_STATE_DIR`, and `AWS_CLI_GUARD_CACHE_DIR` override the directory for tests and for dogfooding. A single home directory is not used, so a grant cannot sit beside a policy file that dotfiles sync would copy to another machine.
+`~` is the home directory of the process's user in the user database (`os/user.Current()`, looked up by user id). It is not `HOME`. Any process can set an environment variable on the same command that runs `aws`, so an environment variable must not be able to point the wrapper at a policy or grants file the caller wrote. [ADR 0014](decisions/0014-guard-paths-from-user-database.md) is the record.
 
-If `HOME` is unset and the relevant XDG variable is also unset, the wrapper stops. It does not fall back to the current directory or to `/tmp`.
+When the lookup fails, or returns an empty or non-absolute directory, the wrapper uses `HOME` instead. That covers accounts the lookup cannot see, such as LDAP or SSSD users on Linux in a `CGO_ENABLED=0` build. The fallback is supported. It does not cancel the command and does not print a warning on the ordinary path. If the lookup fails and `HOME` is also unset, empty, or not absolute, the wrapper stops. It does not fall back to the current directory or to `/tmp`.
+
+`XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` are not read. The override variables in the table exist only in builds with the `awsguard_testpaths` build tag, which `make test` uses and `make build` does not. A production binary has no code that reads them. `aws` and `aws-guard` resolve the same paths.
+
+A single directory is not used for everything, so a grant cannot sit beside a policy file that dotfiles sync would copy to another machine.
+
+The AWS CLI's own files are a separate matter. Reading `~/.aws/config` and `~/.aws/credentials` still follows `AWS_CONFIG_FILE`, `AWS_SHARED_CREDENTIALS_FILE`, and `HOME`, because those paths must match what the real AWS CLI reads ([ADR 0009](decisions/0009-aws-config-read.md)).
 
 The tool reads and writes these paths as regular files. A symlink is a diagnosis failure. Recovery renames the symlink aside and creates a regular file. It does not follow the symlink and write to the target.
 
@@ -373,6 +387,23 @@ aws-cli-guard: aws-guard allow production-admin --ttl 5m
 ```
 
 The command words are illustrative. The message must say that the call failed because the profile is not allowed yet, and that the user allows it on the system before invoking it headlessly. It must not include a bypass, an environment variable that disables the wrapper, or the path of the real AWS CLI. It shows the service and operation, not the raw argument list.
+
+### Revoking grants
+
+A grant can be withdrawn before it expires. Illustrative:
+
+```text
+aws-guard revoke production-admin
+aws-guard revoke --all
+```
+
+- `aws-guard revoke <profile>` removes every grant record for that profile name, current or expired. `aws-guard revoke --all` removes every grant record. The command takes exactly one of those forms. The profile name follows the same rules as for `aws-guard allow`.
+- Revoke does not need a terminal or a confirmation. It only narrows access, so a script or an agent may run it, for example to clean up at the end of a session. That is the reverse of allow, which widens access and therefore needs a confirmation on the controlling terminal.
+- Revoke rewrites the grants file under the same lock as allow. It loads the file, removes the matching records, and replaces the file atomically.
+- When there is nothing to remove, revoke exits 0 and prints one line saying there was no grant for that profile, or no grants at all for `--all`. It does not rewrite the file, and it does not create one when the grants file is missing.
+- On success it prints which profile was revoked, or how many grants `--all` removed. Output uses the `aws-cli-guard:` prefix.
+- When the grants file is corrupt, revoke refuses with status 3. It prints the same diagnosis note the wrapper prints and points at `aws-guard recover grants`. The file is not modified. Recovery stays a separate, confirmed step, as described in [Corrupted files](#corrupted-files).
+- Revoke changes only the grants file. It does not change policy and does not clear cached SSO credentials or other credentials the CLI already stored ([AWS SSO Behavior](#7-aws-sso-behavior)).
 
 ## 6. Effective AWS Profile Resolution
 
@@ -711,6 +742,9 @@ Potential bypasses include:
 - Running another process with sufficient permissions to bypass local controls.
 - Using an AWS CLI older than 2.9.0. The wrapper warns and hands that command through with no policy ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 - Refreshing credentials with a login command. Login is handed through ([ADR 0004](decisions/0004-login-out-of-scope.md)). Later use of a profile is still guarded.
+- Redirecting `HOME` for a user whose account the user-database lookup cannot see. Guard paths then fall back to `HOME` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
+- Editing the policy or grants file directly. That change is persistent and visible, unlike an environment variable on one command.
+- Pointing discovery at a script that runs the wrapper again. Discovery recognizes wrapper binaries, not scripts that call them ([Core Architecture](#3-core-architecture)).
 
 User-facing documentation is in [README.md](../README.md#limitations).
 
@@ -970,6 +1004,8 @@ The initial implementation should be tested without requiring access to a real A
 - Corrupt policy and corrupt grants: diagnosis names the failure, the process exits, and the file bytes are unchanged.
 - `aws-guard recover` moves the unusable file aside, writes a fresh file that grants nothing, and does not delete the moved file.
 - A missing grants file means no grants, not corruption.
+- `aws-guard revoke <profile>` and `aws-guard revoke --all` remove grants without a terminal, exit 0 with a note when there is nothing to remove, and refuse a corrupt grants file without modifying it.
+- An environment variable cannot move the policy or grants file in a production build. The `HOME` fallback applies only when the user-database lookup fails.
 
 ### Execution tests
 
@@ -985,6 +1021,7 @@ The initial implementation should be tested without requiring access to a real A
 - A refusal does not read stdin.
 - Signals are handled correctly across process replacement.
 - The wrapper does not recursively execute itself.
+- Discovery skips another copy of the wrapper on `PATH`, and `AWS_CLI_GUARD_REAL_AWS` naming a wrapper cancels with status 3.
 - The real executable cannot be confused with the wrapper.
 - Error output is understandable and contains no secret material, raw argv, or a disabling environment variable.
 - Use of the profile named `default` writes the named-profile warning and still follows policy.
@@ -1025,10 +1062,13 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Improve diagnostics for SSO profiles, role chaining, and `credential_process`.
 - Optionally display verified AWS account and identity information.
 - Add policy inspection and configuration-validation commands.
+- Resolve guard-owned paths from the user database, with the `HOME` fallback ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
+- Skip every copy of the wrapper during real AWS CLI discovery. This part of safe executable detection is pulled ahead of Phase 5.
 
 ### Phase 3: Grant operations
 
 - List current grants and show expiry and fingerprint mismatch.
+- Revoke one profile's grants, or all grants, before they expire. See [Revoking grants](#revoking-grants).
 - Explicit migrate command for an older policy version the binary still understands.
 - Deny rules continue to beat grants. This is already required in phase 1; tests here cover reload and concurrent allow.
 
