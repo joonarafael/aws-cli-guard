@@ -31,11 +31,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-The MVP is complete. Phase 2 starts with one fix to shipped behavior, then the rest of the milestone:
-
-- `FD-6` skipping every copy of the wrapper during real AWS CLI discovery, so two copies cannot hand off to each other forever.
-
-Then the rest of Phase 2:
+The MVP is complete. Phase 2 starts here:
 
 - `FD-7` checking the real AWS CLI version against the 2.9.0 floor and verified ceiling, with per-session caching ([ADR 0002](decisions/0002-aws-cli-version-floor.md)).
 - `FS-6` loading and validating `settings.toml`, plus `aws-guard recover settings` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
@@ -104,7 +100,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FD-3 | Wrapper exit status and secret-safe error messages | Done | MVP | — | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
 | FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `GR-7`, `OP-1` |
 | FD-5 | Guard-owned paths from the user database | Done | Phase 2 | `FD-2` | — |
-| FD-6 | Skip every wrapper copy during real AWS CLI discovery | To do | Phase 2 | `FD-1` | `FD-7` |
+| FD-6 | Skip every wrapper copy during real AWS CLI discovery | Done | Phase 2 | `FD-1` | `FD-7` |
 | FD-7 | AWS CLI version check and session-cached warning | To do | Phase 2 | `FD-1`, `FD-6`, `FS-1`, `FS-2` | — |
 
 - `FD-5` implements [ADR 0014](decisions/0014-guard-paths-from-user-database.md) in `internal/paths`:
@@ -115,9 +111,9 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
   - The lookup is injectable for unit tests.
   - Run `make check` on macOS before merging. Update [DEVELOPMENT.md](DEVELOPMENT.md) with the tag and the new dogfooding behavior.
 - `FD-6` closes two self-handoff loops in `internal/executor/find.go`. Today `AWS_CLI_GUARD_REAL_AWS` is returned without a self-check, and `PATH` discovery only skips the running file. With two wrapper copies on `PATH`, each finds the other first. The design is in [Core Architecture](DESIGN.md#3-core-architecture):
-  - A candidate is a wrapper when it is the same file as the running executable, or when `debug/buildinfo.ReadFile` reports the same main package path that `debug.ReadBuildInfo` reports for the running wrapper. A file with no Go build information is not a wrapper.
+  - A candidate is a wrapper when it is the same file as the running executable, or when `debug/buildinfo.ReadFile` reports the same main package path (`BuildInfo.Path`) that `debug.ReadBuildInfo` reports for the running wrapper. A file with no Go build information is not a wrapper.
   - `PATH` discovery skips wrappers. An `AWS_CLI_GUARD_REAL_AWS` that names a wrapper cancels with status 3, without printing the path and without falling back to `PATH`.
-  - In tests, `./cmd/aws` has `Main.Path == "aws-cli-guard/cmd/aws"` while `fakeaws` has `Main.Path == "aws-cli-guard/internal/executor/testdata/fakeaws"`, so comparing `Main.Path` naturally distinguishes the wrapper from `fakeaws`.
+  - In tests, `./cmd/aws` has `Path == "aws-cli-guard/cmd/aws"` while `fakeaws` has `Path == "aws-cli-guard/internal/executor/testdata/fakeaws"`, so comparing `BuildInfo.Path` naturally distinguishes the wrapper from `fakeaws`.
   - Tests: a second wrapper copy earlier on `PATH` is skipped and the fake AWS runs once; the override naming the wrapper, or a copy of it, exits 3 and the fake does not run; the fake AWS, which is a different Go main package, is not treated as a wrapper.
   - Roughly 30 lines of code plus tests. It implements part of the Phase 5 safe-detection item early, the same way `PR-4` was pulled ahead.
 - `FD-7` implements [ADR 0002](decisions/0002-aws-cli-version-floor.md):

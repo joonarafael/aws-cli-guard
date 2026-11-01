@@ -16,11 +16,15 @@ var ErrPlatformUnsupported = errors.New(
 	"aws-cli-guard: process replacement is not supported on this platform yet",
 )
 
+// ErrConfiguredWrapper is returned when AWS_CLI_GUARD_REAL_AWS names an AWS CLI Guard wrapper.
+var ErrConfiguredWrapper = errors.New("aws-cli-guard: configured real AWS CLI is a wrapper")
+
 const (
 	reasonRealAWSNotFound     = "the real AWS CLI was not found"
 	reasonResolveWrapper      = "the wrapper executable could not be resolved"
 	reasonStartFailed         = "the real AWS CLI could not be started"
 	reasonPlatformUnsupported = "process replacement is not supported on this platform"
+	reasonConfiguredWrapper   = "the configured AWS CLI is an AWS CLI Guard wrapper"
 	reasonGeneric             = "the command could not be started"
 )
 
@@ -35,6 +39,8 @@ func CancellationReason(err error) string {
 		return reasonStartFailed
 	case errors.Is(err, ErrPlatformUnsupported):
 		return reasonPlatformUnsupported
+	case errors.Is(err, ErrConfiguredWrapper):
+		return reasonConfiguredWrapper
 	default:
 		return reasonGeneric
 	}
