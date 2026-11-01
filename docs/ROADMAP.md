@@ -44,7 +44,7 @@ Then the rest of Phase 2:
 
 Also unblocked, but in later milestones: `GR-7`, `AG-1`, `IN-1`, `OP-3`.
 
-`Q-6` and `Q-9` are answered, along with `Q-1`, `Q-2`, `Q-3`, and `Q-8`. Still open, and not in the way of the MVP: `Q-4`, `Q-5`, and `Q-7`.
+`Q-4`, `Q-5`, `Q-6`, and `Q-9` are answered, along with `Q-1`, `Q-2`, `Q-3`, and `Q-8`. Still open, and not in the way of the MVP: `Q-7`.
 
 `CI-1` is unblocked too. Leave it until `AG-4`. The note on `CI-1` says why.
 
@@ -82,14 +82,14 @@ Most of these come from [Open Design Questions](DESIGN.md#16-open-design-questio
 | Q-1 | Which shells get first-class integration? | Answered in [ADR 0005](decisions/0005-bash-and-zsh.md) | — |
 | Q-2 | Is `aws sso login` allowed by default, or does it get its own policy? | Answered in [ADR 0004](decisions/0004-login-out-of-scope.md) | — |
 | Q-3 | Is identity verification optional, and when does it run? | Answered in [ADR 0006](decisions/0006-identity-verification-off-by-default.md) | — |
-| Q-4 | Which AI agents are supported initially? | Open | `AG-5` |
-| Q-5 | Is agent detection on by default, or opt-in? | Open | `AG-2` |
+| Q-4 | Which AI agents are supported initially? | Answered in [ADR 0015](decisions/0015-initial-agent-integrations.md) | — |
+| Q-5 | Is agent detection on by default, or opt-in? | Answered in [ADR 0016](decisions/0016-agent-detection-switches.md) | — |
 | Q-6 | Which minimum AWS CLI version and configuration features are supported? | Answered in [ADR 0002](decisions/0002-aws-cli-version-floor.md) | — |
 | Q-7 | Which mechanism does persistent disable and enable use? | Open | `OP-2` |
 | Q-8 | Is auto-update on or off by default? | Answered in [ADR 0007](decisions/0007-auto-update-asked-at-init.md) | — |
 | Q-9 | Which exit status does the wrapper use for its own refusals? | Answered in [ADR 0003](decisions/0003-wrapper-exit-status.md) | — |
 
-Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience). Q-4, Q-5, and Q-7 are the ones still open.
+Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persistent system-wide disable and enable](DESIGN.md#122-persistent-system-wide-disable-and-enable), Q-8 from [Auto-update and update notices](DESIGN.md#124-auto-update-and-update-notices), and Q-9 from the exit-code requirement in [User Experience](DESIGN.md#9-user-experience). `Q-7` is the one still open.
 
 ## Epics
 
@@ -211,10 +211,15 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | AG-1 | Caller context, including whether a terminal is attached | To do | Phase 4 | — | `AG-2`, `AG-4`, `OP-1` |
-| AG-2 | Environment-variable markers for agents | To do | Phase 4 | `Q-5`, `AG-1` | `AG-3`, `AG-5` |
+| AG-2 | Environment-variable markers for agents | To do | Phase 4 | `AG-1` | `AG-3`, `AG-5` |
 | AG-3 | Agent-specific policy rules | To do | Phase 4 | `AG-2`, `PO-3` | `AD-3` |
 | AG-4 | Parent-process detection | To do | Phase 4 | `AG-1`, `CI-1` | — |
-| AG-5 | Tested integrations for selected agents | To do | Phase 4 | `Q-4`, `AG-2` | `AD-5` |
+| AG-5 | Tested integrations for selected agents | To do | Phase 4 | `AG-2` | `AD-5` |
+
+- `AG-2` is the built-in environment markers from [ADR 0015](decisions/0015-initial-agent-integrations.md). They run only when `[agents.detection] environment_markers` is true ([ADR 0016](decisions/0016-agent-detection-switches.md)).
+- `AG-3` applies `[agents]` actions only to a positive recognition. Those actions are present in the file, or they are not. The product does not add a default deny.
+- `AG-4` inspects parent processes only when `[agents.detection] parent_process` is true.
+- `AG-5` tests Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI at pinned versions. Adding or dropping a product is a later change to that set.
 
 ### IN: Installation
 

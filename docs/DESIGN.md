@@ -172,7 +172,7 @@ The initial policy evaluation order should be:
 1. Resolve the effective invocation and the credential subject, where possible. A named profile, the profile literally named `default`, environment credentials, and other ambient credentials are different subjects. See [Environment-based credentials](#64-environment-based-credentials).
 2. Load configuration. A missing policy file is not a corrupt file. See [Missing policy](#missing-policy) and [Corrupted files](#corrupted-files).
 3. Apply explicit unconditional deny rules.
-4. Apply applicable caller-context restrictions. An unknown caller uses the normal profile policy. See [Agent-specific policy](#85-agent-specific-policy).
+4. Apply applicable caller-context restrictions when the user has turned that detector on. An unknown caller, and any caller while detection is off, uses the normal profile policy. See [Agent-specific policy](#85-agent-specific-policy).
 5. If the command would print access keys, apply the credential-export rule. A profile allow or a grant does not override it. See [Commands that print access keys](#commands-that-print-access-keys).
 6. Apply profile-specific policy.
 7. If the action is `prompt`, require a valid system-wide grant. See [Grants](#5-grants).
@@ -206,8 +206,13 @@ approval_ttl = "5m"
 action = "deny"
 
 # Recognized agents only. Unknown callers use the profile policy above.
+# Markers stay off until environment_markers is true.
 [agents]
 default = "deny"
+
+[agents.detection]
+environment_markers = true
+parent_process = false
 
 [agents.profiles.dev-readonly]
 action = "allow"
@@ -217,7 +222,7 @@ action = "allow"
 action = "prompt"
 ```
 
-A build that does not enforce a section rejects a file that contains it. Ignoring `agents` or `credential_export` would let the file claim a guarantee the binary does not provide. Adding an enforced section is a schema change, as described in [Versions and schema changes](#versions-and-schema-changes).
+A build that does not enforce a section rejects a file that contains it. Ignoring `agents` or `credential_export` would let the file claim a guarantee the binary does not provide. Adding an enforced section is a schema change, as described in [Versions and schema changes](#versions-and-schema-changes). Agent actions in the example apply only after the user turns a detector on ([ADR 0016](decisions/0016-agent-detection-switches.md)). Init does not write that section.
 
 `allow_readonly` is not a policy key. A profile is not read-only because its name contains a word such as `readonly`. If the tool later supports a read-only classification, the user must set it explicitly, or the tool must establish it through a documented, sufficiently reliable method. A `classification` field would be a user assertion unless independently verified. It is not an AWS authorization guarantee.
 
@@ -311,7 +316,7 @@ Policy keys for behavior this build does not enforce are unknown fields. They fa
 
 A missing policy file means the user has not run init. `aws` does not create the file, does not execute the real CLI, and does not treat the absence as an allow. It exits with a wrapper status and tells the user to run `aws-guard init`.
 
-`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows. If the policy file already exists, init refuses to overwrite it. When `settings.toml` is missing, init creates it in that same directory without changing an existing policy file. A build that includes auto-update asks the question from [ADR 0007](decisions/0007-auto-update-asked-at-init.md) at that moment. Identity verification is written off unless the user turns it on.
+`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows and does not enable agent detection. If the policy file already exists, init refuses to overwrite it. When `settings.toml` is missing, init creates it in that same directory without changing an existing policy file. A build that includes auto-update asks the question from [ADR 0007](decisions/0007-auto-update-asked-at-init.md) at that moment. Identity verification is written off unless the user turns it on.
 
 A missing grants file means there are no grants. That is normal before the first allow, and it is not corruption. A missing cache means there is nothing cached. Cache misses do not affect authorization.
 
@@ -582,32 +587,23 @@ The tool should support agent-aware policy as an additional defense-in-depth fea
 
 There is no universal, trustworthy environment variable or operating-system flag that identifies every command as originating from an AI agent.
 
-Detection will therefore be heuristic and extensible.
+Detection will therefore be heuristic and extensible. The initial products, and the rule that the set changes, are [ADR 0015](decisions/0015-initial-agent-integrations.md). When a detector runs, and what a match is allowed to change, are [ADR 0016](decisions/0016-agent-detection-switches.md).
 
 ### 8.1 Environment variables
 
 Many coding agents expose environment variables to processes they launch.
 
-Examples worth investigating include:
-
-```text
-    CLAUDECODE
-    CODEX_THREAD_ID
-    OPENCODE
-    GOOSE_TERMINAL
-    COPILOT_CLI
-```
-
-These are candidate signals, not a guaranteed or exhaustive list. Actual availability, meaning, and behavior must be verified against supported agent versions.
+The initial built-in integrations are Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). That set is a starting point. Agents, harnesses, IDEs, and models change often, and the set is expected to change with them. Variable names are not fixed in this document. Each integration records the command-scoped variables of one pinned version. A variable that also appears in an ordinary human terminal is not the signal for that product.
 
 The implementation should:
 
-- Maintain a configurable list of recognized markers.
+- Maintain the built-in list and any markers the user has explicitly added.
 - Treat a marker as a signal rather than cryptographic proof.
 - Document which agents and versions have been tested.
 - Avoid treating the absence of markers as proof of human execution.
 - Allow additional markers to be configured by the user.
-- Keep detection logic modular so new integrations can be added independently.
+- Keep detection logic modular so a later integration can be added on its own.
+- Consult markers only when the user has set `[agents.detection] environment_markers = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)).
 
 Environment variables can be inherited, removed, or forged. Detection should not be presented as tamper-proof.
 
@@ -615,9 +611,9 @@ Environment variables can be inherited, removed, or forged. Detection should not
 
 On supported operating systems, the tool may inspect its parent process or process ancestry to look for known agent executables.
 
-This may help identify an agent when environment markers are missing.
+Parent-process inspection is its own detector. It runs only when the user sets `[agents.detection] parent_process = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)). A missing environment marker leaves it off. Turning environment markers on leaves it off.
 
-However:
+Limits:
 
 - Process inspection differs across operating systems.
 - Parent processes can exit or be reparented.
@@ -655,7 +651,7 @@ default = "deny"
 
 [agents.detection]
 environment_markers = true
-parent_process = true
+parent_process = false
 
 [agents.profiles.dev-readonly]
 action = "allow"
@@ -666,6 +662,8 @@ action = "deny"
 [agents.profiles.production-admin]
 action = "deny"
 ```
+
+`environment_markers`, agent action keys, and `parent_process` are three separate choices ([ADR 0016](decisions/0016-agent-detection-switches.md)). `environment_markers = true` is the user opting in to the built-in markers. Until that key is true, those markers change nothing. `parent_process` is off unless it is true; the example sets false so the off is written down. Agent `default` and `[agents.profiles]` actions apply only to a caller a detector has recognized. Writing those actions is the opt-in. A file that sets them while both detectors are off is invalid.
 
 The policy engine distinguishes:
 
@@ -823,7 +821,7 @@ Session-off has to stay inside the wrapper so the agent exception can run. The m
 
 1. `aws-guard off` requires a controlling terminal and an explicit confirmation. A headless caller cannot complete it. An agent that can already type on the user's terminal still can. That is an accepted limit.
 2. The command records the kernel session id (`getsid` on Linux and macOS), the controlling terminal's device identity when there is one, and a random token created by that command. The token is not a well-known constant.
-3. The wrapper honors the latest record for the current session only when the token matches and no recognized agent marker is present. An unknown caller with a matching record is off. That is the remaining hole: a missing agent marker is not proof of a human, so an unknown process in the confirmed session skips policy, including a process that stripped its markers. Detection remains heuristic. See [Agent-specific policy](#85-agent-specific-policy).
+3. The wrapper honors the latest record for the current session only when the token matches and the caller is not a recognized agent. A recognized agent is a positive match from a detector the user has turned on ([ADR 0016](decisions/0016-agent-detection-switches.md)). With no detector on, no caller is recognized, and this exception does not run. An unknown caller with a matching record is off. That is the remaining hole: a missing agent marker is not proof of a human, so an unknown process in the confirmed session skips policy, including a process that stripped its markers. Detection remains heuristic. See [Agent-specific policy](#85-agent-specific-policy).
 4. Policy refusals do not mention this mechanism, the record path, the token, or the real AWS CLI path.
 
 Illustrative commands, not a final interface:
@@ -1028,12 +1026,14 @@ The initial implementation should be tested without requiring access to a real A
 
 ### Agent detection tests
 
-- Recognized environment markers.
+- Recognized environment markers, only when `environment_markers` is true.
+- With detection unset, or with `environment_markers = false`, a built-in marker does not recognize the caller and does not change the decision.
 - Missing markers.
 - Conflicting signals.
 - Marker values inherited from the environment.
 - User-configured markers.
-- Parent-process detection where supported.
+- Parent-process detection only when `parent_process` is true. An omitted `parent_process`, and `parent_process = false`, do not inspect processes.
+- Agent action keys with both detectors off fail validation.
 - Non-interactive invocation without an agent marker.
 
 The test suite should explicitly verify that no agent detector treats an absent marker as proof that the caller is human.
@@ -1074,12 +1074,12 @@ The test suite should explicitly verify that no agent detector treats an absent 
 
 ### Phase 4: AI-agent awareness
 
-- Configurable environment-marker detection.
-- Initial integrations for selected coding agents.
-- Optional parent-process detection.
-- Agent-specific profile rules.
+- Built-in environment-marker detection for Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). The set is expected to change.
+- Marker detection stays off until the user sets `[agents.detection] environment_markers = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)).
+- Parent-process detection only when `[agents.detection] parent_process = true`.
+- Agent-specific profile rules, opt-in by the presence of `[agents]` actions, applied only to a positively recognized caller.
 - Unknown and uncertain callers follow the normal profile policy, as specified in [Agent-specific policy](#85-agent-specific-policy).
-- Tests against actual supported agent environments.
+- Tests against pinned versions of the initial products.
 
 ### Phase 5: Installation and portability
 
@@ -1122,8 +1122,8 @@ Questions to resolve during implementation:
 5. ~~Should identity verification be optional, and when should it run?~~ **Resolved:** [ADR 0006](decisions/0006-identity-verification-off-by-default.md) — off unless the user turns it on in `settings.toml`.
 6. ~~How should unresolved profile and credential-source cases be handled?~~ **Resolved:** `AWS_ACCESS_KEY_ID` is not the named profile. Named profiles, environment credentials, other ambient sources, and unresolved subjects are different. A missing policy file asks for init. A corrupt policy or grants file uses the diagnosis flow and does not execute. See [Environment-based credentials](#64-environment-based-credentials), [Missing policy](#missing-policy), and [Corrupted files](#corrupted-files).
 7. ~~How should session-scoped approval be tied to a terminal session?~~ **Resolved:** grants are not session-scoped. A grant is system-wide for the installation until its TTL. Session identity is used only for session-off. See [Grants](#5-grants) and [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session).
-8. Which AI agents should be supported initially?
-9. Should agent detection be enabled by default or require explicit configuration?
+8. ~~Which AI agents should be supported initially?~~ **Resolved:** [ADR 0015](decisions/0015-initial-agent-integrations.md) — Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI. The set is a starting point and is expected to change.
+9. ~~Should agent detection be enabled by default or require explicit configuration?~~ **Resolved:** [ADR 0016](decisions/0016-agent-detection-switches.md) — three explicit switches. Built-in environment markers are opt-in. Agent authorization is opt-in by the presence of `[agents]` actions. Parent-process detection is off unless `parent_process` is true. Nothing changes until the user turns a switch on.
 10. ~~What should happen when the caller is unknown and the requested profile is ordinarily allowed?~~ **Resolved:** the normal profile policy. Only a positively recognized agent uses agent rules. A missing marker is not proof of a human and is not treated as an agent. See [Agent-specific policy](#85-agent-specific-policy).
 11. ~~Should the tool support an explicit, conspicuous bypass for debugging or recovery?~~ **Recorded:** yes. A dedicated command turns the wrapper off for the current terminal session only. The session-off mechanism is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). A separate persistent control disables and re-enables the installation system-wide, including when a published build is broken. The persistent-disable mechanism is still open. See [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable).
 12. ~~What minimum AWS CLI versions and configuration features must be supported?~~ **Resolved:** [ADR 0002](decisions/0002-aws-cli-version-floor.md) — 2.9.0 and newer. Older CLIs are warned and handed through with no policy. A CLI newer than the verified release is warned and still guarded.
