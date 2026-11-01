@@ -21,6 +21,10 @@ func TestCancellationReasonSentinels(t *testing.T) {
 			executor.ErrPlatformUnsupported,
 			"process replacement is not supported on this platform",
 		},
+		{
+			executor.ErrConfiguredWrapper,
+			"the configured AWS CLI is an AWS CLI Guard wrapper",
+		},
 	}
 
 	for _, tc := range cases {

@@ -45,7 +45,7 @@ command -v aws    # should print .../aws-cli-guard/bin/aws
 aws --version   # should run the real AWS CLI if it appears later on PATH
 ```
 
-The wrapper walks `PATH`, skips its own executable, and execs the next `aws` it finds.
+The wrapper walks `PATH`, skips every AWS CLI Guard wrapper copy (including a second build earlier on `PATH`), and execs the next real `aws` it finds.
 
 A `make build` binary resolves policy, settings, grants, and cache under the user-database home directory ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). It ignores `XDG_*` and the `AWS_CLI_GUARD_*_DIR` variables. To dogfood against a scratch policy without touching your live files, build with the test-path tag:
 
