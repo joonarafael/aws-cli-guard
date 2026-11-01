@@ -38,7 +38,6 @@ The MVP is complete. Phase 2 starts here:
 - `GR-7` revoking grants (`aws-guard revoke <profile>` and `aws-guard revoke --all`).
 - `PR-5` detecting credential providers beyond the environment-key case and bumping `grants.json` to version 2, followed by `PR-6` showing account and role in messages.
 - `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
-- `SS-1` login handoff ([ADR 0004](decisions/0004-login-out-of-scope.md)).
 
 Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
@@ -204,11 +203,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| SS-1 | How `aws sso login` is handled | To do | Phase 2 | `PR-2` | — |
+| SS-1 | How `aws sso login` is handled | Done | Phase 2 | `PR-2` | — |
 
-- [ADR 0004](decisions/0004-login-out-of-scope.md) decides the behavior: recognize login and hand it to the real CLI, with no policy and no grant. `SS-1` is that recognition. Phase 2 remains the placeholder milestone.
-- In `internal/gate/decide.go`, `gate.Decide` currently checks `policy.Present(env)`, resolves the subject, warns on `default`, and loads `config.toml` and `grants.json` before calling `invocation.Parse(args)`. Move `invocation.Parse(args)` and the login check to the top of `gate.Decide` so login works before `aws-guard init`, without a grant, and without printing a `default` profile warning.
-- Pin down the exact argv rule for login in `internal/invocation` (for example `inv.OK && inv.Command == "sso" && inv.Operation == "login"` for the 2.9.0 floor; when `!inv.OK`, fail closed into the normal guarded path).
+- [ADR 0004](decisions/0004-login-out-of-scope.md) decides the behavior: recognize login and hand it to the real CLI, with no policy and no grant.
+- `internal/invocation` exposes `Invocation.IsLogin()` for a successfully parsed `aws sso login` (`inv.OK && inv.Command == "sso" && inv.Operation == "login"`). A failed parse is not login and follows the normal guarded path.
+- `gate.Decide` parses argv first and returns before `policy.Present`, the default-profile warning, and policy or grants loads when `IsLogin()` is true. Login works before `aws-guard init`, without a grant, and without stderr from the wrapper.
 
 ### CI: Continuous integration
 
