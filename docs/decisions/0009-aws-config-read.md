@@ -20,7 +20,7 @@ The guard must not return secret access keys, session tokens, or `credential_pro
 
 4. **Secrets.** Strip `aws_access_key_id`, `aws_secret_access_key`, `aws_session_token`, `aws_security_token`, and `credential_process` values from returned data. Record presence flags only. Parse errors name paths, keys, and line numbers, never values or file bodies.
 
-5. **Scope.** This ADR covers read and merge only. The wrapper entrypoint does not call `Load` until policy evaluation exists. Provider typing and fingerprint hashing stay in `PR-5` and `GR-2`.
+5. **Scope.** This ADR covers read and merge only. `Load` is reached through the grant fingerprint in [ADR 0012](0012-credential-source-fingerprint.md). Provider typing stays in `PR-5`.
 
 ## Consequences
 

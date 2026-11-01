@@ -31,13 +31,18 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-The MVP is complete. Phase 2 is the default next milestone:
+The MVP is complete. Two fixes to shipped behavior come first. Both are small, unblocked, and filed under Phase 2:
+
+- `FD-6` skipping every copy of the wrapper during real AWS CLI discovery, so two copies cannot hand off to each other forever.
+- `FD-5` resolving guard-owned paths from the user database, so an environment variable cannot point the wrapper at a forged policy or grants file ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)).
+
+Then the rest of Phase 2:
 
 - `PR-5` detecting credential providers beyond the environment-key case.
 - `SS-1` login handoff ([ADR 0004](decisions/0004-login-out-of-scope.md)).
 - `PO-5` inspect, explain, and validate policy.
 
-Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`.
+Also unblocked, but in later milestones: `GR-7`, `AG-1`, `IN-1`, `OP-3`.
 
 `Q-6` and `Q-9` are answered, along with `Q-1`, `Q-2`, `Q-3`, and `Q-8`. Still open, and not in the way of the MVP: `Q-4`, `Q-5`, and `Q-7`.
 
@@ -60,8 +65,8 @@ After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant o
 | Milestone | Epics |
 | --- | --- |
 | MVP (Phase 1) | `FD-1`, `FD-2`, `FD-3`, `FD-4`, `PR-1`, `PR-2`, `PR-3`, `PR-4`, `FS-1`, `FS-2`, `FS-3`, `FS-4`, `PO-1`, `PO-2`, `PO-3`, `PO-4`, `GR-1`, `GR-2`, `GR-3`, `GR-4`, `MV-1`, `MV-2` |
-| Phase 2: Better profile awareness | `PR-5`, `PR-6`, `PO-5`, `SS-1` |
-| Phase 3: Grant operations | `FS-5`, `GR-5`, `GR-6` |
+| Phase 2: Better profile awareness | `FD-5`, `FD-6`, `PR-5`, `PR-6`, `PO-5`, `SS-1` |
+| Phase 3: Grant operations | `FS-5`, `GR-5`, `GR-6`, `GR-7` |
 | Phase 4: AI-agent awareness | `AG-1`, `AG-2`, `AG-3`, `CI-1`, `AG-4`, `AG-5` |
 | Phase 5: Installation and portability | `IN-1`, `IN-2`, `IN-3` |
 | Backlog | `FS-6`, `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5`, `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
@@ -92,10 +97,24 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| FD-1 | Wrapper entrypoint and real AWS CLI handoff | Done | MVP | — | — |
-| FD-2 | On-disk path resolution | Done | MVP | — | `FS-1` |
+| FD-1 | Wrapper entrypoint and real AWS CLI handoff | Done | MVP | — | `FD-6` |
+| FD-2 | On-disk path resolution | Done | MVP | — | `FS-1`, `FD-5` |
 | FD-3 | Wrapper exit status and secret-safe error messages | Done | MVP | — | `PR-3`, `FS-3`, `OP-5`, `AD-2` |
-| FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `OP-1` |
+| FD-4 | `aws-guard` command skeleton and terminal confirmation | Done | MVP | — | `FS-4`, `PO-2`, `GR-3`, `GR-7`, `OP-1` |
+| FD-5 | Guard-owned paths from the user database | To do | Phase 2 | `FD-2` | — |
+| FD-6 | Skip every wrapper copy during real AWS CLI discovery | To do | Phase 2 | `FD-1` | — |
+
+- `FD-5` implements [ADR 0014](decisions/0014-guard-paths-from-user-database.md) in `internal/paths`:
+  - The home directory comes from `os/user.Current()`. `HOME` is the fallback when the lookup fails or returns an empty or non-absolute directory. The fallback is supported, prints no warning, and does not cancel.
+  - `XDG_*` variables are no longer read.
+  - The `AWS_CLI_GUARD_*_DIR` overrides compile only under the `awsguard_testpaths` build tag. `make test` and the integration-test build helper pass that tag; `make build` does not.
+  - The lookup is injectable for unit tests.
+  - Run `make check` on macOS before merging. Update [DEVELOPMENT.md](DEVELOPMENT.md) with the tag and the new dogfooding behavior.
+- `FD-6` closes two self-handoff loops in `internal/executor/find.go`. Today `AWS_CLI_GUARD_REAL_AWS` is returned without a self-check, and `PATH` discovery only skips the running file. With two wrapper copies on `PATH`, each finds the other first. The design is in [Core Architecture](DESIGN.md#3-core-architecture):
+  - A candidate is a wrapper when it is the same file as the running executable, or when `debug/buildinfo.ReadFile` reports the same main package path that `debug.ReadBuildInfo` reports for the running wrapper. A file with no Go build information is not a wrapper.
+  - `PATH` discovery skips wrappers. An `AWS_CLI_GUARD_REAL_AWS` that names a wrapper cancels with status 3, without printing the path and without falling back to `PATH`.
+  - Tests: a second wrapper copy earlier on `PATH` is skipped and the fake AWS runs once; the override naming the wrapper, or a copy of it, exits 3 and the fake does not run; the fake AWS, which is a different Go main package, is not treated as a wrapper.
+  - Roughly 30 lines of code plus tests. It implements part of the Phase 5 safe-detection item early, the same way `PR-4` was pulled ahead.
 
 ### PR: Profile resolution
 
@@ -108,7 +127,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
-- `PR-3` warns on stderr when the credential subject is the named profile `default`, then hands off to the real AWS CLI. Policy is not evaluated yet.
+- `PR-3` warns on stderr when the credential subject is the named profile `default`. The command still follows policy for `default`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
 
 ### FS: File storage and recovery
@@ -144,17 +163,24 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| GR-1 | Grants file store | Done | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5` |
+| GR-1 | Grants file store | Done | MVP | `FS-1`, `FS-2` | `GR-3`, `GR-4`, `GR-5`, `GR-7` |
 | GR-2 | Credential-source fingerprint | Done | MVP | `PR-4` | `GR-3`, `GR-4`, `GR-5` |
 | GR-3 | `aws-guard allow` | Done | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | Done | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
+| GR-7 | `aws-guard revoke` | To do | Phase 3 | `GR-1`, `FD-4` | — |
 
 - `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper loads grants on every guarded invocation.
 - `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). `GR-3` `aws-guard allow` calls `Fingerprint` and `Update`.
 - `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant.
 - `GR-4` adds `grants.Current` and `policy.EvaluateGrant`. A `prompt` action runs only when a grant for that named profile is unexpired and the stored source matches the current fingerprint. `internal/gate` applies grant checking on every guarded invocation.
+- `GR-7` adds `aws-guard revoke <profile>` and `aws-guard revoke --all`, as specified in [Revoking grants](DESIGN.md#revoking-grants):
+  - It needs no terminal, because it only narrows access.
+  - It runs under the `grants.Update` lock.
+  - With nothing to remove, it exits 0 with a note and writes nothing. A missing grants file is not created.
+  - A corrupt grants file is refused with status 3, with the diagnosis note and a pointer to `aws-guard recover grants`. The file is not modified.
+  - It pairs naturally with `GR-5`, so the user can see what to revoke, but neither blocks the other.
 
 ### MV: MVP milestone
 

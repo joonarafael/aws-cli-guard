@@ -21,8 +21,7 @@ type Decision struct {
 }
 
 // Evaluate returns the profile action for subj under pol. It does not check grants
-// or [credential_export]; callers apply EvaluateExport and EvaluateGrant; the wrapper
-// calls them in MV-1.
+// or [credential_export]; callers apply EvaluateExport and EvaluateGrant separately.
 func Evaluate(pol Policy, subj subject.Subject) Decision {
 	switch subj.Kind {
 	case subject.NamedProfile:

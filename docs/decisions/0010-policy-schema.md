@@ -28,7 +28,7 @@ The design leaves `approval_ttl` on profiles for `aws-guard allow` defaults. Tha
 
 6. **Rejected keys.** `classification`, `allow_readonly`, and other design examples that are not in this schema are unknown fields.
 
-7. **Loading.** `internal/policy.Load` reads from an environment slice via `paths.ConfigFile`, `files.ReadRegular`, and `decode.Decode`. Maximum file size is 1 MiB. Missing file returns `ErrMissing` wrapping `os.ErrNotExist`. Guard-owned paths refuse a final symlink. Loose mode `0644` is not corruption. The wrapper does not call `Load` until evaluation exists.
+7. **Loading.** `internal/policy.Load` reads from an environment slice via `paths.ConfigFile`, `files.ReadRegular`, and `decode.Decode`. Maximum file size is 1 MiB. Missing file returns `ErrMissing` wrapping `os.ErrNotExist`. Guard-owned paths refuse a final symlink. Loose mode `0644` is not corruption. The wrapper calls `Load` on every guarded invocation through `internal/gate`.
 
 ## Consequences
 

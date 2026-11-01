@@ -68,10 +68,10 @@ There is no Windows CI or manual Windows testing in this phase. `make lint` and 
 
 ## How integration tests work
 
-Tests live in [internal/executor/executor_test.go](../internal/executor/executor_test.go). They compile the wrapper and [testdata/fakeaws](../internal/executor/testdata/fakeaws), spawn the wrapper as a subprocess, and assert on exit codes and recorded arguments. When the test binary is built with `-race`, those subprocess builds use `-race` as well. `syscall.Exec` does not return in the wrapper process, so the wrapper cannot be exercised entirely in-process.
+Tests live in [internal/executor/executor_test.go](../internal/executor/executor_test.go), [policy_enforcement_test.go](../internal/executor/policy_enforcement_test.go), and their siblings in that package. They compile the wrapper and [testdata/fakeaws](../internal/executor/testdata/fakeaws), spawn the wrapper as a subprocess, and assert on exit codes and recorded arguments. When the test binary is built with `-race`, those subprocess builds use `-race` as well. `syscall.Exec` does not return in the wrapper process, so the wrapper cannot be exercised entirely in-process.
 
 A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: error:`; diagnosis and allow guidance use `aws-cli-guard:` detail lines. That contract is [ADR 0003](decisions/0003-wrapper-exit-status.md). Tests for wrapper failures should assert the status and the error prefix on the cancellation lines.
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0014`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0015`.
