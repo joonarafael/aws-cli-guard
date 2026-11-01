@@ -30,13 +30,13 @@ func TestWrapperForwardsArgsAndExitStatus(t *testing.T) {
 		"--output",
 		"json",
 	)
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		executor.RealAWSEnv+"="+fake,
 		"FAKE_AWS_RECORD="+record,
 		"FAKE_AWS_EXIT=42",
 		"AWS_PROFILE="+handoffProfileName,
-	)
+	)...)
 
 	err := cmd.Run()
 	if err != nil {
@@ -89,12 +89,12 @@ func TestWrapperSkipsSelfOnPATH(t *testing.T) {
 
 	cmd := exec.CommandContext(t.Context(), wrapper, "s3", "ls")
 
-	cmd.Env = envHandoff(
-		policyConfigEnv(t, work),
+	cmd.Env = envHandoff(append(
+		policyConfigEnvEntries(t, work),
 		"PATH="+wrapperDir+string(os.PathListSeparator)+fakeDir,
 		"FAKE_AWS_RECORD="+record,
 		"AWS_PROFILE="+handoffProfileName,
-	)
+	)...)
 
 	err = cmd.Run()
 	if err != nil {
@@ -218,7 +218,11 @@ func envHandoff(extra ...string) []string {
 		"AWS_WEB_IDENTITY_TOKEN_FILE=",
 		"AWS_PROFILE=",
 		"AWS_CLI_GUARD_CONFIG_DIR=",
+		"AWS_CLI_GUARD_STATE_DIR=",
 		"XDG_CONFIG_HOME=",
+		"XDG_STATE_HOME=",
+		"AWS_CONFIG_FILE=",
+		"AWS_SHARED_CREDENTIALS_FILE=",
 		"HOME=",
 	}
 
