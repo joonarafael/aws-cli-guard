@@ -108,7 +108,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4` | `PR-6`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
-- `PR-3` warns on stderr when the credential subject is the named profile `default`, then hands off to the real AWS CLI. Policy is not evaluated yet.
+- `PR-3` warns on stderr when the credential subject is the named profile `default`. The command still follows policy for `default`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
 
 ### FS: File storage and recovery

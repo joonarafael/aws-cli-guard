@@ -22,7 +22,7 @@ Accepted
 
 6. **Validation.** Copied strings must pass the same no-control-character rule as loaded grants. Failure returns `*grants.Error` with `KindInvalid` and a `source.*` key. Values are not echoed.
 
-7. **Wrapper.** `cmd/aws` and `cmd/aws-guard` do not call `Fingerprint` until `GR-3` and `GR-4`.
+7. **Callers.** `aws-guard allow` calls `Fingerprint` before writing a grant. The wrapper calls it through `internal/gate` when a named profile's action is `prompt`.
 
 ## Consequences
 

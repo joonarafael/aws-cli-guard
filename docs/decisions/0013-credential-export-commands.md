@@ -27,7 +27,7 @@ MVP policy evaluation (`PO-4`) must enforce `[credential_export]` from [ADR 0010
 
 6. **Refusal text.** One fixed cancellation reason, with no command or setting text: `commands that print access keys are refused until credential_export action is allow`.
 
-7. **Wrapper.** `cmd/aws` does not call `EvaluateExport` until `MV-1`. Grant checking stays in `GR-4`.
+7. **Wrapper.** `internal/gate` calls `EvaluateExport` before profile policy and grant checking.
 
 ## Consequences
 

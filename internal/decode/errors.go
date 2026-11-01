@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-// Programmer-error sentinels. FS-3 must not treat these as corrupt files.
+// Programmer-error sentinels. Corrupt-file diagnosis must not treat these as corrupt files.
 var (
 	ErrFormat = errors.New("aws-cli-guard: decode: invalid format")
 	ErrDest   = errors.New(

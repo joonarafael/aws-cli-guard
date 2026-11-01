@@ -28,5 +28,5 @@ Status 3 carries no standard name that means "permission denied" or "bad configu
 
 - Scripts can treat exit 3 as "AWS CLI Guard cancelled this" and treat every other non-zero status as the AWS CLI, a signal, or the shell.
 - Exit 3 will still collide with any other program that picked 3. The prefixed error line is the disambiguator, and it is part of the contract, not an optional flourish.
-- The missing-CLI path in `cmd/aws` exits 1 today. The exit-status epic changes that path to 3 and adds the prefix.
+- A failure to find or start the real AWS CLI in `cmd/aws` exits 3 with the same prefixed error line as a policy refusal.
 - Longer guidance, such as how to allow a profile, is more wrapper lines with the same `aws-cli-guard:` prefix. It stays free of secrets, raw argument vectors, a disabling environment variable, and the path of the real AWS CLI.
