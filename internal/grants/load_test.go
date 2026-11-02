@@ -104,7 +104,7 @@ func TestLoadMissingFileEmptyList(t *testing.T) {
 		t.Fatalf("len(Grants) = %d", len(got.Grants))
 	}
 
-	if got.Version != 1 {
+	if got.Version != 2 {
 		t.Fatalf("Version = %d", got.Version)
 	}
 

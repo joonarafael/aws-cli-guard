@@ -1,4 +1,4 @@
-// Package grants loads and writes the system-wide grants file (grants.json).
+// Package grants loads and writes the system-wide grants file (grants.json, version 2 on write).
 //
 // Callers pass an environment slice; this package does not read os.Environ.
 // Load reads through paths.GrantsFile and files.ReadRegular, then decodes

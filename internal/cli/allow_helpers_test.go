@@ -147,6 +147,13 @@ func emptyAllowSource() grants.Source {
 		SSOAccountID:      "",
 		SSORoleName:       "",
 		CredentialProcess: false,
+		SourceProfile:     "",
+		CredentialSource:  "",
+		SSOSession:        "",
+		SSOStartURL:       "",
+		SSORegion:         "",
+		ExternalID:        "",
+		Chain:             nil,
 	}
 }
 

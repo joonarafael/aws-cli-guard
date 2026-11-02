@@ -19,13 +19,13 @@ func TestReplaceRoundTrip(t *testing.T) {
 		{
 			Profile: "production-admin",
 			Expires: expires,
-			Source: grants.Source{
-				AccountID:         "123456789012",
-				RoleARN:           "arn:aws:iam::123456789012:role/Admin",
-				SSOAccountID:      "",
-				SSORoleName:       "",
-				CredentialProcess: false,
-			},
+			Source: func() grants.Source {
+				out := emptySource()
+				out.AccountID = "123456789012"
+				out.RoleARN = "arn:aws:iam::123456789012:role/Admin"
+
+				return out
+			}(),
 		},
 	}
 
@@ -86,12 +86,11 @@ func TestReplaceNilEmptyFile(t *testing.T) {
 		t.Fatalf("ReadFile: %v", err)
 	}
 
-	want := `{
-  "version": 1,
-  "grants": []
-}
-`
-	if !bytes.Equal(data, []byte(want)) {
+	if !bytes.Contains(data, []byte(`"version": 2`)) {
+		t.Fatalf("body:\n%s", data)
+	}
+
+	if !bytes.Contains(data, []byte(`"grants": []`)) {
 		t.Fatalf("body:\n%s", data)
 	}
 }

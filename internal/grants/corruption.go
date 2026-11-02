@@ -32,7 +32,7 @@ func Corruption(err error) (diagnose.Note, bool) {
 		}
 
 		return noteFromGrantsError(grErr, decodeFailurePhrase(decErr)), true
-	case KindWrite:
+	case KindWrite, KindResolve:
 		return emptyDiagnoseNote(), false
 	default:
 		return emptyDiagnoseNote(), false

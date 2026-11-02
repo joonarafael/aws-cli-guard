@@ -117,7 +117,7 @@ func encodeGrants(list []Grant) ([]byte, error) {
 	}
 
 	encoded := encodeDocument{
-		Version: supportedVersion,
+		Version: writeVersion,
 		Grants:  make([]encodeGrant, len(list)),
 	}
 
@@ -125,13 +125,7 @@ func encodeGrants(list []Grant) ([]byte, error) {
 		encoded.Grants[i] = encodeGrant{
 			Profile: grant.Profile,
 			Expires: grant.Expires.UTC().Format(time.RFC3339),
-			Source: encodeSource{
-				AccountID:         grant.Source.AccountID,
-				RoleARN:           grant.Source.RoleARN,
-				SSOAccountID:      grant.Source.SSOAccountID,
-				SSORoleName:       grant.Source.SSORoleName,
-				CredentialProcess: grant.Source.CredentialProcess,
-			},
+			Source:  encodeSourceFrom(grant.Source),
 		}
 	}
 
@@ -143,6 +137,33 @@ func encodeGrants(list []Grant) ([]byte, error) {
 	body = append(body, '\n')
 
 	return body, nil
+}
+
+func encodeSourceFrom(src Source) encodeSource {
+	out := encodeSource{
+		AccountID:         src.AccountID,
+		RoleARN:           src.RoleARN,
+		SSOAccountID:      src.SSOAccountID,
+		SSORoleName:       src.SSORoleName,
+		CredentialProcess: src.CredentialProcess,
+		SourceProfile:     src.SourceProfile,
+		CredentialSource:  src.CredentialSource,
+		SSOSession:        src.SSOSession,
+		SSOStartURL:       src.SSOStartURL,
+		SSORegion:         src.SSORegion,
+		ExternalID:        src.ExternalID,
+		Chain:             make([]encodeHop, len(src.Chain)),
+	}
+
+	for hopIndex, hop := range src.Chain {
+		out.Chain[hopIndex] = encodeChainHop(hop)
+	}
+
+	return out
+}
+
+func encodeChainHop(hop ChainHop) encodeHop {
+	return encodeHop(hop)
 }
 
 func mapWriteError(path string, err error) error {

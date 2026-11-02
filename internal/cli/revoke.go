@@ -119,7 +119,11 @@ func cancelRevokeGrants(stderr io.Writer, err error) int {
 			output.Error(stderr, reasonRevokeWrite)
 
 			return output.CancelStatus
-		case grants.KindMissing, grants.KindRead, grants.KindDecode, grants.KindInvalid:
+		case grants.KindMissing,
+			grants.KindRead,
+			grants.KindDecode,
+			grants.KindInvalid,
+			grants.KindResolve:
 			output.Error(stderr, reasonRevokeRead)
 
 			return output.CancelStatus

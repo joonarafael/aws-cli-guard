@@ -17,33 +17,25 @@ type currentCase struct {
 }
 
 func currentMatchSource() grants.Source {
-	return grants.Source{
-		AccountID:         "123456789012",
-		RoleARN:           fixtureRoleARN,
-		SSOAccountID:      "",
-		SSORoleName:       "",
-		CredentialProcess: false,
-	}
+	out := emptySource()
+	out.AccountID = "123456789012"
+	out.RoleARN = fixtureRoleARN
+
+	return out
 }
 
 func currentMismatchSource() grants.Source {
-	return grants.Source{
-		AccountID:         "",
-		RoleARN:           "arn:aws:iam::999999999999:role/Other",
-		SSOAccountID:      "",
-		SSORoleName:       "",
-		CredentialProcess: false,
-	}
+	out := emptySource()
+	out.RoleARN = "arn:aws:iam::999999999999:role/Other"
+
+	return out
 }
 
 func currentPartialMismatchSource() grants.Source {
-	return grants.Source{
-		AccountID:         "",
-		RoleARN:           "mismatch",
-		SSOAccountID:      "",
-		SSORoleName:       "",
-		CredentialProcess: false,
-	}
+	out := emptySource()
+	out.RoleARN = "mismatch"
+
+	return out
 }
 
 func currentExpiry() time.Time {

@@ -30,6 +30,9 @@ var (
 	errNestedLineWithoutEquals = errors.New("aws-cli-guard: awsconfig: nested line without =")
 	errEmptyNestedKey          = errors.New("aws-cli-guard: awsconfig: empty nested key")
 	errDuplicateNestedKey      = errors.New("aws-cli-guard: awsconfig: duplicate nested key")
+	errCredentialUnresolved    = errors.New(
+		"aws-cli-guard: awsconfig: credential source could not be resolved",
+	)
 )
 
 // Kind classifies a read or parse failure.
@@ -40,6 +43,7 @@ const (
 	KindParse Kind = iota + 1
 	KindRead
 	KindPath
+	KindResolve
 )
 
 // Error is a secret-safe awsconfig failure.
@@ -71,6 +75,8 @@ func (e *Error) Error() string {
 		builder.WriteString("aws-cli-guard: awsconfig: read failed")
 	case KindPath:
 		builder.WriteString("aws-cli-guard: awsconfig: invalid path")
+	case KindResolve:
+		builder.WriteString("aws-cli-guard: awsconfig: credential source could not be resolved")
 	default:
 		builder.WriteString("aws-cli-guard: awsconfig: error")
 	}

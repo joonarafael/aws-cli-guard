@@ -28,4 +28,4 @@ Accepted
 
 - `GR-3` `aws-guard allow` calls `Fingerprint` before writing a grant.
 - `GR-4` compares stored and current sources with `Equal` when checking grants.
-- Role chains and `sso-session` resolution belong in `PR-5` and would require a new grants schema version to record.
+- Role chains and `sso-session` resolution belong in `PR-5` and are recorded in [ADR 0018](0018-grants-schema-v2.md).

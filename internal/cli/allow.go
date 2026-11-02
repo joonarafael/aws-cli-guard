@@ -16,16 +16,18 @@ const (
 	allowCommand = "allow"
 	allowMinArgs = 3
 
-	reasonAllowUsage        = "usage: aws-guard allow <profile> [--ttl <duration>]"
-	reasonProfileInvalid    = "the profile name is invalid"
-	reasonTTLInvalid        = "the ttl is invalid"
-	reasonTTLRequired       = "a ttl is required"
-	reasonPolicyRead        = "the policy file could not be read"
-	reasonAWSConfigRead     = "the aws config could not be read"
-	reasonGrantNotConfirmed = "the grant was not confirmed"
-	reasonAllowPath         = "the file path could not be resolved"
-	reasonGrantsRead        = "the grants file could not be read"
-	reasonGrantsWrite       = "the grants file could not be written"
+	reasonAllowUsage     = "usage: aws-guard allow <profile> [--ttl <duration>]"
+	reasonProfileInvalid = "the profile name is invalid"
+	reasonTTLInvalid     = "the ttl is invalid"
+	reasonTTLRequired    = "a ttl is required"
+	reasonPolicyRead     = "the policy file could not be read"
+	reasonAWSConfigRead  = "the aws config could not be read"
+	//nolint:gosec // G101: user-facing message, not a secret
+	reasonCredentialUnresolved = "the credential source could not be resolved"
+	reasonGrantNotConfirmed    = "the grant was not confirmed"
+	reasonAllowPath            = "the file path could not be resolved"
+	reasonGrantsRead           = "the grants file could not be read"
+	reasonGrantsWrite          = "the grants file could not be written"
 
 	allowConfirmPrompt = "type the profile name to allow it on this installation until it expires"
 	allowHeadlessNote  = "the grant applies to later invocations on this installation, " +
@@ -61,7 +63,7 @@ func runAllow(args []string, env []string, stdout, stderr io.Writer, confirm con
 
 	source, err := grants.Fingerprint(env, parsed.profile)
 	if err != nil {
-		output.Error(stderr, reasonAWSConfigRead)
+		output.Error(stderr, allowFingerprintReason(err))
 
 		return output.CancelStatus
 	}
@@ -216,6 +218,15 @@ func writeAllowSuccess(stdout io.Writer, profile string, expires time.Time) {
 	output.Detail(stdout, allowHeadlessNote)
 }
 
+func allowFingerprintReason(err error) string {
+	grantErr, ok := errors.AsType[*grants.Error](err)
+	if ok && grantErr.Kind == grants.KindResolve {
+		return reasonCredentialUnresolved
+	}
+
+	return reasonAWSConfigRead
+}
+
 func allowWriteReason(err error) string {
 	if errors.Is(err, paths.ErrHomeUnset) {
 		return reasonAllowPath
@@ -227,7 +238,7 @@ func allowWriteReason(err error) string {
 			return reasonGrantsRead
 		case grants.KindPath:
 			return reasonAllowPath
-		case grants.KindRead, grants.KindDecode, grants.KindInvalid:
+		case grants.KindRead, grants.KindDecode, grants.KindInvalid, grants.KindResolve:
 			return reasonGrantsRead
 		case grants.KindWrite:
 			return reasonGrantsWrite

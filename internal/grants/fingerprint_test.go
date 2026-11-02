@@ -2,6 +2,7 @@ package grants_test
 
 import (
 	"aws-cli-guard/internal/grants"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -118,17 +119,16 @@ func TestFingerprintCredentialProcessInNestedBlock(t *testing.T) {
 	}
 }
 
-func TestFingerprintIgnoresSourceProfileChain(t *testing.T) {
+func TestFingerprintBindsSourceProfileChain(t *testing.T) {
 	t.Parallel()
 
 	env := homeEnv(t)
 	writeAWSConfig(t, env, strings.Join([]string{
-		"[profile base]",
+		fixtureProfileBaseHeader,
 		"role_arn = " + fixtureRoleARN,
 		"",
 		"[profile chained]",
-		"source_profile = base",
-		"credential_source = Ec2InstanceMetadata",
+		fixtureSourceProfileBase,
 	}, "\n"), "")
 
 	got, err := grants.Fingerprint(env, "chained")
@@ -136,8 +136,36 @@ func TestFingerprintIgnoresSourceProfileChain(t *testing.T) {
 		t.Fatalf("Fingerprint: %v", err)
 	}
 
-	if got.RoleARN != "" || got.CredentialProcess {
+	if got.SourceProfile != fixtureProfileBaseName || len(got.Chain) != 1 {
 		t.Fatalf("source: %+v", got)
+	}
+
+	if got.Chain[0].Profile != fixtureProfileBaseName || got.Chain[0].RoleARN != fixtureRoleARN {
+		t.Fatalf("chain[0]: %+v", got.Chain[0])
+	}
+}
+
+func TestFingerprintAmbiguousSourceProfileAndCredentialSource(t *testing.T) {
+	t.Parallel()
+
+	env := homeEnv(t)
+	writeAWSConfig(t, env, strings.Join([]string{
+		"[profile bad]",
+		"source_profile = base",
+		"credential_source = Ec2InstanceMetadata",
+		"",
+		"[profile base]",
+		"role_arn = " + fixtureRoleARN,
+	}, "\n"), "")
+
+	_, err := grants.Fingerprint(env, "bad")
+	if err == nil {
+		t.Fatal("expected resolve error")
+	}
+
+	grErr, ok := errors.AsType[*grants.Error](err)
+	if !ok || grErr.Kind != grants.KindResolve {
+		t.Fatalf("got %v", err)
 	}
 }
 

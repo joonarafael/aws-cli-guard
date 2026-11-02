@@ -10,9 +10,13 @@ import (
 )
 
 const (
-	maxFileSize      = 1 << 20
-	supportedVersion = 1
+	maxFileSize  = 1 << 20
+	writeVersion = 2
 )
+
+func supportedGrantVersions() []int {
+	return []int{1, writeVersion}
+}
 
 // Load reads and validates the grants file from env.
 func Load(env []string) (File, error) {
@@ -30,7 +34,7 @@ func loadAtPath(path string) (File, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return File{
 				Path:    path,
-				Version: supportedVersion,
+				Version: writeVersion,
 				Mode:    0,
 				Grants:  []Grant{},
 			}, nil
@@ -45,7 +49,7 @@ func loadAtPath(path string) (File, error) {
 
 	var doc document
 
-	decodeErr := decode.Decode(decode.JSON, data, &doc, []int{supportedVersion})
+	decodeErr := decode.Decode(decode.JSON, data, &doc, supportedGrantVersions())
 	if decodeErr != nil {
 		return File{}, mapDecodeError(path, decodeErr)
 	}
@@ -108,7 +112,8 @@ func stampInvalidError(err error, path string, version int) error {
 
 	grErr.Version = version
 	grErr.HasVersion = true
-	grErr.Supported = []int{supportedVersion}
+
+	grErr.Supported = append([]int(nil), supportedGrantVersions()...)
 
 	return grErr
 }
