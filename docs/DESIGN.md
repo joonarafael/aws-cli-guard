@@ -398,7 +398,7 @@ aws-cli-guard: the grant covers later invocations on this machine, including hea
 aws-cli-guard: aws-guard allow production-admin --ttl 5m
 ```
 
-The command words are illustrative. The message must say that the call failed because the profile is not allowed yet, and that the user allows it on the system before invoking it headlessly. It must not include a bypass, an environment variable that disables the wrapper, or the path of the real AWS CLI. It shows the service and operation, not the raw argument list.
+The command words are illustrative. The example omits account and role lines because the profile has no grounded values in config; when values are present, see [User Experience](#9-user-experience). The message must say that the call failed because the profile is not allowed yet, and that the user allows it on the system before invoking it headlessly. It must not include a bypass, an environment variable that disables the wrapper, or the path of the real AWS CLI. It shows the service and operation, not the raw argument list.
 
 ### Revoking grants
 
@@ -712,6 +712,10 @@ aws-cli-guard: reason: production-admin is denied for recognized agents
 ```
 
 The account and role shown here are illustrative. They are included only when grounded in configuration or a real verification.
+
+For a named-profile refusal (`deny` or `prompt`), after the `profile:` line and before `command:`, the wrapper may print account and role detail lines from the same credential-source snapshot as `grants.Fingerprint` (the outer profile only; upstream chain hops are not shown, and account IDs are not parsed from a role ARN). When `account_id` is set, print `account: <account_id>`. When only `sso_account_id` is set, print `account: <sso_account_id>`. When both are set, print `account: <account_id>` then `sso account: <sso_account_id>`. Role lines follow the same pattern with `role_arn` and `sso_role_name` (`role:` and `sso role:`). Omit a line when its value is empty. If fingerprinting fails, print no account, role, or identity lines and keep the policy reason. Export refusals, environment subjects, and non-profile cancellations do not print these lines.
+
+When the profile uses `credential_process`, a non-empty `credential_source`, or a non-empty `source_profile`, add one fixed line after any account and role lines: `identity: configured source only; the caller was not verified`. Plain SSO profiles that only set `sso_account_id` and `sso_role_name` do not get that line. Do not print SSO session URLs, hop profiles, or credential-process commands.
 
 A `prompt` profile with no current grant fails the same way in a terminal and in a headless run. The message says the prompt failed and that the profile has to be allowed on this system before it is invoked, including headlessly. The full example is in [Grants](#5-grants). There is no menu, no default key, and no timeout that grants access. The process does not read stdin, so a piped payload is left untouched because the real CLI is not started.
 

@@ -55,7 +55,14 @@ func TestDecideExportAllowStillProfilePolicy(t *testing.T) {
 	var stderr bytes.Buffer
 
 	permitted := gate.Decide(
-		[]string{gateProgName, "configure", "get", "region", gateProfileFlag, gateTestProfile},
+		[]string{
+			gateProgName,
+			gateConfigureCommand,
+			"get",
+			"region",
+			gateProfileFlag,
+			gateTestProfile,
+		},
 		env,
 		&stderr,
 	)

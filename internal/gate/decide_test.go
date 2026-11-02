@@ -134,7 +134,13 @@ func TestDecideExportRefused(t *testing.T) {
 	var stderr bytes.Buffer
 
 	permitted := gate.Decide(
-		[]string{gateProgName, "configure", "export-credentials", gateProfileFlag, gateTestProfile},
+		[]string{
+			gateProgName,
+			gateConfigureCommand,
+			"export-credentials",
+			gateProfileFlag,
+			gateTestProfile,
+		},
 		env,
 		&stderr,
 	)

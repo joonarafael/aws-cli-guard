@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 The MVP is complete. Phase 2 starts here:
 
-- `PR-6` showing account and role in messages, then `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
+- `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
 
 Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
@@ -132,12 +132,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-3 | Warning when the `default` profile is used | Done | MVP | `PR-1`, `FD-3` | `MV-1` |
 | PR-4 | Reading AWS config and credentials files, including custom locations | Done | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | Done | Phase 2 | `PR-4`, `GR-1`, `GR-2` | `PR-6`, `FS-5`, `GR-5`, `AD-1` |
-| PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
+| PR-6 | Showing account and role in messages | Done | Phase 2 | `PR-5` | — |
 
 - `PR-3` warns on stderr when the credential subject is the named profile `default`. The command still follows policy for `default`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
 - `PR-5` classifies credential providers and resolves `[sso-session]`, `source_profile`, `credential_source`, and role chains (with cycle detection) in `internal/awsconfig` to power `PR-6` refusal details and `PO-5` `policy explain`. It bumps `grants.json` to `version = 2` (while still supporting `version = 1` in memory) so `grants.Fingerprint` and `grants.Source` bind role chains, `credential_source`, and `sso-session` settings, as recorded in [ADR 0018](decisions/0018-grants-schema-v2.md).
-- `PR-6` uses the provider resolution from `PR-5` to include grounded account and role detail lines in refusal messages when available in config.
+- `PR-6` adds grounded account and role detail lines to named-profile refusals in `internal/gate`, using `grants.Fingerprint` after the `profile:` line. Labels follow [User Experience](DESIGN.md#9-user-experience): outer `account_id` / `sso_account_id` and `role_arn` / `sso_role_name` only; a fixed `identity:` line when `credential_process`, `credential_source`, or `source_profile` is set; no lines on fingerprint failure or for export, environment, and unresolved subjects.
 
 ### FS: File storage and recovery
 
