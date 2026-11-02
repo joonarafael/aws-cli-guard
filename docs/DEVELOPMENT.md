@@ -41,13 +41,16 @@ Do not copy the binary into `~/.local/bin` until an installer exists. Prepend th
 
 ```bash
 export PATH="$PWD/bin:$PATH"
-command -v aws    # should print .../aws-cli-guard/bin/aws
-aws --version   # should run the real AWS CLI if it appears later on PATH
+command -v aws       # should print .../aws-cli-guard/bin/aws
+aws-guard init       # creates policy and settings under your home directory
+aws --version        # runs the real CLI when policy allows (see below)
 ```
 
 The wrapper walks `PATH`, skips every AWS CLI Guard wrapper copy (including a second build earlier on `PATH`), and execs the next real `aws` it finds.
 
-Before policy runs, the wrapper checks that binary's version against the 2.9.0 floor and verified ceiling ([ADR 0002](decisions/0002-aws-cli-version-floor.md)). The check is cached per terminal session in `cli-version.json` under the cache directory (`~/.cache/aws-cli-guard/` in a normal install). A CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning with no policy. A CLI newer than the verified ceiling warns once per session and still applies policy. User-facing `aws --version` still reaches the real CLI; the wrapper's own `--version` probe does not replace that stdout.
+Every guarded command, including `aws --version`, goes through policy. Without a policy file, the wrapper cancels and asks you to run `aws-guard init`. After init, the `default` profile still needs an allow rule or a grant before the real CLI runs.
+
+Before policy runs, the wrapper checks that binary's version against the 2.9.0 floor and verified ceiling ([ADR 0002](decisions/0002-aws-cli-version-floor.md)). The check is cached per terminal session in `cli-version.json` under the cache directory (`~/.cache/aws-cli-guard/` in a normal install). A CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning with no policy. A CLI newer than the verified ceiling warns once per session and still applies policy. When policy allows the command, the real CLI's output is shown; the wrapper's own `--version` probe does not replace that stdout.
 
 A `make build` binary resolves policy, settings, grants, and cache under the user-database home directory ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). It ignores `XDG_*` and the `AWS_CLI_GUARD_*_DIR` variables. To dogfood against a scratch policy without touching your live files, build with the test-path tag:
 
@@ -56,7 +59,9 @@ CGO_ENABLED=0 go build -tags=awsguard_testpaths -o bin/aws ./cmd/aws
 CGO_ENABLED=0 go build -tags=awsguard_testpaths -o bin/aws-guard ./cmd/aws-guard
 export AWS_CLI_GUARD_CONFIG_DIR=/path/to/scratch/config
 export AWS_CLI_GUARD_STATE_DIR=/path/to/scratch/state
+export AWS_CLI_GUARD_CACHE_DIR=/path/to/scratch/cache
 export PATH="$PWD/bin:$PATH"
+aws-guard init
 ```
 
 ### When the real CLI is not on PATH
@@ -80,7 +85,7 @@ Integration tests always set `AWS_CLI_GUARD_REAL_AWS` so discovery is determinis
 - **Linux** — primary development machine; run `make check` here routinely. CI runs on `ubuntu-24.04`.
 - **macOS** — run `make check` on the laptop before merging changes that touch `internal/paths`, `internal/executor/exec_unix.go`, PATH lookup, or other platform-sensitive code.
 
-There is no Windows CI or manual Windows testing in this phase. `make lint` and `make vet` still typecheck the `//go:build !unix` stub under `GOOS=windows`.
+There is no Windows CI or manual Windows testing in this phase. `make vet` and `make lint` type-check Linux, Darwin, and Windows (`//go:build !unix` stubs) from either host. A green Ubuntu CI run still does not replace a laptop `make check` for runtime behavior on macOS.
 
 ## How integration tests work
 

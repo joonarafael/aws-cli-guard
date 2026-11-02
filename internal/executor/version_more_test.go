@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestWrapperSupportedDefaultNoVersionWarning(t *testing.T) {
@@ -105,6 +106,52 @@ func TestWrapperCLIVersionProbeUsesStderr(t *testing.T) {
 
 	if readVersionProbeCount(t, work) != 1 {
 		t.Fatal("expected version probe")
+	}
+}
+
+func TestWrapperCLIVersionReprobesWhenMtimeSecondsChange(t *testing.T) {
+	t.Parallel()
+
+	root := moduleRoot(t)
+	work := t.TempDir()
+
+	wrapper := build(t, root, filepath.Join(work, "aws"), "./cmd/aws")
+	fake := build(t, root, filepath.Join(work, "fake-aws"), "./internal/executor/testdata/fakeaws")
+	env := append(
+		versionHandoffEnv(t, work, "aws-cli/2.9.0 Python/3.11.0"),
+		"FAKE_AWS_EXIT=0",
+	)
+
+	firstMtime := time.Unix(1_700_000_000, 0)
+
+	err := os.Chtimes(fake, firstMtime, firstMtime)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = runWrapperVersionCase(t, work, wrapper, fake, env, "s3", "ls")
+	if err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+
+	if readVersionProbeCount(t, work) != 1 {
+		t.Fatalf("probe count after first = %d", readVersionProbeCount(t, work))
+	}
+
+	secondMtime := time.Unix(1_700_000_100, 0)
+
+	err = os.Chtimes(fake, secondMtime, secondMtime)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = runWrapperVersionCase(t, work, wrapper, fake, env, "s3", "ls")
+	if err != nil {
+		t.Fatalf("second run: %v", err)
+	}
+
+	if readVersionProbeCount(t, work) != 2 {
+		t.Fatalf("probe count after mtime change = %d, want 2", readVersionProbeCount(t, work))
 	}
 }
 
