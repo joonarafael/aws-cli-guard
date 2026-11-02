@@ -46,7 +46,7 @@ func runAllow(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return output.CancelStatus
 	}
 
-	if !validAllowProfile(parsed.profile) {
+	if !validProfileName(parsed.profile) {
 		output.Error(stderr, reasonProfileInvalid)
 
 		return output.CancelStatus
@@ -146,7 +146,7 @@ func parseTTLFlag(token string) (string, bool) {
 	return "", false
 }
 
-func validAllowProfile(name string) bool {
+func validProfileName(name string) bool {
 	if name == "" {
 		return false
 	}

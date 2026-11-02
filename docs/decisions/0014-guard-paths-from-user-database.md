@@ -26,7 +26,7 @@ Some users cannot be found in the local user database. With `CGO_ENABLED=0`, Go'
 
 5. **Test-only overrides.** `AWS_CLI_GUARD_CONFIG_DIR`, `AWS_CLI_GUARD_STATE_DIR`, and `AWS_CLI_GUARD_CACHE_DIR` are compiled only into builds with the `awsguard_testpaths` build tag. `make build` does not set that tag, so a production binary has no code that reads them. `make test` sets the tag, and the integration-test helper passes it when it builds the wrapper subprocess. The user-database lookup is injectable inside `internal/paths`, so unit tests can cover both the lookup and the fallback.
 
-6. **Both binaries.** `aws` and `aws-guard` use the same resolution, so `aws-guard init`, `allow`, and `recover` write where the wrapper reads.
+6. **Both binaries.** `aws` and `aws-guard` use the same resolution, so `aws-guard init`, `allow`, `revoke`, and `recover` write where the wrapper reads.
 
 7. **AWS files are unchanged.** Reading `~/.aws/config` and `~/.aws/credentials` for the grant fingerprint still follows `AWS_CONFIG_FILE`, `AWS_SHARED_CREDENTIALS_FILE`, and `HOME` ([ADR 0009](0009-aws-config-read.md)). Those paths must match what the real AWS CLI reads, and the real CLI follows the environment.
 

@@ -8,7 +8,10 @@ import (
 	"testing"
 )
 
-const progName = "aws-guard"
+const (
+	progName    = "aws-guard"
+	cliExtraArg = "extra"
+)
 
 func TestRunNoArgs(t *testing.T) {
 	t.Parallel()

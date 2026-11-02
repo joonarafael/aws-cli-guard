@@ -248,7 +248,7 @@ func TestRunRecoverExtraArgs(t *testing.T) {
 	var stderr bytes.Buffer
 
 	status := cli.Dispatch(
-		[]string{progName, recoverSubcommand, recoverPolicy, "extra"},
+		[]string{progName, recoverSubcommand, recoverPolicy, cliExtraArg},
 		nil,
 		&bytes.Buffer{},
 		&stderr,

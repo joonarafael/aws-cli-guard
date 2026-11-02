@@ -5,7 +5,8 @@
 // strictly with internal/decode. A missing file means no grants. Fingerprint
 // fills Source from AWS shared config for a profile name; Equal compares two
 // sources; Current finds an unexpired matching grant in a list. aws-guard allow
-// calls Fingerprint and Update. The aws wrapper loads grants and applies
+// calls Fingerprint and Update; aws-guard revoke calls Revoke. The aws wrapper
+// loads grants and applies
 // Fingerprint and Current through internal/gate. Recover moves a broken grants
 // file aside and writes an empty grant list. Corruption builds the corrupt-file
 // note that gate prints after output.Cancel; it does not write stderr itself.
