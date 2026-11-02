@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	fixtureCredProcFP = "UNIQUE-CRED-PROC-COMMAND-GR2-TEST"
-	fixtureRoleARN    = "arn:aws:iam::123456789012:role/Admin"
+	fixtureCredProcFP        = "UNIQUE-CRED-PROC-COMMAND-GR2-TEST"
+	fixtureRoleARN           = "arn:aws:iam::123456789012:role/Admin"
+	fixtureProfileBaseHeader = "[profile base]"
+	fixtureProfileBaseName   = "base"
+	fixtureSourceProfileBase = "source_profile = base"
 )
 
 func homeEnv(t *testing.T) []string {

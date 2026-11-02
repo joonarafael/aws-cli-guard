@@ -38,7 +38,7 @@ func TestFingerprintMissingProfileEmpty(t *testing.T) {
 		t.Fatalf("Fingerprint: %v", err)
 	}
 
-	if got != emptySource() {
+	if !got.Equal(emptySource()) {
 		t.Fatalf("source: %+v", got)
 	}
 }
@@ -53,7 +53,7 @@ func TestFingerprintMissingAWSFilesEmpty(t *testing.T) {
 		t.Fatalf("Fingerprint: %v", err)
 	}
 
-	if got != emptySource() {
+	if !got.Equal(emptySource()) {
 		t.Fatalf("source: %+v", got)
 	}
 }
@@ -114,13 +114,12 @@ func TestFingerprintContinuedRoleARNInvalid(t *testing.T) {
 func TestSourceEqual(t *testing.T) {
 	t.Parallel()
 
-	left := grants.Source{
-		AccountID:         "1",
-		RoleARN:           fixtureRoleARN,
-		SSOAccountID:      "2",
-		SSORoleName:       "Dev",
-		CredentialProcess: true,
-	}
+	left := emptySource()
+	left.AccountID = "1"
+	left.RoleARN = fixtureRoleARN
+	left.SSOAccountID = "2"
+	left.SSORoleName = "Dev"
+	left.CredentialProcess = true
 
 	right := left
 	if !left.Equal(right) {

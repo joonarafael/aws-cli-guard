@@ -353,11 +353,11 @@ The command requires a controlling terminal. The user confirms by typing the pro
 
 `approval_ttl` in the profile's policy is the default duration when `--ttl` is omitted. It does not grant access on its own.
 
-A grant record stores the profile name, the expiry, and a fingerprint of the credential source visible in the AWS config: account, role ARN, SSO account and role, and whether `credential_process` is set. The fingerprint does not include secrets or the credential-process command. If those source fields change, or if they cannot be read, the grant does not apply and the profile has to be allowed again. The stored `account_id` is the profile's `account_id` config key when present; the role ARN is stored as `role_arn` and is not parsed for an account ID. Version 1 is defined in [ADR 0011](decisions/0011-grants-schema.md). Filling and comparing fingerprints is [ADR 0012](decisions/0012-credential-source-fingerprint.md):
+A grant record stores the profile name, the expiry, and a fingerprint of the credential source visible in the AWS config: account, role ARN, SSO account and role, whether `credential_process` is set, and—for chained or SSO-session profiles—the upstream hop snapshots that bind `source_profile`, `credential_source`, and `[sso-session]` settings. The fingerprint does not include secrets or the credential-process command. If those source fields change, or if they cannot be read, the grant does not apply and the profile has to be allowed again. The stored `account_id` is the profile's `account_id` config key when present; the role ARN is stored as `role_arn` and is not parsed for an account ID. Version 1 is defined in [ADR 0011](decisions/0011-grants-schema.md). Version 1 filling is [ADR 0012](decisions/0012-credential-source-fingerprint.md). Version 2 chain and SSO-session binding is [ADR 0018](decisions/0018-grants-schema-v2.md). The binary still loads version 1 files; new writes use version 2.
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "grants": [
     {
       "profile": "production-admin",
@@ -367,7 +367,14 @@ A grant record stores the profile name, the expiry, and a fingerprint of the cre
         "role_arn": "arn:aws:iam::123456789012:role/Admin",
         "sso_account_id": "",
         "sso_role_name": "",
-        "credential_process": false
+        "credential_process": false,
+        "source_profile": "",
+        "credential_source": "",
+        "sso_session": "",
+        "sso_start_url": "",
+        "sso_region": "",
+        "external_id": "",
+        "chain": []
       }
     }
   ]

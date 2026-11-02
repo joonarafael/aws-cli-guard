@@ -32,4 +32,4 @@ MVP grants (`GR-3`, `GR-4`) need a strict, versioned grants file at `grants.json
 - `GR-3` `aws-guard allow` mutates grants through `Update`.
 - `GR-4` decides expiry and source match. `Load` returns expired grants.
 - `FS-4` `aws-guard recover grants` moves the unusable file aside and `Replace`s it with version 1 and an empty list.
-- Adding a bound on `source_profile` or role chaining is a new schema version.
+- Adding a bound on `source_profile` or role chaining is a new schema version. That binding is [ADR 0018](0018-grants-schema-v2.md).

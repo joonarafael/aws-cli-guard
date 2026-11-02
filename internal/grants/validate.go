@@ -23,7 +23,7 @@ func validateDocument(path string, doc document) (File, error) {
 	for i, item := range *doc.Grants {
 		keyPrefix := "grants." + strconv.Itoa(i)
 
-		grantOut, err := validateGrantItem(item, keyPrefix)
+		grantOut, err := validateGrantItem(item, keyPrefix, doc.Version)
 		if err != nil {
 			return File{}, stampInvalidError(err, path, doc.Version)
 		}
@@ -43,7 +43,7 @@ func validateDocument(path string, doc document) (File, error) {
 	return out, nil
 }
 
-func validateGrantItem(item grantDocument, keyPrefix string) (Grant, error) {
+func validateGrantItem(item grantDocument, keyPrefix string, fileVersion int) (Grant, error) {
 	if item.Profile == nil {
 		return Grant{}, newError(KindInvalid, "", keyPrefix+".profile", 0, 0, nil)
 	}
@@ -66,7 +66,7 @@ func validateGrantItem(item grantDocument, keyPrefix string) (Grant, error) {
 		return Grant{}, newError(KindInvalid, "", keyPrefix+".source", 0, 0, nil)
 	}
 
-	source, srcErr := validateSource(*item.Source, keyPrefix+".source")
+	source, srcErr := validateSource(*item.Source, keyPrefix+".source", fileVersion)
 	if srcErr != nil {
 		return Grant{}, srcErr
 	}
@@ -76,62 +76,6 @@ func validateGrantItem(item grantDocument, keyPrefix string) (Grant, error) {
 		Expires: expires,
 		Source:  source,
 	}, nil
-}
-
-func validateSource(src sourceDocument, keyPrefix string) (Source, error) {
-	out := Source{}
-
-	if src.AccountID == nil {
-		return Source{}, newError(KindInvalid, "", keyPrefix+".account_id", 0, 0, nil)
-	}
-
-	err := validateNoControl(*src.AccountID, keyPrefix+".account_id")
-	if err != nil {
-		return Source{}, err
-	}
-
-	out.AccountID = *src.AccountID
-
-	if src.RoleARN == nil {
-		return Source{}, newError(KindInvalid, "", keyPrefix+".role_arn", 0, 0, nil)
-	}
-
-	err = validateNoControl(*src.RoleARN, keyPrefix+".role_arn")
-	if err != nil {
-		return Source{}, err
-	}
-
-	out.RoleARN = *src.RoleARN
-
-	if src.SSOAccountID == nil {
-		return Source{}, newError(KindInvalid, "", keyPrefix+".sso_account_id", 0, 0, nil)
-	}
-
-	err = validateNoControl(*src.SSOAccountID, keyPrefix+".sso_account_id")
-	if err != nil {
-		return Source{}, err
-	}
-
-	out.SSOAccountID = *src.SSOAccountID
-
-	if src.SSORoleName == nil {
-		return Source{}, newError(KindInvalid, "", keyPrefix+".sso_role_name", 0, 0, nil)
-	}
-
-	err = validateNoControl(*src.SSORoleName, keyPrefix+".sso_role_name")
-	if err != nil {
-		return Source{}, err
-	}
-
-	out.SSORoleName = *src.SSORoleName
-
-	if src.CredentialProcess == nil {
-		return Source{}, newError(KindInvalid, "", keyPrefix+".credential_process", 0, 0, nil)
-	}
-
-	out.CredentialProcess = *src.CredentialProcess
-
-	return out, nil
 }
 
 func validateProfileName(name, key string) error {
@@ -181,14 +125,14 @@ func validateGrantList(path string, list []Grant) error {
 
 		nameErr := validateProfileName(grant.Profile, keyPrefix+".profile")
 		if nameErr != nil {
-			return stampInvalidError(nameErr, path, supportedVersion)
+			return stampInvalidError(nameErr, path, writeVersion)
 		}
 
 		if _, dup := seen[grant.Profile]; dup {
 			return stampInvalidError(
 				newError(KindInvalid, "", keyPrefix+".profile", 0, 0, nil),
 				path,
-				supportedVersion,
+				writeVersion,
 			)
 		}
 
@@ -198,38 +142,14 @@ func validateGrantList(path string, list []Grant) error {
 			return stampInvalidError(
 				newError(KindInvalid, "", keyPrefix+".expires", 0, 0, nil),
 				path,
-				supportedVersion,
+				writeVersion,
 			)
 		}
 
 		srcErr := validateSourceFields(grant.Source, keyPrefix+".source")
 		if srcErr != nil {
-			return stampInvalidError(srcErr, path, supportedVersion)
+			return stampInvalidError(srcErr, path, writeVersion)
 		}
-	}
-
-	return nil
-}
-
-func validateSourceFields(src Source, keyPrefix string) error {
-	err := validateNoControl(src.AccountID, keyPrefix+".account_id")
-	if err != nil {
-		return err
-	}
-
-	err = validateNoControl(src.RoleARN, keyPrefix+".role_arn")
-	if err != nil {
-		return err
-	}
-
-	err = validateNoControl(src.SSOAccountID, keyPrefix+".sso_account_id")
-	if err != nil {
-		return err
-	}
-
-	err = validateNoControl(src.SSORoleName, keyPrefix+".sso_role_name")
-	if err != nil {
-		return err
 	}
 
 	return nil

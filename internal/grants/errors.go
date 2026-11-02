@@ -24,6 +24,7 @@ const (
 	KindDecode
 	KindInvalid
 	KindWrite
+	KindResolve
 )
 
 // Error is a secret-safe grants failure.
@@ -69,6 +70,8 @@ func (e *Error) Error() string {
 		builder.WriteString("aws-cli-guard: grants: invalid value")
 	case KindWrite:
 		builder.WriteString("aws-cli-guard: grants: write failed")
+	case KindResolve:
+		builder.WriteString("aws-cli-guard: grants: credential source could not be resolved")
 	default:
 		builder.WriteString("aws-cli-guard: grants: error")
 	}

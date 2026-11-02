@@ -33,8 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 The MVP is complete. Phase 2 starts here:
 
-- `PR-5` detecting credential providers beyond the environment-key case and bumping `grants.json` to version 2, followed by `PR-6` showing account and role in messages.
-- `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
+- `PR-6` showing account and role in messages, then `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
 
 Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
@@ -126,12 +125,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-2 | AWS CLI global option parsing | Done | MVP | — | `PR-1`, `PO-4`, `SS-1` |
 | PR-3 | Warning when the `default` profile is used | Done | MVP | `PR-1`, `FD-3` | `MV-1` |
 | PR-4 | Reading AWS config and credentials files, including custom locations | Done | MVP | — | `PR-5`, `GR-2` |
-| PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | To do | Phase 2 | `PR-4`, `GR-1`, `GR-2` | `PR-6`, `FS-5`, `GR-5`, `AD-1` |
+| PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | Done | Phase 2 | `PR-4`, `GR-1`, `GR-2` | `PR-6`, `FS-5`, `GR-5`, `AD-1` |
 | PR-6 | Showing account and role in messages | To do | Phase 2 | `PR-5` | — |
 
 - `PR-3` warns on stderr when the credential subject is the named profile `default`. The command still follows policy for `default`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
-- `PR-5` classifies credential providers and resolves `[sso-session]`, `source_profile`, `credential_source`, and role chains (with cycle detection) in `internal/awsconfig` to power `PR-6` refusal details and `PO-5` `policy explain`. It bumps `grants.json` to `version = 2` (while still supporting `version = 1` in memory) so `grants.Fingerprint` and `grants.Source` bind role chains, `credential_source`, and `sso-session` settings, as anticipated in [ADR 0011](decisions/0011-grants-schema.md) and [ADR 0012](decisions/0012-credential-source-fingerprint.md).
+- `PR-5` classifies credential providers and resolves `[sso-session]`, `source_profile`, `credential_source`, and role chains (with cycle detection) in `internal/awsconfig` to power `PR-6` refusal details and `PO-5` `policy explain`. It bumps `grants.json` to `version = 2` (while still supporting `version = 1` in memory) so `grants.Fingerprint` and `grants.Source` bind role chains, `credential_source`, and `sso-session` settings, as recorded in [ADR 0018](decisions/0018-grants-schema-v2.md).
 - `PR-6` uses the provider resolution from `PR-5` to include grounded account and role detail lines in refusal messages when available in config.
 
 ### FS: File storage and recovery

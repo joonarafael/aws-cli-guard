@@ -31,6 +31,13 @@ func grantTestSource() grants.Source {
 		SSOAccountID:      "",
 		SSORoleName:       "",
 		CredentialProcess: false,
+		SourceProfile:     "",
+		CredentialSource:  "",
+		SSOSession:        "",
+		SSOStartURL:       "",
+		SSORegion:         "",
+		ExternalID:        "",
+		Chain:             nil,
 	}
 }
 
@@ -41,6 +48,13 @@ func grantTestMismatchSource() grants.Source {
 		SSOAccountID:      "",
 		SSORoleName:       "",
 		CredentialProcess: false,
+		SourceProfile:     "",
+		CredentialSource:  "",
+		SSOSession:        "",
+		SSOStartURL:       "",
+		SSORegion:         "",
+		ExternalID:        "",
+		Chain:             nil,
 	}
 }
 
@@ -51,6 +65,13 @@ func emptyGrantSource() grants.Source {
 		SSOAccountID:      "",
 		SSORoleName:       "",
 		CredentialProcess: false,
+		SourceProfile:     "",
+		CredentialSource:  "",
+		SSOSession:        "",
+		SSOStartURL:       "",
+		SSORegion:         "",
+		ExternalID:        "",
+		Chain:             nil,
 	}
 }
 
