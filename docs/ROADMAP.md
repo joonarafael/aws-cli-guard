@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 The MVP is complete. Phase 2 starts here:
 
-- `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
+- `PO-5` inspect, explain, and validate policy.
 
 Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
@@ -163,7 +163,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PO-3 | Policy evaluation engine | Done | MVP | `PO-1`, `PR-1` | `PO-4`, `PO-5`, `PO-6`, `GR-4`, `AG-3` |
 | PO-4 | Rule for commands that print access keys | Done | MVP | `PR-2`, `PO-3` | `MV-1` |
 | PO-5 | Inspect, explain, and validate policy | To do | Phase 2 | `PO-3`, `PO-6` | `AD-4` |
-| PO-6 | Policy key for environment credentials | To do | Phase 2 | `PO-1`, `PO-3`, `PR-1` | `PO-5`, `FS-5` |
+| PO-6 | Policy key for environment credentials | Done | Phase 2 | `PO-1`, `PO-3`, `PR-1` | `PO-5`, `FS-5` |
 
 - Configuration validation shows up twice in the design. Validating on every load is part of `PO-1`. The standalone validate command is `PO-5`, which the design places in Phase 2.
 - `PO-2` adds `aws-guard init` (default `config.toml` via `policy.DefaultFileBody`, optional `settings.toml` without loading it), and the wrapper cancels when the policy file is absent (`policy.Present` in `internal/gate`).

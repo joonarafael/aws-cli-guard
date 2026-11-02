@@ -134,7 +134,7 @@ func TestCorruptionUnsupportedVersion(t *testing.T) {
 		path:       "",
 		hasVersion: true,
 		version:    99,
-		supported:  "1",
+		supported:  "1, 2",
 		omitSecret: false,
 	})
 }
@@ -182,7 +182,7 @@ action = "`+fixtureSecret+`"
 		path:       path,
 		hasVersion: true,
 		version:    1,
-		supported:  "1",
+		supported:  "1, 2",
 		omitSecret: true,
 	})
 }

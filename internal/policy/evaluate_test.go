@@ -30,22 +30,26 @@ func profileAction(action policy.Action) policy.Profile {
 
 func policyWithDefault(action policy.Action) policy.Policy {
 	return policy.Policy{
-		Path:             "",
-		Version:          0,
-		Mode:             0,
-		DefaultAction:    action,
-		CredentialExport: policy.ActionPrompt,
-		Profiles:         map[string]policy.Profile{},
+		Path:                 "",
+		Version:              0,
+		Mode:                 0,
+		DefaultAction:        action,
+		EnvironmentAction:    policy.ActionPrompt,
+		HasEnvironmentAction: false,
+		CredentialExport:     policy.ActionPrompt,
+		Profiles:             map[string]policy.Profile{},
 	}
 }
 
 func policyWithProfiles(profiles map[string]policy.Profile) policy.Policy {
 	return policy.Policy{
-		Path:             "",
-		Version:          0,
-		Mode:             0,
-		DefaultAction:    policy.ActionPrompt,
-		CredentialExport: policy.ActionPrompt,
-		Profiles:         profiles,
+		Path:                 "",
+		Version:              0,
+		Mode:                 0,
+		DefaultAction:        policy.ActionPrompt,
+		EnvironmentAction:    policy.ActionPrompt,
+		HasEnvironmentAction: false,
+		CredentialExport:     policy.ActionPrompt,
+		Profiles:             profiles,
 	}
 }

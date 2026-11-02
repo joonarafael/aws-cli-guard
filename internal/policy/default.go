@@ -9,10 +9,13 @@ import (
 	"path/filepath"
 )
 
-// DefaultFileBody is the init and recover default for config.toml (schema version 1).
-const DefaultFileBody = `version = 1
+// DefaultFileBody is the init and recover default for config.toml (schema version 2).
+const DefaultFileBody = `version = 2
 
 [defaults]
+action = "prompt"
+
+[environment]
 action = "prompt"
 
 [credential_export]
