@@ -18,9 +18,9 @@ func cliVersionKey(realPath, sessionID string) (cache.CLIVersionKey, error) {
 	return cache.CLIVersionKey{
 		Session:   sessionID,
 		Path:      realPath,
-		Device:    stat.Dev,
+		Device:    statDevice(&stat),
 		Inode:     stat.Ino,
 		Size:      stat.Size,
-		MtimeNsec: stat.Mtim.Nsec,
+		MtimeNsec: statMtimeNsec(&stat),
 	}, nil
 }

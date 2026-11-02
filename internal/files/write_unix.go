@@ -123,34 +123,27 @@ func openPartialExclusive(partial string) (int, error) {
 }
 
 func writeSyncClose(partialFD int, partial string, data []byte) error {
+	file := os.NewFile(uintptr(partialFD), partial)
+
 	if len(data) > 0 {
-		err := writeAll(partialFD, data)
+		_, err := file.Write(data)
 		if err != nil {
+			_ = file.Close()
+
 			return fmt.Errorf("aws-cli-guard: write partial %q: %w", partial, err)
 		}
 	}
 
-	err := syscall.Fsync(partialFD)
+	err := file.Sync()
 	if err != nil {
+		_ = file.Close()
+
 		return fmt.Errorf("aws-cli-guard: sync partial %q: %w", partial, err)
 	}
 
-	err = syscall.Close(partialFD)
+	err = file.Close()
 	if err != nil {
 		return fmt.Errorf("aws-cli-guard: close partial %q: %w", partial, err)
-	}
-
-	return nil
-}
-
-func writeAll(partialFD int, data []byte) error {
-	for len(data) > 0 {
-		count, err := syscall.Write(partialFD, data)
-		if err != nil {
-			return fmt.Errorf("syscall write: %w", err)
-		}
-
-		data = data[count:]
 	}
 
 	return nil

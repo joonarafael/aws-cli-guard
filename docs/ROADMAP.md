@@ -58,7 +58,7 @@ After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant o
 | Milestone | Epics |
 | --- | --- |
 | MVP (Phase 1) | `FD-1`, `FD-2`, `FD-3`, `FD-4`, `PR-1`, `PR-2`, `PR-3`, `PR-4`, `FS-1`, `FS-2`, `FS-3`, `FS-4`, `PO-1`, `PO-2`, `PO-3`, `PO-4`, `GR-1`, `GR-2`, `GR-3`, `GR-4`, `MV-1`, `MV-2` |
-| Phase 2: Better profile awareness | `FD-5`, `FD-6`, `FD-7`, `PR-5`, `PR-6`, `FS-6`, `PO-5`, `PO-6`, `GR-7`, `SS-1` |
+| Phase 2: Better profile awareness | `FD-5`, `FD-6`, `FD-7`, `FD-8`, `PR-5`, `PR-6`, `FS-6`, `PO-5`, `PO-6`, `GR-7`, `SS-1` |
 | Phase 3: Grant operations | `GR-5`, `GR-6` |
 | Phase 4: AI-agent awareness | `FS-5`, `AG-1`, `AG-2`, `AG-3`, `CI-1`, `AG-4`, `AG-5` |
 | Phase 5: Installation and portability | `IN-1`, `IN-2`, `IN-3` |
@@ -97,6 +97,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FD-5 | Guard-owned paths from the user database | Done | Phase 2 | `FD-2` | — |
 | FD-6 | Skip every wrapper copy during real AWS CLI discovery | Done | Phase 2 | `FD-1` | `FD-7` |
 | FD-7 | AWS CLI version check and session-cached warning | Done | Phase 2 | `FD-1`, `FD-6`, `FS-1`, `FS-2` | — |
+| FD-8 | macOS build fix and cross-OS type-checks | Done | Phase 2 | `FD-7` | — |
 
 - `FD-5` implements [ADR 0014](decisions/0014-guard-paths-from-user-database.md) in `internal/paths`:
   - The home directory comes from `os/user.Current()`. `HOME` is the fallback when the lookup fails or returns an empty or non-absolute directory. The fallback is supported, prints no warning, and does not cancel.
@@ -116,6 +117,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
   - Older than `2.9.0`, or an unreadable version, logs `aws-cli-guard: warning:` and hands off with no policy. Newer than the ceiling logs a warning and still runs policy.
   - Per-session results live in `cli-version.json` under the cache directory, keyed by `getsid(0)` (parent-PID fallback) and the binary's path, device, inode, size, and mtime. A corrupt cache file is not rewritten; the wrapper warns once and continues.
   - `internal/executor/testdata/fakeaws` reports `aws-cli/2.9.0` on `--version` by default; tests override with `FAKE_AWS_VERSION` and related variables.
+- `FD-8` fixes Darwin compilation and tightens cross-platform checks after `FD-7`:
+  - `internal/executor/stat_linux.go` and `stat_darwin.go` read device and full modification time for the version-cache key; `mtime_nsec` in `cli-version.json` stores `Timespec.Nano()`.
+  - `internal/files/write_unix.go` syncs partial files through `os.File.Sync` so macOS uses `F_FULLFSYNC` where supported.
+  - `make vet` and `make lint` type-check `GOOS=linux` and `GOOS=darwin` on every host, alongside the existing Windows pass.
+  - [DEVELOPMENT.md](DEVELOPMENT.md) documents init before dogfood, policy on `aws --version`, scratch cache dir, and platform checks.
 
 ### PR: Profile resolution
 
@@ -211,7 +217,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | CI-1 | macOS runner for tests and the native build | To do | Phase 4 | — | `AG-4` |
 
-- Leave `CI-1` until `AG-4`. Ubuntu already runs the shared `unix` tests, and a `CGO_ENABLED=0` Darwin binary cross-compiles there. [ADR 0001](decisions/0001-linux-and-macos-first.md) covers platform-sensitive edits with a laptop `make check`. A standing `macos-15` job would add queue time on every pull request for that same source. Parent-process detection is the first planned code a green Ubuntu run will not compile: macOS has no `/proc`. Start `CI-1` as the first step of `AG-4`. If `OP-1` needs a Darwin-only session or terminal implementation sooner, start `CI-1` with that work instead.
+- Leave `CI-1` until `AG-4`. Ubuntu already runs the shared `unix` tests, and `make vet` / `make lint` type-check Darwin sources there via `GOOS=darwin`. [ADR 0001](decisions/0001-linux-and-macos-first.md) covers platform-sensitive edits with a laptop `make check`. A standing `macos-15` job would add queue time on every pull request for that same source. Parent-process detection is the first planned code a green Ubuntu run will not compile: macOS has no `/proc`. Start `CI-1` as the first step of `AG-4`. If `OP-1` needs a Darwin-only session or terminal implementation sooner, start `CI-1` with that work instead.
 - The macOS job runs `make test` and `make build` on the standard `macos-15` runner. Gitleaks, actionlint, ShellCheck, and govulncheck stay on `ubuntu-24.04`. That runner is free while this repository is public.
 
 ### AG: Agent awareness
