@@ -33,7 +33,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 The MVP is complete. Phase 2 starts here:
 
-- `FS-6` loading and validating `settings.toml`, plus `aws-guard recover settings` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
 - `PR-5` detecting credential providers beyond the environment-key case and bumping `grants.json` to version 2, followed by `PR-6` showing account and role in messages.
 - `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
 
@@ -144,7 +143,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FS-3 | Diagnosis of corrupted files | Done | MVP | `FS-2`, `FD-3` | `FS-4`, `FS-6`, `MV-1` |
 | FS-4 | `aws-guard recover` | Done | MVP | `FS-1`, `FS-3`, `FD-4` | `FS-6` |
 | FS-5 | Migrate command for older file versions | To do | Phase 4 | `FS-1`, `FS-2`, `PR-5`, `PO-6`, `AG-3` | `IN-3` |
-| FS-6 | Preference settings file | To do | Phase 2 | `FS-1`, `FS-2`, `FS-3`, `FS-4` | `AD-1`, `OP-4` |
+| FS-6 | Preference settings file | Done | Phase 2 | `FS-1`, `FS-2`, `FS-3`, `FS-4` | `AD-1`, `OP-4` |
 
 - `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md), pulled into Phase 2 because `aws-guard init` (`PO-2`) already creates `settings.toml` on disk. Identity verification and the auto-update answer live there. `FS-6` adds `settings.Load`, strict validation (rejecting `verify = true` until `AD-1` enforces it), corrupt-file diagnosis on the `aws` path (`settings.Corruption` and `diagnose.Write` in `internal/gate`), and `aws-guard recover settings`.
 - `FS-5` is placed in Phase 4 so `aws-guard migrate` has real schema transitions to rewrite after `PR-5` (`grants.json` v2), `PO-6` (`config.toml` v2), and `AG-3` (`[agents]` rules) land.

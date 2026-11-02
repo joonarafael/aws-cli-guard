@@ -21,7 +21,7 @@ verify = false
 func Create(env []string) (bool, error) {
 	path, err := paths.SettingsFile(env)
 	if err != nil {
-		return false, mapPathError(err)
+		return false, mapCreatePathError(err)
 	}
 
 	err = files.MkdirPrivate(filepath.Dir(path))
@@ -48,19 +48,19 @@ func Create(env []string) (bool, error) {
 
 func refuseNonRegular(path string, info os.FileInfo) error {
 	if info.Mode()&os.ModeSymlink != 0 {
-		return newError(KindWrite, path, files.ErrSymlink)
+		return newError(KindWrite, path, "", 0, 0, files.ErrSymlink)
 	}
 
 	if !info.Mode().IsRegular() {
-		return newError(KindWrite, path, files.ErrNotRegular)
+		return newError(KindWrite, path, "", 0, 0, files.ErrNotRegular)
 	}
 
 	return nil
 }
 
-func mapPathError(err error) error {
+func mapCreatePathError(err error) error {
 	if errors.Is(err, paths.ErrHomeUnset) {
-		return newError(KindPath, "", err)
+		return newError(KindPath, "", "", 0, 0, err)
 	}
 
 	return fmt.Errorf("aws-cli-guard: settings: resolve config path: %w", err)
@@ -68,8 +68,8 @@ func mapPathError(err error) error {
 
 func mapCreateError(path string, err error) error {
 	if errors.Is(err, files.ErrSymlink) || errors.Is(err, files.ErrNotRegular) {
-		return newError(KindWrite, path, err)
+		return newError(KindWrite, path, "", 0, 0, err)
 	}
 
-	return newError(KindWrite, path, fmt.Errorf("aws-cli-guard: settings: %w", err))
+	return newError(KindWrite, path, "", 0, 0, fmt.Errorf("aws-cli-guard: settings: %w", err))
 }

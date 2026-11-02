@@ -29,3 +29,11 @@ func ClassCache() Class {
 		Recover: "aws-guard recover cache",
 	}
 }
+
+// ClassSettings returns the preferences file at settings.toml.
+func ClassSettings() Class {
+	return Class{
+		Name:    "settings",
+		Recover: "aws-guard recover settings",
+	}
+}
