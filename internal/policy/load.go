@@ -10,9 +10,13 @@ import (
 )
 
 const (
-	maxFileSize      = 1 << 20
-	supportedVersion = 1
+	maxFileSize  = 1 << 20
+	writeVersion = 2
 )
+
+func supportedPolicyVersions() []int {
+	return []int{1, writeVersion}
+}
 
 // Load reads and validates the user policy file from env.
 func Load(env []string) (Policy, error) {
@@ -32,7 +36,7 @@ func Load(env []string) (Policy, error) {
 
 	var doc document
 
-	decodeErr := decode.Decode(decode.TOML, data, &doc, []int{supportedVersion})
+	decodeErr := decode.Decode(decode.TOML, data, &doc, supportedPolicyVersions())
 	if decodeErr != nil {
 		return Policy{}, mapDecodeError(path, decodeErr)
 	}
@@ -106,7 +110,8 @@ func stampInvalidError(err error, path string, version int) error {
 
 	polErr.Version = version
 	polErr.HasVersion = true
-	polErr.Supported = []int{supportedVersion}
+
+	polErr.Supported = append([]int(nil), supportedPolicyVersions()...)
 
 	return polErr
 }

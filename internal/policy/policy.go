@@ -19,12 +19,14 @@ const (
 
 // Policy is a loaded, validated user policy file.
 type Policy struct {
-	Path             string
-	Version          int
-	Mode             os.FileMode
-	DefaultAction    Action
-	CredentialExport Action
-	Profiles         map[string]Profile
+	Path                 string
+	Version              int
+	Mode                 os.FileMode
+	DefaultAction        Action
+	EnvironmentAction    Action
+	HasEnvironmentAction bool
+	CredentialExport     Action
+	Profiles             map[string]Profile
 }
 
 // Profile holds profile-specific policy settings.

@@ -182,7 +182,7 @@ The exact precedence between global and profile-specific rules should be documen
 
 ### Example configuration
 
-User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). The block below is illustrative; `[agents]` is not part of version 1 and is rejected until a later schema version enforces it:
+User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). Version 2 adds optional `[environment]` for static environment credentials ([ADR 0019](decisions/0019-policy-schema-v2.md)). The block below is illustrative; `[agents]` is not part of version 1 and is rejected until a later schema version enforces it:
 
 ```toml
 version = 1
@@ -493,7 +493,7 @@ The credential subject is one of:
 - Another ambient source the wrapper recognizes, such as container credentials or instance metadata.
 - Unresolved, when a credential source may be in use and the wrapper cannot classify it.
 
-A grant or an allow for one subject does not cover another. The wrapper does not guess that an unresolved source is `default` or the profile named on the command line. An unresolved subject uses the default action, unless the user has set a policy for that subject. Environment credentials are that kind of subject: they can be named in policy, and they are not an entry under `profiles`.
+A grant or an allow for one subject does not cover another. The wrapper does not guess that an unresolved source is `default` or the profile named on the command line. An unresolved subject uses the default action, unless the user has set a policy for that subject. Environment credentials are that kind of subject: they can be named in policy, and they are not an entry under `profiles`. In schema version 2, the optional `[environment]` table sets the action for `subject.Environment` only. When that table is omitted, environment credentials use `[defaults]`, as in version 1. A grant still cannot authorize environment credentials.
 
 The wrapper must never print secret access keys, session tokens, or passwords.
 

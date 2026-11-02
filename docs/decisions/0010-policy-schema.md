@@ -36,3 +36,4 @@ The design leaves `approval_ttl` on profiles for `aws-guard allow` defaults. Tha
 - `PO-3` evaluates using exported `Policy`, `Profile`, and `Action` types.
 - Agent policy requires a new schema version that defines `[agents]` and enforcement in the binary. The switches in that version are [ADR 0016](0016-agent-detection-switches.md). The initial products are [ADR 0015](0015-initial-agent-integrations.md).
 - The illustrative example in [DESIGN.md](../DESIGN.md) remains documentation; version 1 rejects `[agents]`.
+- Environment credentials outside `[profiles]` are [ADR 0019](0019-policy-schema-v2.md) (`version = 2`, optional `[environment]`).

@@ -12,6 +12,8 @@ const (
 	BasisDefault
 	// BasisCredentialExport is [credential_export] action.
 	BasisCredentialExport
+	// BasisEnvironment is [environment] action for subject.Environment.
+	BasisEnvironment
 )
 
 // Decision is the profile-policy outcome for one credential subject.
@@ -26,11 +28,29 @@ func Evaluate(pol Policy, subj subject.Subject) Decision {
 	switch subj.Kind {
 	case subject.NamedProfile:
 		return evaluateNamedProfile(pol, subj.Name)
-	case subject.Environment, subject.Unresolved:
+	case subject.Environment:
+		return evaluateEnvironment(pol)
+	case subject.Unresolved:
 		return decisionFromDefault(pol.DefaultAction)
 	default:
 		return Decision{Action: ActionDeny, Basis: Basis(0)}
 	}
+}
+
+func evaluateEnvironment(pol Policy) Decision {
+	if pol.HasEnvironmentAction {
+		return decisionFromEnvironment(pol.EnvironmentAction)
+	}
+
+	return decisionFromDefault(pol.DefaultAction)
+}
+
+func decisionFromEnvironment(action Action) Decision {
+	if knownAction(action) {
+		return Decision{Action: action, Basis: BasisEnvironment}
+	}
+
+	return Decision{Action: ActionDeny, Basis: BasisEnvironment}
 }
 
 func evaluateNamedProfile(pol Policy, name string) Decision {

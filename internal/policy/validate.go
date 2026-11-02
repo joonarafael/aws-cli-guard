@@ -7,12 +7,14 @@ import (
 
 func validatePolicy(path string, doc document) (Policy, error) {
 	out := Policy{
-		Path:             path,
-		Version:          doc.Version,
-		Mode:             0,
-		DefaultAction:    ActionPrompt,
-		CredentialExport: ActionPrompt,
-		Profiles:         map[string]Profile{},
+		Path:                 path,
+		Version:              doc.Version,
+		Mode:                 0,
+		DefaultAction:        ActionPrompt,
+		EnvironmentAction:    ActionPrompt,
+		HasEnvironmentAction: false,
+		CredentialExport:     ActionPrompt,
+		Profiles:             map[string]Profile{},
 	}
 
 	defaultAction, err := resolveDefaults(doc.Defaults)
@@ -28,6 +30,11 @@ func validatePolicy(path string, doc document) (Policy, error) {
 	}
 
 	out.CredentialExport = exportAction
+
+	envErr := resolveEnvironment(doc.Version, doc.Environment, &out)
+	if envErr != nil {
+		return Policy{}, envErr
+	}
 
 	for name, prof := range doc.Profiles {
 		keyPrefix := "profiles." + name
@@ -70,6 +77,30 @@ func resolveCredentialExport(sec *credentialExportDocument) (Action, error) {
 	}
 
 	return parseAction(*sec.Action, "credential_export.action")
+}
+
+func resolveEnvironment(fileVersion int, sec *environmentDocument, out *Policy) error {
+	if sec == nil {
+		return nil
+	}
+
+	if fileVersion == 1 {
+		return newError(KindInvalid, "", "environment", 0, 0, nil)
+	}
+
+	if sec.Action == nil {
+		return newError(KindInvalid, "", "environment.action", 0, 0, nil)
+	}
+
+	action, err := parseAction(*sec.Action, "environment.action")
+	if err != nil {
+		return err
+	}
+
+	out.EnvironmentAction = action
+	out.HasEnvironmentAction = true
+
+	return nil
 }
 
 func validateProfile(prof profileDocument, keyPrefix string) (Profile, error) {

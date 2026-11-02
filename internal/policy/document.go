@@ -3,6 +3,7 @@ package policy
 type document struct {
 	Version          int                        `toml:"version"`
 	Defaults         *defaultsDocument          `toml:"defaults"`
+	Environment      *environmentDocument       `toml:"environment"`
 	Profiles         map[string]profileDocument `toml:"profiles"`
 	CredentialExport *credentialExportDocument  `toml:"credential_export"`
 }
@@ -17,5 +18,9 @@ type profileDocument struct {
 }
 
 type credentialExportDocument struct {
+	Action *string `toml:"action"`
+}
+
+type environmentDocument struct {
 	Action *string `toml:"action"`
 }
