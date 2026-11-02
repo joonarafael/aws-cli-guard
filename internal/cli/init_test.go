@@ -138,7 +138,12 @@ func TestRunInitExtraArgsUsage(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand, "extra"}, env, &bytes.Buffer{}, &stderr)
+	status := cli.Run(
+		[]string{progName, initSubcommand, cliExtraArg},
+		env,
+		&bytes.Buffer{},
+		&stderr,
+	)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d", status)
 	}

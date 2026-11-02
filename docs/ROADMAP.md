@@ -34,7 +34,6 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 The MVP is complete. Phase 2 starts here:
 
 - `FS-6` loading and validating `settings.toml`, plus `aws-guard recover settings` ([ADR 0006](decisions/0006-identity-verification-off-by-default.md)).
-- `GR-7` revoking grants (`aws-guard revoke <profile>` and `aws-guard revoke --all`).
 - `PR-5` detecting credential providers beyond the environment-key case and bumping `grants.json` to version 2, followed by `PR-6` showing account and role in messages.
 - `PO-6` adding a dedicated policy key for environment credentials, followed by `PO-5` inspect, explain, and validate policy.
 
@@ -178,7 +177,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | Done | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2`, `PR-5` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
-| GR-7 | `aws-guard revoke` | To do | Phase 2 | `GR-1`, `FD-4` | — |
+| GR-7 | `aws-guard revoke` | Done | Phase 2 | `GR-1`, `FD-4` | — |
 
 - `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper loads grants on every guarded invocation.
 - `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). `GR-3` `aws-guard allow` calls `Fingerprint` and `Update`.
