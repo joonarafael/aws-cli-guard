@@ -18,6 +18,7 @@ const (
 	gateSSOCommand          = "sso"
 	gateLoginOperation      = "login"
 	gateLogoutOperation     = "logout"
+	gateConfigureCommand    = "configure"
 )
 
 func gateEnv(t *testing.T) []string {
@@ -118,6 +119,39 @@ func policyPathFromEnv(t *testing.T, env []string) string {
 	t.Helper()
 
 	return filepath.Join(configDirFromEnv(t, env), "config.toml")
+}
+
+func awsConfigPathFromEnv(t *testing.T, env []string) string {
+	t.Helper()
+
+	return pathFromEnv(t, env, "AWS_CONFIG_FILE=")
+}
+
+func pathFromEnv(t *testing.T, env []string, prefix string) string {
+	t.Helper()
+
+	for _, entry := range env {
+		if after, ok := strings.CutPrefix(entry, prefix); ok {
+			return after
+		}
+	}
+
+	t.Fatalf("%s missing from env", prefix)
+
+	return ""
+}
+
+func writeGateAWSConfig(t *testing.T, env []string, configBody string) {
+	t.Helper()
+
+	configPath := awsConfigPathFromEnv(t, env)
+
+	if configBody != "" {
+		err := os.WriteFile(configPath, []byte(configBody), 0o600)
+		if err != nil {
+			t.Fatalf("WriteFile config: %v", err)
+		}
+	}
 }
 
 func allowPolicyBody(profile string) string {

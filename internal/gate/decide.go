@@ -80,7 +80,7 @@ func Decide(args []string, env []string, stderr io.Writer) bool {
 
 	decision := policy.Evaluate(pol, subj)
 	prof := pol.Profiles[subj.Name]
-	writeProfileRefusal(stderr, subj, inv, decision, prof)
+	writeProfileRefusal(stderr, env, subj, inv, decision, prof)
 
 	return false
 }

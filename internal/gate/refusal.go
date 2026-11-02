@@ -23,6 +23,7 @@ const (
 
 func writeProfileRefusal(
 	stderr io.Writer,
+	env []string,
 	subj subject.Subject,
 	inv invocation.Invocation,
 	decision policy.Decision,
@@ -32,6 +33,7 @@ func writeProfileRefusal(
 
 	if subj.Kind == subject.NamedProfile && subj.Name != "" {
 		output.Detail(stderr, "profile: "+subj.Name)
+		writeProfileIdentityDetails(stderr, env, subj)
 	}
 
 	writeCommandDetail(stderr, inv)
