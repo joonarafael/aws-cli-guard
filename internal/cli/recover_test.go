@@ -17,6 +17,7 @@ const (
 	recoverSubcommand = "recover"
 	recoverPolicy     = "policy"
 	recoverGrants     = "grants"
+	recoverSettings   = "settings"
 	recoverCache      = "cache"
 )
 
@@ -227,7 +228,7 @@ func TestRunRecoverUsageNoEcho(t *testing.T) {
 	var stderr bytes.Buffer
 
 	status := cli.Dispatch(
-		[]string{progName, recoverSubcommand, "settings"},
+		[]string{progName, recoverSubcommand, "bogus"},
 		nil,
 		&bytes.Buffer{},
 		&stderr,
@@ -237,7 +238,7 @@ func TestRunRecoverUsageNoEcho(t *testing.T) {
 		t.Fatalf("status = %d", status)
 	}
 
-	if strings.Contains(stderr.String(), "settings") {
+	if strings.Contains(stderr.String(), "bogus") {
 		t.Fatalf("stderr must not echo argv: %q", stderr.String())
 	}
 }

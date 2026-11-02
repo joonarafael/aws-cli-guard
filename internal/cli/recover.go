@@ -6,6 +6,7 @@ import (
 	"aws-cli-guard/internal/output"
 	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/policy"
+	"aws-cli-guard/internal/settings"
 	"errors"
 	"io"
 	"time"
@@ -15,18 +16,21 @@ const (
 	recoverCommand   = "recover"
 	recoverArgsExact = 3
 
-	recoverTargetPolicy = "policy"
-	recoverTargetGrants = "grants"
-	recoverTargetCache  = "cache"
+	recoverTargetPolicy   = "policy"
+	recoverTargetGrants   = "grants"
+	recoverTargetSettings = "settings"
+	recoverTargetCache    = "cache"
 
-	reasonRecoverUsage       = "usage: aws-guard recover policy|grants|cache"
-	reasonRecoverPolicyMiss  = "the policy file does not exist"
-	reasonRecoverGrantsMiss  = "the grants file does not exist"
-	reasonRecoverPath        = "the file path could not be resolved"
-	reasonRecoverConfirm     = "recovery was not confirmed"
-	reasonRecoverPolicyWrite = "the policy file could not be written"
-	reasonRecoverGrantsWrite = "the grants file could not be written"
-	reasonRecoverCacheWrite  = "the cache could not be written"
+	reasonRecoverUsage         = "usage: aws-guard recover policy|grants|settings|cache"
+	reasonRecoverPolicyMiss    = "the policy file does not exist"
+	reasonRecoverGrantsMiss    = "the grants file does not exist"
+	reasonRecoverSettingsMiss  = "the settings file does not exist"
+	reasonRecoverPath          = "the file path could not be resolved"
+	reasonRecoverConfirm       = "recovery was not confirmed"
+	reasonRecoverPolicyWrite   = "the policy file could not be written"
+	reasonRecoverGrantsWrite   = "the grants file could not be written"
+	reasonRecoverSettingsWrite = "the settings file could not be written"
+	reasonRecoverCacheWrite    = "the cache could not be written"
 )
 
 type confirmFunc func(phrase, prompt string) error
@@ -45,6 +49,8 @@ func runRecover(args []string, env []string, stdout, stderr io.Writer, confirm c
 		return recoverPolicy(env, stdout, stderr, confirm)
 	case recoverTargetGrants:
 		return recoverGrants(env, stdout, stderr, confirm)
+	case recoverTargetSettings:
+		return recoverSettings(env, stdout, stderr, confirm)
 	case recoverTargetCache:
 		return recoverCache(env, stdout, stderr, confirm)
 	default:
@@ -121,6 +127,41 @@ func recoverGrants(env []string, stdout, stderr io.Writer, confirm confirmFunc) 
 	return 0
 }
 
+func recoverSettings(env []string, stdout, stderr io.Writer, confirm confirmFunc) int {
+	err := settings.Present(env)
+	if err != nil {
+		output.Error(stderr, recoverSettingsPresentReason(err))
+
+		return output.CancelStatus
+	}
+
+	err = confirm(
+		recoverTargetSettings,
+		"type settings to replace the settings file with the default",
+	)
+	if err != nil {
+		output.Error(stderr, reasonRecoverConfirm)
+
+		return output.CancelStatus
+	}
+
+	aside, err := settings.Recover(env, time.Now())
+	if err != nil {
+		if aside != "" {
+			output.Detail(stdout, "aside: "+aside)
+		}
+
+		output.Error(stderr, reasonRecoverSettingsWrite)
+
+		return output.CancelStatus
+	}
+
+	output.Detail(stdout, "aside: "+aside)
+	output.Detail(stdout, "wrote fresh settings file")
+
+	return 0
+}
+
 func recoverCache(env []string, stdout, stderr io.Writer, confirm confirmFunc) int {
 	err := cache.Present(env)
 	if errors.Is(err, cache.ErrAbsent) {
@@ -175,6 +216,18 @@ func recoverPresentReason(err error, policyFile bool) string {
 
 	if errors.Is(err, grants.ErrMissing) {
 		return reasonRecoverGrantsMiss
+	}
+
+	return reasonRecoverPath
+}
+
+func recoverSettingsPresentReason(err error) string {
+	if errors.Is(err, paths.ErrHomeUnset) {
+		return reasonRecoverPath
+	}
+
+	if errors.Is(err, settings.ErrMissing) {
+		return reasonRecoverSettingsMiss
 	}
 
 	return reasonRecoverPath

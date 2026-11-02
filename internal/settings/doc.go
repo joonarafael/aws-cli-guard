@@ -1,5 +1,10 @@
-// Package settings writes the preferences file (settings.toml).
+// Package settings loads and writes the preferences file (settings.toml).
 //
-// Only aws-guard init writes this file, and nothing reads it. Loading, corrupt-file
-// diagnosis, and aws-guard recover settings belong to FS-6.
+// Callers pass an environment slice; this package does not read os.Environ.
+// Create writes the init default when the file is missing. Load reads through
+// paths.SettingsFile and files.ReadRegular, then decodes strictly with
+// internal/decode. A missing file returns defaults. The aws wrapper calls Load
+// through internal/gate. Recover moves a broken settings file aside and writes
+// the init default. Corruption builds the corrupt-file note that gate prints
+// after output.Cancel; it does not write stderr itself.
 package settings

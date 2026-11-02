@@ -7,6 +7,7 @@ import (
 	"aws-cli-guard/internal/output"
 	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/policy"
+	"aws-cli-guard/internal/settings"
 	"aws-cli-guard/internal/subject"
 	"errors"
 	"io"
@@ -14,11 +15,14 @@ import (
 )
 
 const (
-	reasonPolicyUnusable  = "the policy file is unusable"
-	reasonPolicyReadFail  = "the policy file could not be read"
-	reasonGrantsUnusable  = "the grants file is unusable"
-	reasonGrantsPathUnset = "the grants path could not be resolved"
-	reasonGrantsReadFail  = "the grants file could not be read"
+	reasonPolicyUnusable    = "the policy file is unusable"
+	reasonPolicyReadFail    = "the policy file could not be read"
+	reasonGrantsUnusable    = "the grants file is unusable"
+	reasonGrantsPathUnset   = "the grants path could not be resolved"
+	reasonGrantsReadFail    = "the grants file could not be read"
+	reasonSettingsUnusable  = "the settings file is unusable"
+	reasonSettingsPathUnset = "the settings path could not be resolved"
+	reasonSettingsReadFail  = "the settings file could not be read"
 )
 
 // Decide reports whether the wrapper may exec the real AWS CLI for args and env.
@@ -37,6 +41,15 @@ func Decide(args []string, env []string, stderr io.Writer) bool {
 
 	subj := subject.Resolve(args, env)
 	subject.WarnDefaultProfile(stderr, subj)
+
+	setFile, err := settings.Load(env)
+	if err != nil {
+		return cancelSettingsLoad(stderr, err)
+	}
+
+	if setFile.Mode != 0 {
+		diagnose.WriteLooseMode(stderr, diagnose.ClassSettings(), setFile.Path, setFile.Mode)
+	}
 
 	pol, err := policy.Load(env)
 	if err != nil {
@@ -99,6 +112,33 @@ func permitsProfile(
 	)
 
 	return grantDecision.Permits()
+}
+
+func cancelSettingsLoad(stderr io.Writer, err error) bool {
+	if note, ok := settings.Corruption(err); ok {
+		output.Cancel(stderr, reasonSettingsUnusable)
+		diagnose.Write(stderr, note)
+
+		return false
+	}
+
+	var setErr *settings.Error
+
+	if errors.As(err, &setErr) && setErr.Kind == settings.KindPath {
+		output.Cancel(stderr, reasonSettingsPathUnset)
+
+		return false
+	}
+
+	if errors.Is(err, paths.ErrHomeUnset) {
+		output.Cancel(stderr, reasonSettingsPathUnset)
+
+		return false
+	}
+
+	output.Cancel(stderr, reasonSettingsReadFail)
+
+	return false
 }
 
 func cancelPolicyLoad(stderr io.Writer, err error) bool {
