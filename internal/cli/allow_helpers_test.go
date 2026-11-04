@@ -213,8 +213,12 @@ func configDirFromAllowEnv(t *testing.T, env []string) string {
 	return ""
 }
 
-func writeAllowAWSConfig(t *testing.T, env []string, configBody, credBody string) {
+func writeAllowAWSConfig(t *testing.T, env []string, configBody string) {
 	t.Helper()
+
+	if configBody == "" {
+		return
+	}
 
 	home := homeFromAllowEnv(t, env)
 	awsDir := filepath.Join(home, ".aws")
@@ -224,18 +228,9 @@ func writeAllowAWSConfig(t *testing.T, env []string, configBody, credBody string
 		t.Fatal(err)
 	}
 
-	if configBody != "" {
-		err = os.WriteFile(filepath.Join(awsDir, "config"), []byte(configBody), 0o600)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if credBody != "" {
-		err = os.WriteFile(filepath.Join(awsDir, "credentials"), []byte(credBody), 0o600)
-		if err != nil {
-			t.Fatal(err)
-		}
+	err = os.WriteFile(filepath.Join(awsDir, "config"), []byte(configBody), 0o600)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

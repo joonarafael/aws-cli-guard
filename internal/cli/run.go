@@ -37,6 +37,8 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runPolicy(args, env, stdout, stderr)
 	case configCommand:
 		return runConfig(args, env, stdout, stderr)
+	case grantsCommand:
+		return runGrants(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 
