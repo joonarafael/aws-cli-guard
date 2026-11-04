@@ -182,6 +182,7 @@ action = "deny"
 `
 }
 
+//nolint:unparam // profile matches the other gate policy body helpers.
 func promptPolicyBody(profile string) string {
 	return `version = 1
 
