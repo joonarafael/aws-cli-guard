@@ -33,6 +33,10 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runAllow(args, env, stdout, stderr, confirm)
 	case revokeCommand:
 		return runRevoke(args, env, stdout, stderr)
+	case policyCommand:
+		return runPolicy(args, env, stdout, stderr)
+	case configCommand:
+		return runConfig(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

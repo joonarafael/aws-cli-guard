@@ -22,6 +22,22 @@ type Decision struct {
 	Basis  Basis
 }
 
+// Label returns a secret-safe basis name for explain output.
+func (b Basis) Label() string {
+	switch b {
+	case BasisProfile:
+		return "profile"
+	case BasisDefault:
+		return "defaults"
+	case BasisCredentialExport:
+		return "credential_export"
+	case BasisEnvironment:
+		return "environment"
+	default:
+		return ""
+	}
+}
+
 // Evaluate returns the profile action for subj under pol. It does not check grants
 // or [credential_export]; callers apply EvaluateExport and EvaluateGrant separately.
 func Evaluate(pol Policy, subj subject.Subject) Decision {
