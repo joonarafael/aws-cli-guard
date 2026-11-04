@@ -31,11 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Phase 3 is in progress. Next:
+Phase 3 is complete. Next:
 
-- `GR-6` tests for concurrent allow and policy reload.
+- `AG-1` caller context, including whether a terminal is attached.
 
-Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
+Also unblocked, but in later milestones: `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
 `Q-1` through `Q-9` are answered. None of them block current work.
 
@@ -181,7 +181,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | GR-3 | `aws-guard allow` | Done | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | Done | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
 | GR-5 | List grants | Done | Phase 3 | `GR-1`, `GR-2`, `PR-5` | — |
-| GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
+| GR-6 | Tests for concurrent allow and policy reload | Done | Phase 3 | `GR-3`, `GR-4` | — |
 | GR-7 | `aws-guard revoke` | Done | Phase 2 | `GR-1`, `FD-4` | — |
 
 - `GR-1` adds `internal/grants` (`Load`, `Update`, `Replace`, and corrupt-file diagnosis). A missing grants file means an empty list. The wrapper loads grants on every guarded invocation.
@@ -189,6 +189,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 - `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant.
 - `GR-4` adds `grants.Current` and `policy.EvaluateGrant`. A `prompt` action runs only when a grant for that named profile is unexpired and the stored source matches the current fingerprint. `internal/gate` applies grant checking on every guarded invocation.
 - `GR-5` adds read-only `aws-guard grants list` in `internal/cli` and `grants.GrantStatus` in `internal/grants`. It loads `grants.json` only, never executes AWS, and needs no terminal. A missing file or empty grant list exits 0 with `no grants` and does not create the file. Corrupt-file handling matches revoke. Output prints schema version when grants exist, then each record sorted by profile name and expiry, with `grant: current|expired|source mismatch|source unread` using the same match rule as `grants.Current`, and stored-source identity lines from `grants.IdentityLines`. Live fingerprint errors on unexpired records are `source unread`; expiry beats unread and mismatch.
+- `GR-6` adds tests only. `internal/gate/decide_reload_test.go` calls `gate.Decide` twice after rewriting `config.toml`: deny beats a current grant, prompt without a grant after allow, and corrupt policy refuses without creating grants. `internal/grants/write_concurrent_test.go` overlaps `grants.Update` and `grants.Revoke` under the grants lock so two appends both persist and revoke removes a profile from the list written by a held update.
 - `GR-7` is pulled ahead into Phase 2 and adds `aws-guard revoke <profile>` and `aws-guard revoke --all`, as specified in [Revoking grants](DESIGN.md#revoking-grants):
   - It needs no terminal, because it only narrows access.
   - It runs under the `grants.Update` lock.
