@@ -7,8 +7,6 @@ import (
 	"io"
 )
 
-const identityUnverifiedLine = "identity: configured source only; the caller was not verified"
-
 func writeProfileIdentityDetails(stderr io.Writer, env []string, subj subject.Subject) {
 	if subj.Kind != subject.NamedProfile || subj.Name == "" {
 		return
@@ -19,48 +17,7 @@ func writeProfileIdentityDetails(stderr io.Writer, env []string, subj subject.Su
 		return
 	}
 
-	writeAccountDetails(stderr, source)
-	writeRoleDetails(stderr, source)
-
-	if sourceNeedsUnverifiedLine(source) {
-		output.Detail(stderr, identityUnverifiedLine)
+	for _, line := range grants.IdentityLines(source) {
+		output.Detail(stderr, line)
 	}
-}
-
-func writeAccountDetails(stderr io.Writer, source grants.Source) {
-	if source.AccountID != "" {
-		output.Detail(stderr, "account: "+source.AccountID)
-	}
-
-	if source.SSOAccountID != "" {
-		if source.AccountID != "" {
-			output.Detail(stderr, "sso account: "+source.SSOAccountID)
-
-			return
-		}
-
-		output.Detail(stderr, "account: "+source.SSOAccountID)
-	}
-}
-
-func writeRoleDetails(stderr io.Writer, source grants.Source) {
-	if source.RoleARN != "" {
-		output.Detail(stderr, "role: "+source.RoleARN)
-	}
-
-	if source.SSORoleName != "" {
-		if source.RoleARN != "" {
-			output.Detail(stderr, "sso role: "+source.SSORoleName)
-
-			return
-		}
-
-		output.Detail(stderr, "role: "+source.SSORoleName)
-	}
-}
-
-func sourceNeedsUnverifiedLine(source grants.Source) bool {
-	return source.CredentialProcess ||
-		source.CredentialSource != "" ||
-		source.SourceProfile != ""
 }

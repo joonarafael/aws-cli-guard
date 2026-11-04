@@ -31,9 +31,9 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-The MVP is complete. Phase 2 starts here:
+Phase 2 is complete. Phase 3 starts here:
 
-- `PO-5` inspect, explain, and validate policy.
+- `GR-5` list grants.
 
 Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
@@ -162,7 +162,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PO-2 | `aws-guard init` and the missing-policy flow | Done | MVP | `PO-1`, `FD-4` | `MV-1` |
 | PO-3 | Policy evaluation engine | Done | MVP | `PO-1`, `PR-1` | `PO-4`, `PO-5`, `PO-6`, `GR-4`, `AG-3` |
 | PO-4 | Rule for commands that print access keys | Done | MVP | `PR-2`, `PO-3` | `MV-1` |
-| PO-5 | Inspect, explain, and validate policy | To do | Phase 2 | `PO-3`, `PO-6` | `AD-4` |
+| PO-5 | Inspect, explain, and validate policy | Done | Phase 2 | `PO-3`, `PO-6` | `AD-4` |
 | PO-6 | Policy key for environment credentials | Done | Phase 2 | `PO-1`, `PO-3`, `PR-1` | `PO-5`, `FS-5` |
 
 - Configuration validation shows up twice in the design. Validating on every load is part of `PO-1`. The standalone validate command is `PO-5`, which the design places in Phase 2.
@@ -170,6 +170,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 - `PO-3` adds `Evaluate` for profile policy: named profiles use `[profiles]` or `[defaults]`, and environment or unresolved subjects use `[defaults]` only in MVP. It returns the action and basis; grant and export checks are separate steps in `internal/gate`.
 - `PO-4` adds `Invocation.PrintsAccessKeys` and `EvaluateExport` for `[credential_export]`. The wrapper applies export evaluation before profile policy and grants.
 - `PO-6` implements the promise in [Environment-based credentials](DESIGN.md#64-environment-based-credentials) that `subject.Environment` (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) has its own policy key in `config.toml` outside `[profiles]`, rather than only falling back to `[defaults]`. It introduces `config.toml` schema `version = 2` (while keeping `version = 1` supported in memory per [Versions and schema changes](DESIGN.md#versions-and-schema-changes)). When omitted, `subject.Environment` continues to use `[defaults]`. A grant still cannot authorize `subject.Environment`.
+- `PO-5` adds read-only `aws-guard policy list`, `aws-guard policy explain <profile>`, and `aws-guard config validate` in `internal/cli`. They load `config.toml` only, never execute AWS, and need no terminal. Missing or corrupt policy uses the same messages and diagnosis as the wrapper, with exit 3. `policy list` prints version, defaults, environment action and basis, credential export, and each profile override. `policy explain` prints the effective profile action, basis, optional `approval_ttl`, whether a grant would be required for `prompt`, the `[credential_export]` action, and the same account, role, and `identity:` lines as refusals when `grants.Fingerprint` succeeds. It does not read `grants.json`. `config validate` prints `policy: valid` on success.
 
 ### GR: Grants
 

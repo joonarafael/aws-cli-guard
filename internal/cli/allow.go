@@ -20,7 +20,6 @@ const (
 	reasonProfileInvalid = "the profile name is invalid"
 	reasonTTLInvalid     = "the ttl is invalid"
 	reasonTTLRequired    = "a ttl is required"
-	reasonPolicyRead     = "the policy file could not be read"
 	reasonAWSConfigRead  = "the aws config could not be read"
 	//nolint:gosec // G101: user-facing message, not a secret
 	reasonCredentialUnresolved = "the credential source could not be resolved"

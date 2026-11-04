@@ -253,6 +253,16 @@ The tool should:
 - Create policy, grant, and cache files with mode `0600`, and their directories with mode `0700`, using an explicit chmod rather than the process umask.
 - Never store AWS credentials in its own configuration, grants, cache, or logs.
 
+### Policy inspection
+
+Three read-only `aws-guard` commands inspect `config.toml` without executing AWS:
+
+- `aws-guard policy list` prints the loaded schema version, `[defaults]`, the effective environment action and whether it comes from `[environment]` or `[defaults]`, `[credential_export]`, and each `[profiles]` entry in sorted name order with optional `approval_ttl`.
+- `aws-guard policy explain <profile>` prints the effective action and basis for that profile name, optional `approval_ttl`, whether a grant would be required for a `prompt` action, the file's `[credential_export]` action, and the same grounded account, role, and `identity:` detail lines as a named-profile refusal when credential-source fingerprinting succeeds. It does not read grants or simulate a specific invocation.
+- `aws-guard config validate` loads and validates the policy file and prints `policy: valid` on success. It does not validate `settings.toml`.
+
+All three use the same load and corruption handling as the wrapper's policy path. Success lines go to stdout with the `aws-cli-guard:` prefix. Failures use `aws-cli-guard: error:` on stderr and exit 3. A loose file mode prints the same warning as on a guarded invocation.
+
 Example commands, not a final interface:
 
 ```text
