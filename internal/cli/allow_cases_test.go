@@ -51,7 +51,7 @@ func TestRunAllowUnreadableAWSConfigBeforeConfirm(t *testing.T) {
 	t.Parallel()
 
 	env := allowTestEnv(t)
-	writeAllowAWSConfig(t, env, "not valid aws config\n[[", "")
+	writeAllowAWSConfig(t, env, "not valid aws config\n[[")
 
 	called := false
 
@@ -82,7 +82,7 @@ func TestRunAllowStoresFingerprintWithoutSecret(t *testing.T) {
 	writeAllowAWSConfig(t, env, strings.Join([]string{
 		"[profile fp]",
 		"credential_process = " + allowCredProcTest,
-	}, "\n"), "")
+	}, "\n"))
 
 	var stdout, stderr bytes.Buffer
 

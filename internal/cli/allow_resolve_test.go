@@ -18,7 +18,7 @@ func TestRunAllowUnresolvedCredentialSourceBeforeConfirm(t *testing.T) {
 		"",
 		"[profile b]",
 		"source_profile = a",
-	}, "\n"), "")
+	}, "\n"))
 
 	var stderr bytes.Buffer
 

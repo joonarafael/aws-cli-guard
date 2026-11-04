@@ -270,6 +270,7 @@ aws-guard init
 aws-guard allow production-admin --ttl 5m
 aws-guard revoke production-admin
 aws-guard revoke --all
+aws-guard grants list
 aws-guard policy list
 aws-guard policy explain production-admin
 aws-guard config validate
@@ -426,6 +427,21 @@ aws-guard revoke --all
 - On success it prints which profile was revoked, or how many grants `--all` removed. Output uses the `aws-cli-guard:` prefix.
 - When the grants file is corrupt, revoke refuses with status 3. It prints the same diagnosis note the wrapper prints and points at `aws-guard recover grants`. The file is not modified. Recovery stays a separate, confirmed step, as described in [Corrupted files](#corrupted-files).
 - Revoke changes only the grants file. It does not change policy and does not clear cached SSO credentials or other credentials the CLI already stored ([AWS SSO Behavior](#7-aws-sso-behavior)).
+
+### Listing grants
+
+Every stored grant record can be inspected without a terminal or a confirmation. Illustrative:
+
+```text
+aws-guard grants list
+```
+
+- `aws-guard grants list` loads `grants.json` only. It does not read policy, does not execute AWS, and does not take the grants write lock. A missing grants file means no grants: exit 0 and one stdout line, `no grants`. The file is not created.
+- When the list is empty after load, output matches revoke with nothing to remove: exit 0 and `no grants`, with no schema version line.
+- When the grants file is corrupt, list refuses with status 3. It prints the same diagnosis note as revoke and points at `aws-guard recover grants`. The file is not modified.
+- Other load failures use the same messages as revoke (`the file path could not be resolved`, `the grants file could not be read`). A loose file mode prints the same warning as on a guarded invocation; listing still succeeds.
+- When at least one grant is present, stdout prints `version: N` once, then every record in profile-name order and expiry ascending (stable order for ties). Each record includes `profile`, `expires` in RFC3339 UTC, `grant` with one of `current`, `expired`, `source mismatch`, or `source unread`, and the same account, role, and `identity:` detail lines as refusals for the **stored** source (`grants.IdentityLines`). SSO URLs, chain hops, and credential-process commands are omitted.
+- `current` uses the same rule as `grants.Current`: unexpired at the list time and `Source.Equal` against a live `grants.Fingerprint` for that profile. `expired` means the expiry time has passed or equals the list time. `source unread` means the live fingerprint could not be read for an unexpired record. `source mismatch` means the live source was read and does not equal the stored source. Expiry wins over unread and mismatch.
 
 ## 6. Effective AWS Profile Resolution
 
@@ -1036,6 +1052,7 @@ The initial implementation should be tested without requiring access to a real A
 - `aws-guard recover` moves the unusable file aside, writes a fresh file that grants nothing, and does not delete the moved file.
 - A missing grants file means no grants, not corruption.
 - `aws-guard revoke <profile>` and `aws-guard revoke --all` remove grants without a terminal, exit 0 with a note when there is nothing to remove, and refuse a corrupt grants file without modifying it.
+- `aws-guard grants list` prints every stored grant with expiry and grant status (`current`, `expired`, `source mismatch`, or `source unread`), does not create a missing grants file, and refuses a corrupt grants file without modifying it.
 - An environment variable cannot move the policy or grants file in a production build. The `HOME` fallback applies only when the user-database lookup fails.
 
 ### Execution tests
@@ -1104,7 +1121,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 
 ### Phase 3: Grant operations
 
-- List current grants and show expiry and fingerprint mismatch.
+- `aws-guard grants list` shows every stored grant, expiry, and whether the record is `current`, `expired`, `source mismatch`, or `source unread` (see [Listing grants](#listing-grants)).
 - Deny rules continue to beat grants. This is already required in phase 1; tests here cover reload and concurrent allow.
 
 ### Phase 4: AI-agent awareness

@@ -143,7 +143,7 @@ func TestRunRevokeAllNoGrants(t *testing.T) {
 		t.Fatalf("status = %d", status)
 	}
 
-	if stdout.String() != "aws-cli-guard: no grants\n" {
+	if stdout.String() != grantsListNoGrants {
 		t.Fatalf("stdout = %q", stdout.String())
 	}
 }

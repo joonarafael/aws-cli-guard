@@ -31,11 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Phase 2 is complete. Phase 3 starts here:
+Phase 3 is in progress. Next:
 
-- `GR-5` list grants.
+- `GR-6` tests for concurrent allow and policy reload.
 
-Also unblocked, but in later milestones: `GR-6`, `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
+Also unblocked, but in later milestones: `AG-1`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
 `Q-1` through `Q-9` are answered. None of them block current work.
 
@@ -180,7 +180,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | GR-2 | Credential-source fingerprint | Done | MVP | `PR-4` | `PR-5`, `GR-3`, `GR-4`, `GR-5` |
 | GR-3 | `aws-guard allow` | Done | MVP | `GR-1`, `GR-2`, `FD-4` | `GR-6` |
 | GR-4 | Checking grants (expiry and fingerprint) during policy evaluation | Done | MVP | `GR-1`, `GR-2`, `PO-3` | `GR-6`, `MV-1` |
-| GR-5 | List grants | To do | Phase 3 | `GR-1`, `GR-2`, `PR-5` | — |
+| GR-5 | List grants | Done | Phase 3 | `GR-1`, `GR-2`, `PR-5` | — |
 | GR-6 | Tests for concurrent allow and policy reload | To do | Phase 3 | `GR-3`, `GR-4` | — |
 | GR-7 | `aws-guard revoke` | Done | Phase 2 | `GR-1`, `FD-4` | — |
 
@@ -188,6 +188,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 - `GR-2` adds `Fingerprint` and `Source.Equal` in `internal/grants` ([ADR 0012](decisions/0012-credential-source-fingerprint.md)). `GR-3` `aws-guard allow` calls `Fingerprint` and `Update`.
 - `GR-3` adds `aws-guard allow` in `internal/cli`. It confirms the profile on a terminal and writes one grant.
 - `GR-4` adds `grants.Current` and `policy.EvaluateGrant`. A `prompt` action runs only when a grant for that named profile is unexpired and the stored source matches the current fingerprint. `internal/gate` applies grant checking on every guarded invocation.
+- `GR-5` adds read-only `aws-guard grants list` in `internal/cli` and `grants.GrantStatus` in `internal/grants`. It loads `grants.json` only, never executes AWS, and needs no terminal. A missing file or empty grant list exits 0 with `no grants` and does not create the file. Corrupt-file handling matches revoke. Output prints schema version when grants exist, then each record sorted by profile name and expiry, with `grant: current|expired|source mismatch|source unread` using the same match rule as `grants.Current`, and stored-source identity lines from `grants.IdentityLines`. Live fingerprint errors on unexpired records are `source unread`; expiry beats unread and mismatch.
 - `GR-7` is pulled ahead into Phase 2 and adds `aws-guard revoke <profile>` and `aws-guard revoke --all`, as specified in [Revoking grants](DESIGN.md#revoking-grants):
   - It needs no terminal, because it only narrows access.
   - It runs under the `grants.Update` lock.
