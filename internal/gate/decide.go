@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"aws-cli-guard/internal/agent"
 	"aws-cli-guard/internal/diagnose"
 	"aws-cli-guard/internal/grants"
 	"aws-cli-guard/internal/invocation"
@@ -11,6 +12,7 @@ import (
 	"aws-cli-guard/internal/subject"
 	"errors"
 	"io"
+	"os"
 	"time"
 )
 
@@ -65,6 +67,10 @@ func Decide(args []string, env []string, stderr io.Writer) bool {
 
 	if grantFile.Mode != 0 {
 		diagnose.WriteLooseMode(stderr, diagnose.ClassGrants(), grantFile.Path, grantFile.Mode)
+	}
+
+	if !callerAllowsProfile(agent.Observe(os.Stdin), stderr) {
+		return false
 	}
 
 	export := policy.EvaluateExport(pol, inv.PrintsAccessKeys)
