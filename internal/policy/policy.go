@@ -28,6 +28,9 @@ type Policy struct {
 	CredentialExport      Action
 	EnvironmentMarkers    bool
 	HasEnvironmentMarkers bool
+	HasAgentDefault       bool
+	AgentDefault          Action
+	AgentProfiles         map[string]Action
 	Profiles              map[string]Profile
 }
 

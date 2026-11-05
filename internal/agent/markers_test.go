@@ -58,7 +58,7 @@ func TestApplyMarkersDisabledLeavesUnknown(t *testing.T) {
 	ctx := ContextWithStdin(StdinInteractive)
 	ctx = ApplyMarkers(ctx, []string{testAgentMarkerEnv + "=1"}, false)
 
-	if ctx.recognized() {
+	if ctx.Recognized() {
 		t.Fatal("want unknown when disabled")
 	}
 }
@@ -69,7 +69,7 @@ func TestApplyMarkersBuiltinCatalogEmpty(t *testing.T) {
 	ctx := ContextWithStdin(StdinInteractive)
 	ctx = ApplyMarkers(ctx, []string{"ANY_VAR=1"}, true)
 
-	if ctx.recognized() {
+	if ctx.Recognized() {
 		t.Fatal("empty builtin catalog should not recognize")
 	}
 }
@@ -82,7 +82,7 @@ func TestApplyMarkersRecognitionKeepsStdinClass(t *testing.T) {
 
 	ctx.rec = recognitionAgent
 
-	if !ctx.recognized() || !ctx.FollowsProfilePolicy() {
+	if !ctx.Recognized() || !ctx.FollowsProfilePolicy() {
 		t.Fatal("recognized caller should still follow profile policy")
 	}
 }

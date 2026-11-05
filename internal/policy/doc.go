@@ -4,7 +4,9 @@
 // Load reads through paths.ConfigFile and files.ReadRegular, then decodes
 // strictly with internal/decode. Evaluate maps a loaded policy and a credential
 // subject to allow, prompt, or deny for profile policy. Version 3 adds optional
-// [agents.detection] for the environment-markers switch. EvaluateExport applies
+// [agents.detection] for the environment-markers switch. Version 4 adds optional
+// agent action keys; EvaluateForCaller applies them to recognized named profiles.
+// EvaluateExport applies
 // [credential_export]; EvaluateGrant applies grant checking for prompt. The aws
 // wrapper calls Load, Evaluate, EvaluateExport, and EvaluateGrant through internal/gate.
 // Recover moves a broken policy file aside and writes the init default. Corruption

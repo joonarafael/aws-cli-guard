@@ -67,36 +67,15 @@ func Decide(args []string, env []string, stderr io.Writer) bool {
 		diagnose.WriteLooseMode(stderr, diagnose.ClassGrants(), grantFile.Path, grantFile.Mode)
 	}
 
-	if !callerPermitsProfile(env, pol, stderr) {
-		return false
-	}
-
-	export := policy.EvaluateExport(pol, inv.PrintsAccessKeys)
-	if export.Refuses() {
-		output.Cancel(stderr, policy.ReasonExportRefused)
-
-		return false
-	}
-
-	if permitsProfile(pol, subj, grantFile.Grants, env) {
-		return true
-	}
-
-	decision := policy.Evaluate(pol, subj)
-	prof := pol.Profiles[subj.Name]
-	writeProfileRefusal(stderr, env, subj, inv, decision, prof)
-
-	return false
+	return decideAfterLoads(inv, subj, pol, grantFile.Grants, env, stderr)
 }
 
-func permitsProfile(
-	pol policy.Policy,
+func permitsProfileDecision(
 	subj subject.Subject,
+	decision policy.Decision,
 	grantList []grants.Grant,
 	env []string,
 ) bool {
-	decision := policy.Evaluate(pol, subj)
-
 	var fingerprint grants.Source
 
 	var fingerprintErr error

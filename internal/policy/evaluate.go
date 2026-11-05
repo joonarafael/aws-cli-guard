@@ -14,6 +14,10 @@ const (
 	BasisCredentialExport
 	// BasisEnvironment is [environment] action for subject.Environment.
 	BasisEnvironment
+	// BasisAgentProfile is [agents.profiles] action for a recognized caller.
+	BasisAgentProfile
+	// BasisAgentDefault is [agents] default for a recognized caller.
+	BasisAgentDefault
 )
 
 // Decision is the profile-policy outcome for one credential subject.
@@ -33,6 +37,10 @@ func (b Basis) Label() string {
 		return "credential_export"
 	case BasisEnvironment:
 		return "environment"
+	case BasisAgentProfile:
+		return "agents.profile"
+	case BasisAgentDefault:
+		return "agents.default"
 	default:
 		return ""
 	}

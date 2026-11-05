@@ -19,6 +19,7 @@ const (
 	gateLoginOperation      = "login"
 	gateLogoutOperation     = "logout"
 	gateConfigureCommand    = "configure"
+	gateExportCredentialsOp = "export-credentials"
 )
 
 func gateEnv(t *testing.T) []string {

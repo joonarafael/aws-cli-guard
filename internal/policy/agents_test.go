@@ -138,8 +138,12 @@ default = "deny"
 	}
 
 	var polErr *policy.Error
-	if !errors.As(err, &polErr) || polErr.Kind != policy.KindDecode {
-		t.Fatalf("want KindDecode, got %v", err)
+	if !errors.As(err, &polErr) || polErr.Kind != policy.KindInvalid {
+		t.Fatalf("want KindInvalid, got %v", err)
+	}
+
+	if polErr.Key != policyKeyAgentsDefault {
+		t.Fatalf("Key = %q", polErr.Key)
 	}
 }
 
@@ -181,8 +185,12 @@ action = "allow"
 	}
 
 	var polErr *policy.Error
-	if !errors.As(err, &polErr) || polErr.Kind != policy.KindDecode {
-		t.Fatalf("want KindDecode, got %v", err)
+	if !errors.As(err, &polErr) || polErr.Kind != policy.KindInvalid {
+		t.Fatalf("want KindInvalid, got %v", err)
+	}
+
+	if polErr.Key != "agents.profiles.dev-readonly" {
+		t.Fatalf("Key = %q", polErr.Key)
 	}
 }
 

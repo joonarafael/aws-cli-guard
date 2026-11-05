@@ -10,7 +10,13 @@ type document struct {
 }
 
 type agentsDocument struct {
-	Detection *agentsDetectionDocument `toml:"detection"`
+	Default   *string                         `toml:"default"`
+	Detection *agentsDetectionDocument        `toml:"detection"`
+	Profiles  map[string]agentProfileDocument `toml:"profiles"`
+}
+
+type agentProfileDocument struct {
+	Action *string `toml:"action"`
 }
 
 type agentsDetectionDocument struct {

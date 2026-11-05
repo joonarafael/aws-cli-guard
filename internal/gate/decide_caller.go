@@ -10,12 +10,16 @@ import (
 
 const reasonCallerUnclassified = "the caller context could not be classified"
 
-func callerPermitsProfile(env []string, pol policy.Policy, stderr io.Writer) bool {
+func observeCaller(env []string, pol policy.Policy, stderr io.Writer) (agent.Context, bool) {
 	caller := agent.Observe(os.Stdin)
 
 	caller = agent.ApplyMarkers(caller, env, pol.EnvironmentMarkers)
 
-	return callerAllowsProfile(caller, stderr)
+	if !callerAllowsProfile(caller, stderr) {
+		return agent.Context{}, false
+	}
+
+	return caller, true
 }
 
 func callerAllowsProfile(ctx agent.Context, stderr io.Writer) bool {

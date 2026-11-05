@@ -16,6 +16,8 @@ func TestBasisLabel(t *testing.T) {
 		{policy.BasisDefault, "defaults"},
 		{policy.BasisCredentialExport, "credential_export"},
 		{policy.BasisEnvironment, "environment"},
+		{policy.BasisAgentProfile, policy.BasisAgentProfile.Label()},
+		{policy.BasisAgentDefault, policy.BasisAgentDefault.Label()},
 		{policy.Basis(0), ""},
 	}
 
