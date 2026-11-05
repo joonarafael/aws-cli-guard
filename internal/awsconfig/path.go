@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	configFileEnv = "AWS_CONFIG_FILE"
-	//nolint:gosec // G101: AWS environment variable name, not a credential value.
+	configFileEnv      = "AWS_CONFIG_FILE"
 	credentialsFileEnv = "AWS_SHARED_CREDENTIALS_FILE"
 )
 

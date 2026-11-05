@@ -38,8 +38,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-//nolint:paralleltest // Setsid changes process session; must not run parallel with other tests.
 func TestConfirmRejectsStdinPipeInNewSession(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
@@ -59,7 +60,6 @@ func TestConfirmRejectsStdinPipeInNewSession(t *testing.T) {
 
 	cmd.Stderr = &stderr
 
-	//nolint:exhaustruct_v5 // only Setsid is required for this test.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 
 	err = cmd.Start()

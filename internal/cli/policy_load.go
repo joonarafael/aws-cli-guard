@@ -19,8 +19,9 @@ func loadPolicyForCLI(env []string, stderr io.Writer) (policy.Policy, int) {
 	if err != nil {
 		cancelPolicyCLI(stderr, err)
 
-		//nolint:exhaustruct_v5 // zero value is intentional on load failure.
-		return policy.Policy{}, output.CancelStatus
+		var unset policy.Policy
+
+		return unset, output.CancelStatus
 	}
 
 	diagnose.WriteLooseMode(stderr, diagnose.ClassPolicy(), pol.Path, pol.Mode)

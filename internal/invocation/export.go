@@ -3,8 +3,7 @@ package invocation
 import "strings"
 
 const (
-	commandConfigure = "configure"
-	//nolint:gosec // G101: AWS CLI operation name, not a credential value
+	commandConfigure     = "configure"
 	operationExportCreds = "export-credentials"
 	operationGet         = "get"
 

@@ -31,6 +31,16 @@ linters:
             allow-empty: false
             allow-empty-returns: false
             allow-empty-declarations: true
+            # syscall.SysProcAttr is large and differs by OS. Call sites set the
+            # fields they need, such as Setsid.
+            ignore-patterns:
+                - ^syscall\.SysProcAttr$
+        gosec:
+            # "cred" matches AWS field names and user-facing text in this module.
+            # Value scanners for key prefixes and private-key blocks stay enabled.
+            config:
+                G101:
+                    pattern: '(?i)passwd|pass|password|pwd|secret|token|pw|apiKey|bearer'
         funlen:
             ignore-comments: true
         ireturn:

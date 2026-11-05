@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+var errPlain = errors.New("plain")
+
 func TestCorruptionDecodeNote(t *testing.T) {
 	t.Parallel()
 
@@ -103,10 +105,7 @@ func TestLooseModeWarning(t *testing.T) {
 func TestCorruptionWriteErrorFalse(t *testing.T) {
 	t.Parallel()
 
-	//nolint:err113 // deliberate non-grants error to test classification
-	plain := errors.New("plain")
-
-	_, ok := grants.Corruption(plain)
+	_, ok := grants.Corruption(errPlain)
 	if ok {
 		t.Fatal("Corruption = true for non-grants error")
 	}

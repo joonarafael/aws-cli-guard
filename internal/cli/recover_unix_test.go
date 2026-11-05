@@ -52,8 +52,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-//nolint:paralleltest // Setsid changes process session.
 func TestRecoverPolicyHeadlessLeavesFile(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	policyPath := filepath.Join(dir, "config.toml")
 	body := []byte("version = 1\n")
@@ -96,7 +97,6 @@ func runHeadlessRecoverChild(t *testing.T, configDir string) int {
 		t.Fatal(err)
 	}
 
-	//nolint:exhaustruct_v5 // only Setsid is required for this test.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 
 	err = cmd.Start()
