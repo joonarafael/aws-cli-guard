@@ -135,13 +135,15 @@ func TestEvaluateEnvironmentOverridesProfileAllow(t *testing.T) {
 	t.Parallel()
 
 	pol := policy.Policy{
-		Path:                 "",
-		Version:              2,
-		Mode:                 0,
-		DefaultAction:        policy.ActionPrompt,
-		EnvironmentAction:    policy.ActionDeny,
-		HasEnvironmentAction: true,
-		CredentialExport:     policy.ActionPrompt,
+		Path:                  "",
+		Version:               2,
+		Mode:                  0,
+		DefaultAction:         policy.ActionPrompt,
+		EnvironmentAction:     policy.ActionDeny,
+		HasEnvironmentAction:  true,
+		CredentialExport:      policy.ActionPrompt,
+		EnvironmentMarkers:    false,
+		HasEnvironmentMarkers: false,
 		Profiles: map[string]policy.Profile{
 			"prod": {Action: policy.ActionAllow, ApprovalTTL: 0, HasApprovalTTL: false},
 		},
@@ -159,14 +161,16 @@ func TestEvaluateUnresolvedIgnoresEnvironmentAction(t *testing.T) {
 	t.Parallel()
 
 	pol := policy.Policy{
-		Path:                 "",
-		Version:              2,
-		Mode:                 0,
-		DefaultAction:        policy.ActionPrompt,
-		EnvironmentAction:    policy.ActionDeny,
-		HasEnvironmentAction: true,
-		CredentialExport:     policy.ActionPrompt,
-		Profiles:             map[string]policy.Profile{},
+		Path:                  "",
+		Version:               2,
+		Mode:                  0,
+		DefaultAction:         policy.ActionPrompt,
+		EnvironmentAction:     policy.ActionDeny,
+		HasEnvironmentAction:  true,
+		CredentialExport:      policy.ActionPrompt,
+		EnvironmentMarkers:    false,
+		HasEnvironmentMarkers: false,
+		Profiles:              map[string]policy.Profile{},
 	}
 
 	subj := subject.Subject{Kind: subject.Unresolved, Name: "", Reason: "ambient"}
@@ -242,7 +246,6 @@ func TestLoadVersion2AgentsStillRejected(t *testing.T) {
 	writePolicy(t, env, `version = 2
 
 [agents]
-default = "deny"
 `)
 
 	_, err := policy.Load(env)
@@ -251,8 +254,12 @@ default = "deny"
 	}
 
 	var polErr *policy.Error
-	if !errors.As(err, &polErr) || polErr.Kind != policy.KindDecode {
-		t.Fatalf("want KindDecode, got %v", err)
+	if !errors.As(err, &polErr) || polErr.Kind != policy.KindInvalid {
+		t.Fatalf("want KindInvalid, got %v", err)
+	}
+
+	if polErr.Key != policyKeyAgents {
+		t.Fatalf("Key = %q, want %q", polErr.Key, policyKeyAgents)
 	}
 }
 

@@ -134,7 +134,7 @@ func TestCorruptionUnsupportedVersion(t *testing.T) {
 		path:       "",
 		hasVersion: true,
 		version:    99,
-		supported:  "1, 2",
+		supported:  policySupportedVersions,
 		omitSecret: false,
 	})
 }
@@ -145,11 +145,32 @@ func TestCorruptionUnknownField(t *testing.T) {
 	env := configDirEnv(t)
 	writePolicy(t, env, `version = 1
 
-[agents]
-default = "deny"
+[nope]
+action = "deny"
 `)
 
 	assertCorruptionFailure(t, env, "unknown field", noCorruptionExpect())
+}
+
+func TestCorruptionAgentsRejectedOnVersion1(t *testing.T) {
+	t.Parallel()
+
+	env := configDirEnv(t)
+	writePolicy(t, env, `version = 1
+
+[agents]
+`)
+
+	path := configPath(t, env)
+
+	assertCorruptionFailure(t, env, "invalid value", corruptionExpect{
+		key:        policyKeyAgents,
+		path:       path,
+		hasVersion: true,
+		version:    1,
+		supported:  policySupportedVersions,
+		omitSecret: true,
+	})
 }
 
 func TestCorruptionInvalidValueType(t *testing.T) {
@@ -182,7 +203,7 @@ action = "`+fixtureSecret+`"
 		path:       path,
 		hasVersion: true,
 		version:    1,
-		supported:  "1, 2",
+		supported:  policySupportedVersions,
 		omitSecret: true,
 	})
 }

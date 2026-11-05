@@ -29,3 +29,4 @@ Phase 2 (`PO-6`) adds that key without changing grant semantics or adding migrat
 - [ADR 0010](0010-policy-schema.md) remains the version 1 record. Version 2 extends it here.
 - `PO-5` `policy explain` and `config validate` can describe the environment rule once they land.
 - `FS-5` `aws-guard migrate` may later rewrite version 1 policy to version 2. The live `aws` path does not.
+- Agent detection settings are [ADR 0020](0020-policy-schema-v3.md) (`version = 3`, optional `[agents.detection]` only).

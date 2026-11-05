@@ -3,7 +3,8 @@
 // Callers pass an environment slice; this package does not read os.Environ.
 // Load reads through paths.ConfigFile and files.ReadRegular, then decodes
 // strictly with internal/decode. Evaluate maps a loaded policy and a credential
-// subject to allow, prompt, or deny for profile policy. EvaluateExport applies
+// subject to allow, prompt, or deny for profile policy. Version 3 adds optional
+// [agents.detection] for the environment-markers switch. EvaluateExport applies
 // [credential_export]; EvaluateGrant applies grant checking for prompt. The aws
 // wrapper calls Load, Evaluate, EvaluateExport, and EvaluateGrant through internal/gate.
 // Recover moves a broken policy file aside and writes the init default. Corruption

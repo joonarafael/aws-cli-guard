@@ -182,7 +182,7 @@ The exact precedence between global and profile-specific rules should be documen
 
 ### Example configuration
 
-User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). Version 2 adds optional `[environment]` for static environment credentials ([ADR 0019](decisions/0019-policy-schema-v2.md)). The block below is illustrative; `[agents]` is not part of version 1 and is rejected until a later schema version enforces it:
+User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). Version 2 adds optional `[environment]` for static environment credentials ([ADR 0019](decisions/0019-policy-schema-v2.md)). Version 3 adds optional `[agents.detection]` with boolean `environment_markers` only ([ADR 0020](decisions/0020-policy-schema-v3.md)). The block below is illustrative; full `[agents]` action keys are not enforced until a later schema version:
 
 ```toml
 version = 1
@@ -257,7 +257,7 @@ The tool should:
 
 Three read-only `aws-guard` commands inspect `config.toml` without executing AWS:
 
-- `aws-guard policy list` prints the loaded schema version, `[defaults]`, the effective environment action and whether it comes from `[environment]` or `[defaults]`, `[credential_export]`, and each `[profiles]` entry in sorted name order with optional `approval_ttl`.
+- `aws-guard policy list` prints the loaded schema version, `[defaults]`, the effective environment action and whether it comes from `[environment]` or `[defaults]`, `[credential_export]`, `environment_markers` when `[agents.detection]` was present on load (otherwise omits that line), and each `[profiles]` entry in sorted name order with optional `approval_ttl`.
 - `aws-guard policy explain <profile>` prints the effective action and basis for that profile name, optional `approval_ttl`, whether a grant would be required for a `prompt` action, the file's `[credential_export]` action, and the same grounded account, role, and `identity:` detail lines as a named-profile refusal when credential-source fingerprinting succeeds. It does not read grants or simulate a specific invocation.
 - `aws-guard config validate` loads and validates the policy file and prints `policy: valid` on success. It does not validate `settings.toml`.
 

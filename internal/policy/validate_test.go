@@ -102,7 +102,6 @@ func TestLoadAgentsSectionRejected(t *testing.T) {
 	writePolicy(t, env, `version = 1
 
 [agents]
-default = "deny"
 `)
 
 	_, err := policy.Load(env)
@@ -111,8 +110,12 @@ default = "deny"
 	}
 
 	var polErr *policy.Error
-	if !errors.As(err, &polErr) || polErr.Kind != policy.KindDecode {
-		t.Fatalf("want KindDecode, got %v", err)
+	if !errors.As(err, &polErr) || polErr.Kind != policy.KindInvalid {
+		t.Fatalf("want KindInvalid, got %v", err)
+	}
+
+	if polErr.Key != policyKeyAgents {
+		t.Fatalf("Key = %q, want %q", polErr.Key, policyKeyAgents)
 	}
 }
 

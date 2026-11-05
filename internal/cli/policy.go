@@ -67,6 +67,10 @@ func writePolicyList(stdout io.Writer, pol policy.Policy) {
 	output.Detail(stdout, "environment_basis: "+envDecision.Basis.Label())
 	output.Detail(stdout, "credential_export: "+string(pol.CredentialExport))
 
+	if pol.HasEnvironmentMarkers {
+		output.Detail(stdout, "environment_markers: "+strconv.FormatBool(pol.EnvironmentMarkers))
+	}
+
 	names := make([]string, 0, len(pol.Profiles))
 	for name := range pol.Profiles {
 		names = append(names, name)
