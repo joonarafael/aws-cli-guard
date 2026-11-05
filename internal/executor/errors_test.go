@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+var errSecretPathMarker = errors.New("secret-path-marker-xyz")
+
 func TestCancellationReasonSentinels(t *testing.T) {
 	t.Parallel()
 
@@ -38,16 +40,14 @@ func TestCancellationReasonSentinels(t *testing.T) {
 func TestCancellationReasonGenericOmitsUnderlyingText(t *testing.T) {
 	t.Parallel()
 
-	secret := "secret-path-marker-xyz"
-	//nolint:err113 // deliberate non-sentinel to test the generic reason path
-	got := executor.CancellationReason(errors.New(secret))
+	got := executor.CancellationReason(errSecretPathMarker)
 	want := "the command could not be started"
 
 	if got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
 
-	if strings.Contains(got, secret) {
+	if strings.Contains(got, errSecretPathMarker.Error()) {
 		t.Fatalf("reason must not contain underlying error text")
 	}
 }

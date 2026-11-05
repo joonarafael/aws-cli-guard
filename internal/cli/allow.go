@@ -16,12 +16,11 @@ const (
 	allowCommand = "allow"
 	allowMinArgs = 3
 
-	reasonAllowUsage     = "usage: aws-guard allow <profile> [--ttl <duration>]"
-	reasonProfileInvalid = "the profile name is invalid"
-	reasonTTLInvalid     = "the ttl is invalid"
-	reasonTTLRequired    = "a ttl is required"
-	reasonAWSConfigRead  = "the aws config could not be read"
-	//nolint:gosec // G101: user-facing message, not a secret
+	reasonAllowUsage           = "usage: aws-guard allow <profile> [--ttl <duration>]"
+	reasonProfileInvalid       = "the profile name is invalid"
+	reasonTTLInvalid           = "the ttl is invalid"
+	reasonTTLRequired          = "a ttl is required"
+	reasonAWSConfigRead        = "the aws config could not be read"
 	reasonCredentialUnresolved = "the credential source could not be resolved"
 	reasonGrantNotConfirmed    = "the grant was not confirmed"
 	reasonAllowPath            = "the file path could not be resolved"

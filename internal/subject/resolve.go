@@ -6,10 +6,8 @@ import (
 )
 
 const (
-	//nolint:gosec // G101: policy reason label, not a credential value
 	reasonPartialEnvCredentials = "partial-env-credentials"
-	//nolint:gosec // G101: policy reason label, not a credential value
-	reasonAmbientCredentials = "ambient-credentials"
+	reasonAmbientCredentials    = "ambient-credentials"
 )
 
 // Resolve determines the credential subject from process arguments and environment.
