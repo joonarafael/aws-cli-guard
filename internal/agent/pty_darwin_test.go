@@ -54,7 +54,8 @@ func openPTYSlaveDarwin(t *testing.T) *os.File {
 		t.Fatal(errno)
 	}
 
-	slavePath := "/dev/" + strings.TrimRight(string(name[:]), "\x00")
+	// TIOCPTYGNAME returns the absolute slave path, such as /dev/ttys003.
+	slavePath := strings.TrimRight(string(name[:]), "\x00")
 
 	slave, err := os.OpenFile(slavePath, os.O_RDWR, 0)
 	if err != nil {

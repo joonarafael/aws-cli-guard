@@ -32,5 +32,10 @@ func isNotTTYErr(err error) bool {
 		return false
 	}
 
-	return errno == syscall.ENOTTY || errno == syscall.EINVAL || errno == syscall.ENXIO
+	if errno == syscall.ENOTTY || errno == syscall.EINVAL || errno == syscall.ENXIO {
+		return true
+	}
+
+	// Darwin answers TIOCGETA on /dev/null with ENODEV.
+	return errno == syscall.ENODEV
 }
