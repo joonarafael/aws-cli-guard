@@ -4,8 +4,17 @@ type document struct {
 	Version          int                        `toml:"version"`
 	Defaults         *defaultsDocument          `toml:"defaults"`
 	Environment      *environmentDocument       `toml:"environment"`
+	Agents           *agentsDocument            `toml:"agents"`
 	Profiles         map[string]profileDocument `toml:"profiles"`
 	CredentialExport *credentialExportDocument  `toml:"credential_export"`
+}
+
+type agentsDocument struct {
+	Detection *agentsDetectionDocument `toml:"detection"`
+}
+
+type agentsDetectionDocument struct {
+	EnvironmentMarkers *bool `toml:"environment_markers"`
 }
 
 type defaultsDocument struct {

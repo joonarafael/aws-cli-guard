@@ -7,7 +7,11 @@ import (
 	"testing"
 )
 
-const fixtureSecret = "AKIAIOSFODNN7EXAMPLE-policy-body"
+const (
+	fixtureSecret           = "AKIAIOSFODNN7EXAMPLE-policy-body"
+	policyKeyAgents         = "agents"
+	policySupportedVersions = "1, 2, 3"
+)
 
 func configDirEnv(t *testing.T) []string {
 	t.Helper()

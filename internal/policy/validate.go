@@ -7,14 +7,16 @@ import (
 
 func validatePolicy(path string, doc document) (Policy, error) {
 	out := Policy{
-		Path:                 path,
-		Version:              doc.Version,
-		Mode:                 0,
-		DefaultAction:        ActionPrompt,
-		EnvironmentAction:    ActionPrompt,
-		HasEnvironmentAction: false,
-		CredentialExport:     ActionPrompt,
-		Profiles:             map[string]Profile{},
+		Path:                  path,
+		Version:               doc.Version,
+		Mode:                  0,
+		DefaultAction:         ActionPrompt,
+		EnvironmentAction:     ActionPrompt,
+		HasEnvironmentAction:  false,
+		CredentialExport:      ActionPrompt,
+		EnvironmentMarkers:    false,
+		HasEnvironmentMarkers: false,
+		Profiles:              map[string]Profile{},
 	}
 
 	defaultAction, err := resolveDefaults(doc.Defaults)
@@ -34,6 +36,11 @@ func validatePolicy(path string, doc document) (Policy, error) {
 	envErr := resolveEnvironment(doc.Version, doc.Environment, &out)
 	if envErr != nil {
 		return Policy{}, envErr
+	}
+
+	agentsErr := resolveAgents(doc.Version, doc.Agents, &out)
+	if agentsErr != nil {
+		return Policy{}, agentsErr
 	}
 
 	for name, prof := range doc.Profiles {
@@ -99,6 +106,29 @@ func resolveEnvironment(fileVersion int, sec *environmentDocument, out *Policy) 
 
 	out.EnvironmentAction = action
 	out.HasEnvironmentAction = true
+
+	return nil
+}
+
+func resolveAgents(fileVersion int, sec *agentsDocument, out *Policy) error {
+	if sec == nil {
+		return nil
+	}
+
+	if fileVersion < readVersionAgent {
+		return newError(KindInvalid, "", "agents", 0, 0, nil)
+	}
+
+	if sec.Detection == nil {
+		return nil
+	}
+
+	if sec.Detection.EnvironmentMarkers == nil {
+		return newError(KindInvalid, "", "agents.detection.environment_markers", 0, 0, nil)
+	}
+
+	out.HasEnvironmentMarkers = true
+	out.EnvironmentMarkers = *sec.Detection.EnvironmentMarkers
 
 	return nil
 }

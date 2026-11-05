@@ -43,6 +43,44 @@ action = "prompt"
 	}
 }
 
+func TestRunConfigValidateSuccessV3(t *testing.T) {
+	t.Parallel()
+
+	env := policyTestEnv(t)
+	writePolicyFile(t, env, `version = 3
+
+[defaults]
+action = "prompt"
+
+[environment]
+action = "prompt"
+
+[credential_export]
+action = "prompt"
+
+[agents.detection]
+environment_markers = false
+`, 0o600)
+
+	var stdout bytes.Buffer
+
+	status := cli.Dispatch(
+		[]string{progName, configSubcommand, configValidateSub},
+		env,
+		&stdout,
+		&bytes.Buffer{},
+		panicIfConfirm,
+	)
+	if status != 0 {
+		t.Fatalf("status = %d", status)
+	}
+
+	want := "aws-cli-guard: policy: valid\n"
+	if stdout.String() != want {
+		t.Fatalf("stdout = %q, want %q", stdout.String(), want)
+	}
+}
+
 func TestRunConfigValidateDoesNotPrintActions(t *testing.T) {
 	t.Parallel()
 

@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	maxFileSize  = 1 << 20
-	writeVersion = 2
+	maxFileSize      = 1 << 20
+	writeVersion     = 2
+	readVersionAgent = 3
 )
 
 func supportedPolicyVersions() []int {
-	return []int{1, writeVersion}
+	return []int{1, writeVersion, readVersionAgent}
 }
 
 // Load reads and validates the user policy file from env.
