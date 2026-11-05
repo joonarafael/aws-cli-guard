@@ -10,7 +10,8 @@ import (
 const (
 	fixtureSecret           = "AKIAIOSFODNN7EXAMPLE-policy-body"
 	policyKeyAgents         = "agents"
-	policySupportedVersions = "1, 2, 3"
+	policyKeyAgentsDefault  = "agents.default"
+	policySupportedVersions = "1, 2, 3, 4"
 )
 
 func configDirEnv(t *testing.T) []string {

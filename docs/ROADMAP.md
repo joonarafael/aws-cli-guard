@@ -31,11 +31,11 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Phase 3 is complete. `AG-2` is done. Next:
+Phase 3 is complete. `AG-3` is done. Next:
 
-- `AG-3` agent-specific policy rules for recognized callers.
+- `AG-5` tested integrations for selected agents at pinned versions (the first change that can recognize a real caller from environment markers).
 
-Also unblocked, but in later milestones: `IN-1`, `OP-3`, `OP-5`, `AD-2`.
+Also unblocked, but in later milestones: `FS-5`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
 
 `Q-1` through `Q-9` are answered. None of them block current work.
 
@@ -229,13 +229,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | AG-1 | Caller context, including whether a terminal is attached | Done | Phase 4 | — | `AG-2`, `AG-4`, `OP-1` |
 | AG-2 | Environment-variable markers for agents | Done | Phase 4 | `AG-1` | `AG-3`, `AG-5` |
-| AG-3 | Agent-specific policy rules | To do | Phase 4 | `AG-2`, `PO-3` | `FS-5`, `AD-3` |
+| AG-3 | Agent-specific policy rules | Done | Phase 4 | `AG-2`, `PO-3` | `FS-5`, `AD-3` |
 | AG-4 | Parent-process detection | To do | Phase 4 | `AG-1`, `CI-1` | — |
 | AG-5 | Tested integrations for selected agents | To do | Phase 4 | `AG-2` | `AD-5` |
 
 - `AG-1` adds `internal/agent` with `Observe` and stdin classes `undetermined`, `interactive`, and `non-interactive`. Linux uses `TCGETS`; Darwin uses `TIOCGETA`. `ENOTTY`, `EINVAL`, `ENXIO`, and `ENODEV` mean non-interactive; other ioctl errors mean undetermined. Darwin returns `ENODEV` for non-terminal devices such as `/dev/null`. Non-unix builds always report undetermined. After settings, policy, and grants load, `gate.Decide` calls `agent.Observe(os.Stdin)` before export and profile rules. The three known classes leave allow, prompt, and deny unchanged. An out-of-range class cancels with status 3. The check does not read stdin and does not open `/dev/tty`. Agent recognition stays unknown until a detector is enabled. `[agents]` remains rejected in policy schema versions 1 and 2.
 - `AG-2` adds policy schema version 3 ([ADR 0020](decisions/0020-policy-schema-v3.md)) with optional `[agents.detection]` and required boolean `environment_markers` when that table is present. Versions 1 and 2 reject `[agents]`. `internal/agent.ApplyMarkers` consults an empty built-in catalog only when the switch is true; a non-empty env value on a catalog name sets recognition without changing allow, prompt, or deny. Init still writes version 2. `aws-guard policy list` prints the switch when the detection table was present. Built-in variable names arrive with pinned versions in `AG-5`; that work does not change authorization until `AG-3`.
-- `AG-3` applies `[agents]` actions only to a positive recognition. Those actions are present in the file, or they are not. The product does not add a default deny.
+- `AG-3` adds policy schema version 4 ([ADR 0021](decisions/0021-policy-schema-v4.md)) with optional `[agents] default` and `[agents.profiles]` action keys, valid only when `environment_markers = true`. `policy.EvaluateForCaller` applies those rules to a positively recognized named profile; agent `deny` runs before credential export and grants. Refusals name `caller: recognized AI agent`. Init still writes version 2. The production marker catalog stays empty until `AG-5`.
 - `AG-4` inspects parent processes only when `[agents.detection] parent_process` is true.
 - `AG-5` tests Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI at pinned versions. Adding or dropping a product is a later change to that set.
 

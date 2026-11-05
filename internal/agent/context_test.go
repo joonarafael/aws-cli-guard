@@ -27,12 +27,12 @@ func TestObserveNotRecognized(t *testing.T) {
 	t.Parallel()
 
 	ctx := Observe(nil)
-	if ctx.recognized() {
+	if ctx.Recognized() {
 		t.Fatal("Observe(nil) recognized")
 	}
 
 	ctx = ContextWithStdin(StdinInteractive)
-	if ctx.recognized() {
+	if ctx.Recognized() {
 		t.Fatal("ContextWithStdin recognized")
 	}
 }
@@ -43,7 +43,7 @@ func TestForcedRecognitionStillFollowsProfilePolicy(t *testing.T) {
 	ctx := ContextWithStdin(StdinInteractive)
 	ctx.rec = recognition(1)
 
-	if !ctx.recognized() {
+	if !ctx.Recognized() {
 		t.Fatal("want recognized")
 	}
 

@@ -2,7 +2,8 @@
 //
 // Decide recognizes login and returns before loading settings, policy, or grants.
 // Otherwise it loads settings, policy, and grants, classifies stdin, applies
-// optional environment-marker recognition, credential-export and profile rules,
+// optional environment-marker recognition, agent profile rules for recognized
+// callers, credential-export and profile rules,
 // and writes secret-safe cancellation output
 // to stderr when execution is refused.
 package gate

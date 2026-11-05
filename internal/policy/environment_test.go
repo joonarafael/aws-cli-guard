@@ -144,6 +144,9 @@ func TestEvaluateEnvironmentOverridesProfileAllow(t *testing.T) {
 		CredentialExport:      policy.ActionPrompt,
 		EnvironmentMarkers:    false,
 		HasEnvironmentMarkers: false,
+		HasAgentDefault:       false,
+		AgentDefault:          "",
+		AgentProfiles:         map[string]policy.Action{},
 		Profiles: map[string]policy.Profile{
 			"prod": {Action: policy.ActionAllow, ApprovalTTL: 0, HasApprovalTTL: false},
 		},
@@ -170,6 +173,9 @@ func TestEvaluateUnresolvedIgnoresEnvironmentAction(t *testing.T) {
 		CredentialExport:      policy.ActionPrompt,
 		EnvironmentMarkers:    false,
 		HasEnvironmentMarkers: false,
+		HasAgentDefault:       false,
+		AgentDefault:          "",
+		AgentProfiles:         map[string]policy.Action{},
 		Profiles:              map[string]policy.Profile{},
 	}
 

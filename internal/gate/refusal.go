@@ -14,6 +14,7 @@ const (
 	reasonPolicyDeny           = "the policy denies this subject"
 	reasonProfileNotApproved   = "this profile is not approved on this machine"
 	reasonGrantCannotAuthorize = "a grant cannot authorize this subject"
+	reasonRecognizedAgent      = "recognized AI agent"
 	allowGuidanceAllowFirst    = "allow it first, for a limited time, then retry"
 	allowGuidanceHeadless      = "the grant covers later invocations on this machine, " +
 		"including headless ones, until it expires"
@@ -36,6 +37,10 @@ func writeProfileRefusal(
 		writeProfileIdentityDetails(stderr, env, subj)
 	}
 
+	if policy.IsAgentBasis(decision.Basis) {
+		output.Detail(stderr, "caller: "+reasonRecognizedAgent)
+	}
+
 	writeCommandDetail(stderr, inv)
 	output.Detail(stderr, "policy: "+string(decision.Action))
 	output.Detail(stderr, "reason: "+refusalReasonLine(subj, decision))
@@ -50,6 +55,12 @@ func cancelReasonForDecision(subj subject.Subject, decision policy.Decision) str
 }
 
 func refusalReasonLine(subj subject.Subject, decision policy.Decision) string {
+	if policy.IsAgentBasis(decision.Basis) && decision.Action == policy.ActionDeny {
+		if subj.Kind == subject.NamedProfile && subj.Name != "" {
+			return subj.Name + " is denied for recognized agents"
+		}
+	}
+
 	switch decision.Action {
 	case policy.ActionAllow:
 		return reasonPolicyDeny

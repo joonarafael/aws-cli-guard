@@ -137,7 +137,7 @@ func TestDecideExportRefused(t *testing.T) {
 		[]string{
 			gateProgName,
 			gateConfigureCommand,
-			"export-credentials",
+			gateExportCredentialsOp,
 			gateProfileFlag,
 			gateTestProfile,
 		},

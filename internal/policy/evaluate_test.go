@@ -39,6 +39,9 @@ func policyWithDefault(action policy.Action) policy.Policy {
 		CredentialExport:      policy.ActionPrompt,
 		EnvironmentMarkers:    false,
 		HasEnvironmentMarkers: false,
+		HasAgentDefault:       false,
+		AgentDefault:          "",
+		AgentProfiles:         map[string]policy.Action{},
 		Profiles:              map[string]policy.Profile{},
 	}
 }
@@ -54,6 +57,9 @@ func policyWithProfiles(profiles map[string]policy.Profile) policy.Policy {
 		CredentialExport:      policy.ActionPrompt,
 		EnvironmentMarkers:    false,
 		HasEnvironmentMarkers: false,
+		HasAgentDefault:       false,
+		AgentDefault:          "",
+		AgentProfiles:         map[string]policy.Action{},
 		Profiles:              profiles,
 	}
 }

@@ -7,7 +7,7 @@ const recognitionAgent recognition = 1
 // builtinMarkerNames lists command-scoped environment variable names for built-in
 // agent integrations. Add a name only with the product and pinned version that sets it.
 func builtinMarkerNames() []string {
-	return nil
+	return extraBuiltinMarkerNames()
 }
 
 // ApplyMarkers updates ctx when enabled and a built-in marker name is set to a

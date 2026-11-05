@@ -47,6 +47,7 @@ func (c Context) FollowsProfilePolicy() bool {
 	}
 }
 
-func (c Context) recognized() bool {
+// Recognized reports whether an enabled detector positively matched this caller.
+func (c Context) Recognized() bool {
 	return c.rec != recognitionUnknown
 }

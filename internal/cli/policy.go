@@ -71,6 +71,22 @@ func writePolicyList(stdout io.Writer, pol policy.Policy) {
 		output.Detail(stdout, "environment_markers: "+strconv.FormatBool(pol.EnvironmentMarkers))
 	}
 
+	if pol.HasAgentDefault {
+		output.Detail(stdout, "agents_default: "+string(pol.AgentDefault))
+	}
+
+	agentNames := make([]string, 0, len(pol.AgentProfiles))
+	for name := range pol.AgentProfiles {
+		agentNames = append(agentNames, name)
+	}
+
+	sort.Strings(agentNames)
+
+	for _, name := range agentNames {
+		output.Detail(stdout, "agent_profile: "+name)
+		output.Detail(stdout, "agent_action: "+string(pol.AgentProfiles[name]))
+	}
+
 	names := make([]string, 0, len(pol.Profiles))
 	for name := range pol.Profiles {
 		names = append(names, name)
@@ -142,6 +158,12 @@ func writePolicyExplain(stdout io.Writer, env []string, pol policy.Policy, profi
 
 	writeGrantRequirement(stdout, decision.Action)
 	output.Detail(stdout, "credential_export: "+string(pol.CredentialExport))
+
+	agentDecision := policy.EvaluateForCaller(pol, subj, true)
+	if policy.IsAgentBasis(agentDecision.Basis) {
+		output.Detail(stdout, "agent_action: "+string(agentDecision.Action))
+		output.Detail(stdout, "agent_basis: "+agentDecision.Basis.Label())
+	}
 }
 
 func writeGrantRequirement(stdout io.Writer, action policy.Action) {

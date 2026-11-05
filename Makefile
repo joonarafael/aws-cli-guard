@@ -28,6 +28,7 @@ TESTPATHS_LINT_TAGS := --build-tags=awsguard_testpaths
 test: ## Run unit tests with race detector
 	CGO_ENABLED=1 go test $(TESTPATHS_GO_TAGS) ./... -race -count=1
 	CGO_ENABLED=1 go test ./internal/paths -race -count=1
+	CGO_ENABLED=1 go test ./internal/agent -race -count=1
 
 vet: ## Run go vet (linux, darwin, and windows build tags)
 	go vet ./...
