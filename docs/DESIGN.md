@@ -28,7 +28,7 @@ The primary goals are:
 - Offer auto-update that the user turns on or off when they run `aws-guard init`, and suggest an update when a newer version is available and updates are off.
 - Log tightly by default, and support verbose logging for troubleshooting.
 
-Session off, persistent disable, GitHub Releases, auto-update, and logging are recorded operational criteria. [Section 12](#12-recorded-operational-criteria) specifies them so they are not forgotten. They are outside the current roadmap.
+Session off, persistent disable, GitHub Releases, auto-update, and logging are recorded operational criteria. [Section 12](#12-recorded-operational-criteria) specifies them. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection.
 
 The implementation language will be Go.
 
@@ -48,7 +48,7 @@ The implementation language will be Go.
 - Support both PATH-based installation and an optional shell-integration mode.
 - When a profile is not approved yet, fail the invocation and explain how to allow it on this machine before retrying, including headless use.
 - Fail closed when policy evaluation is unavailable or ambiguous in ways that could bypass a configured restriction.
-- Meet the recorded operational criteria in [Recorded operational criteria](#12-recorded-operational-criteria): session-scoped off, persistent system-wide disable and enable, GitHub Releases with direct download, optional auto-update, and tight plus verbose logging. Those criteria are specified so they are not forgotten. They are not scheduled work yet.
+- Meet the recorded operational criteria in [Recorded operational criteria](#12-recorded-operational-criteria): session-scoped off, persistent system-wide disable and enable, GitHub Releases with direct download, optional auto-update, and tight plus verbose logging. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules that work after migrate and with installation, before further agent detection.
 
 ### Non-Goals
 
@@ -182,7 +182,7 @@ The exact precedence between global and profile-specific rules should be documen
 
 ### Example configuration
 
-User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). Version 2 adds optional `[environment]` for static environment credentials ([ADR 0019](decisions/0019-policy-schema-v2.md)). Version 3 adds optional `[agents.detection]` with boolean `environment_markers` only ([ADR 0020](decisions/0020-policy-schema-v3.md)). Version 4 adds optional `[agents] default` and `[agents.profiles]` action keys for recognized callers ([ADR 0021](decisions/0021-policy-schema-v4.md)). The block below is illustrative; `parent_process` is not enforced until a later schema version:
+User policy is TOML. Version 1 is defined in [ADR 0010](decisions/0010-policy-schema.md). Version 2 adds optional `[environment]` for static environment credentials ([ADR 0019](decisions/0019-policy-schema-v2.md)). Version 3 adds optional `[agents.detection]` with boolean `environment_markers` only ([ADR 0020](decisions/0020-policy-schema-v3.md)). Version 4 adds optional `[agents] default` and `[agents.profiles]` action keys for recognized callers ([ADR 0021](decisions/0021-policy-schema-v4.md)). Version 5 adds optional `[agents.detection] user_declared` ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). The block below is illustrative. `parent_process` and `user_declared` are not enforced until those schema versions. A file that sets either key on an earlier version fails validation:
 
 ```toml
 version = 1
@@ -213,6 +213,7 @@ default = "deny"
 [agents.detection]
 environment_markers = true
 parent_process = false
+user_declared = ["EXAMPLE_AGENT"]
 
 [agents.profiles.dev-readonly]
 action = "allow"
@@ -257,7 +258,7 @@ The tool should:
 
 Three read-only `aws-guard` commands inspect `config.toml` without executing AWS:
 
-- `aws-guard policy list` prints the loaded schema version, `[defaults]`, the effective environment action and whether it comes from `[environment]` or `[defaults]`, `[credential_export]`, `environment_markers` when `[agents.detection]` was present on load (otherwise omits that line), `agents_default` and each `agent_profile` / `agent_action` when agent action keys were present on load, and each `[profiles]` entry in sorted name order with optional `approval_ttl`.
+- `aws-guard policy list` prints the loaded schema version, `[defaults]`, the effective environment action and whether it comes from `[environment]` or `[defaults]`, `[credential_export]`, `environment_markers` when `[agents.detection]` was present on load (otherwise omits that line), one `user_declared: <name>` line per name when that key was present and non-empty, `agents_default` and each `agent_profile` / `agent_action` when agent action keys were present on load, and each `[profiles]` entry in sorted name order with optional `approval_ttl`. `user_declared` is not accepted until policy schema version 5.
 - `aws-guard policy explain <profile>` prints the effective action and basis for that profile name, optional `approval_ttl`, whether a grant would be required for a `prompt` action, the file's `[credential_export]` action, `agent_action` and `agent_basis` when a recognized caller would use an agent rule, and the same grounded account, role, and `identity:` detail lines as a named-profile refusal when credential-source fingerprinting succeeds. It does not read grants or simulate a specific invocation.
 - `aws-guard config validate` loads and validates the policy file and prints `policy: valid` on success. It does not validate `settings.toml`.
 
@@ -317,7 +318,7 @@ The policy file, the settings file, and the grants file each carry their own int
 
 Decoding is strict. Unknown fields, duplicate keys, missing versions, and unknown action values are errors. The live `aws` path does not migrate or rewrite a file it does not understand.
 
-A binary interprets the current version and any older version it still supports, in memory. An explicit migrate command, separate from recovery, can rewrite an older supported file. That command copies the current file aside first, then atomically replaces it. `aws` never calls it.
+A binary interprets the current version and any older version it still supports, in memory. `aws-guard migrate` rewrites an older supported `config.toml` or `grants.json` to the newest version this binary enforces (today policy version 4 and grants version 2). It requires no confirmation. The command loads both files first; a missing policy file or any unusable file cancels without writing. A missing grants file is normal. For each file that still needs a higher version, the tool copies the current bytes to a sibling name with a `.migrated.` marker and a UTC timestamp, then atomically replaces the live file. Recover uses `.corrupt.` instead. A file already at the target version is left byte-for-byte unchanged. Policy migrate encodes loaded decisions and does not add agent detection the user did not already have. Grants migrate keeps stored fingerprint fields and does not re-read AWS config. A second migrate is a no-op. The live `aws` path never calls migrate. [ADR 0024](decisions/0024-migrate-command.md) records the contract.
 
 An unsupported version, including a newer one, uses the corrupted-file flow below. Writing a fresh file is not a migration. It drops the previous contents down to a default file, and the previous bytes stay on disk under the moved name.
 
@@ -626,7 +627,7 @@ Detection will therefore be heuristic and extensible. The initial products, and 
 
 Many coding agents expose environment variables to processes they launch.
 
-The initial built-in integrations are Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). That set is a starting point. Agents, harnesses, IDEs, and models change often, and the set is expected to change with them. Variable names are not fixed in this document. Each integration records the command-scoped variables of one pinned version. A variable that also appears in an ordinary human terminal is not the signal for that product. The first recorded rows are Cursor and Claude Code ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). The OpenAI Codex CLI and Gemini CLI are not in the catalog yet.
+The initial built-in integrations are Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). That set is a starting point. Agents, harnesses, IDEs, and models change often, and the set is expected to change with them. Variable names are not fixed in this document. Each integration records the command-scoped variables of one pinned version. A variable that also appears in an ordinary human terminal is not the signal for that product. The first recorded rows are Cursor and Claude Code ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). The OpenAI Codex CLI and Gemini CLI are not in the catalog yet. Those rows wait until after `user_declared` ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)).
 
 The implementation should:
 
@@ -634,9 +635,11 @@ The implementation should:
 - Treat a marker as a signal rather than cryptographic proof.
 - Document which agents and versions have been tested.
 - Avoid treating the absence of markers as proof of human execution.
-- Allow additional markers to be configured by the user.
+- Allow additional markers through `[agents.detection] user_declared`, an array of environment variable names ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). The key arrives in policy schema version 5. Until that version, a file that sets it fails validation.
 - Keep detection logic modular so a later integration can be added on its own.
-- Consult markers only when the user has set `[agents.detection] environment_markers = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)).
+- Consult the built-in list and `user_declared` only when the user has set `[agents.detection] environment_markers = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)). Listing names does not turn that switch on.
+
+`user_declared` is part of the environment-marker switch, not a separate detector. A listed name matches when it is set to a non-empty value. The wrapper does not compare or log the value. Several matches, built-in or declared, are one recognized caller. The array does not add a product to the set in [ADR 0015](decisions/0015-initial-agent-integrations.md). The name rules are in [ADR 0023](decisions/0023-product-finish-before-agent-detection.md). That epic is scheduled after installation and the operational criteria, before more catalog rows and before parent-process detection.
 
 Environment variables can be inherited, removed, or forged. Detection should not be presented as tamper-proof.
 
@@ -644,7 +647,7 @@ Environment variables can be inherited, removed, or forged. Detection should not
 
 On supported operating systems, the tool may inspect its parent process or process ancestry to look for known agent executables.
 
-Parent-process inspection is its own detector. It runs only when the user sets `[agents.detection] parent_process = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)). A missing environment marker leaves it off. Turning environment markers on leaves it off.
+Parent-process inspection is its own detector. It runs only when the user sets `[agents.detection] parent_process = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)). A missing environment marker leaves it off. Turning environment markers on leaves it off. The key stays unknown until the schema version that implements the detector. That work is last in the detection tail, after `user_declared` and the remaining initial products ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)).
 
 Limits:
 
@@ -685,6 +688,7 @@ default = "deny"
 [agents.detection]
 environment_markers = true
 parent_process = false
+user_declared = ["EXAMPLE_AGENT"]
 
 [agents.profiles.dev-readonly]
 action = "allow"
@@ -696,7 +700,7 @@ action = "deny"
 action = "deny"
 ```
 
-`environment_markers`, agent action keys, and `parent_process` are three separate choices ([ADR 0016](decisions/0016-agent-detection-switches.md)). `environment_markers = true` is the user opting in to the built-in markers. Until that key is true, those markers change nothing. `parent_process` is off unless it is true; the example sets false so the off is written down. Agent `default` and `[agents.profiles]` actions apply only to a caller a detector has recognized. Writing those actions is the opt-in. A file that sets them while both detectors are off is invalid.
+`environment_markers`, agent action keys, and `parent_process` are three separate choices ([ADR 0016](decisions/0016-agent-detection-switches.md)). `environment_markers = true` is the user opting in to the built-in markers and to any names in `user_declared`. Until that key is true, those markers change nothing. `user_declared` is not its own switch ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). `parent_process` is off unless it is true; the example sets false so the off is written down. Agent `default` and `[agents.profiles]` actions apply only to a caller a detector has recognized. Writing those actions is the opt-in. A file that sets them while every implemented detector is off is invalid. Version 4 treats `environment_markers` as the only implemented detector. The parent-process schema widens that rule to "at least one detector is on."
 
 The policy engine distinguishes:
 
@@ -841,7 +845,7 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. They sit outside the phases in [Initial Roadmap](#15-initial-roadmap). This section records them so they are not forgotten. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline, auto-update, and logging are not designed in detail yet.
+These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline, auto-update, and logging are not designed in detail yet.
 
 ### 12.1 Turn the wrapper off for one terminal session
 
@@ -1081,7 +1085,7 @@ The initial implementation should be tested without requiring access to a real A
 - Missing markers.
 - Conflicting signals.
 - Marker values inherited from the environment.
-- User-configured markers.
+- User-declared names in `user_declared`, only when `environment_markers` is true. A name that is absent or empty does not recognize the caller. `user_declared` while the switch is false or absent fails validation.
 - Parent-process detection only when `parent_process` is true. An omitted `parent_process`, and `parent_process = false`, do not inspect processes.
 - Agent action keys with both detectors off fail validation.
 - Non-interactive invocation without an agent marker.
@@ -1128,19 +1132,21 @@ The test suite should explicitly verify that no agent detector treats an absent 
 
 - Built-in environment-marker detection for Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). The set is expected to change.
 - Marker detection stays off until the user sets `[agents.detection] environment_markers = true` ([ADR 0016](decisions/0016-agent-detection-switches.md)).
-- Parent-process detection only when `[agents.detection] parent_process = true`.
+- User-declared markers in `[agents.detection] user_declared` ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). The key is named. Policy schema version 5 enforces it. That epic waits until installation and the operational criteria are done, and it comes before more catalog rows.
+- Parent-process detection only when `[agents.detection] parent_process = true`. That detector is last among the planned detection work, after `user_declared` and the remaining initial products.
 - Agent-specific profile rules, opt-in by the presence of `[agents]` actions, applied only to a positively recognized caller.
 - Unknown and uncertain callers follow the normal profile policy, as specified in [Agent-specific policy](#85-agent-specific-policy).
-- Explicit migrate command for older policy and grants file versions the binary still understands.
-- Tests against pinned versions of the initial products. Cursor and Claude Code are recorded in [ADR 0022](decisions/0022-cursor-and-claude-code-markers.md). The OpenAI Codex CLI and Gemini CLI are still open.
+- Tests against pinned versions of the initial products. Cursor and Claude Code are recorded in [ADR 0022](decisions/0022-cursor-and-claude-code-markers.md). The OpenAI Codex CLI and Gemini CLI wait with the rest of the detection tail.
 
-### Phase 5: Installation and portability
+### Phase 5: Installation, upgrades, and operations
 
+- Explicit migrate command for older policy and grants file versions the binary still understands. It runs before the installer work. It does not enable detection and does not write `user_declared`.
 - Install command or script. Uninstall stays out of scope.
 - PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
-- Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)).
-- Safe detection of the actual AWS CLI executable.
+- Safe detection of the actual AWS CLI executable. Skipping every wrapper copy is already done.
 - Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
+- The recorded operational criteria, in the order in [Remaining order](#remaining-order): the release pipeline ships with the installer, then session off, persistent disable and enable, tight and verbose logging, and auto-update.
+- Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)). It follows the operational criteria.
 
 ### Phase 6: Optional advanced features
 
@@ -1150,19 +1156,29 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Optional audit logging with sensitive-data redaction. Day-to-day tight and verbose logging is a separate recorded criterion in [Logging](#125-logging).
 - Stronger integration with OS-level isolation mechanisms.
 
-### Recorded, not yet scheduled
+### Remaining order
 
-[Recorded operational criteria](#12-recorded-operational-criteria) are intentionally outside phases 1–6:
+Phases 1 through 3 are complete. Part of Phase 4 is complete: caller context, the environment-marker switch, agent action keys, and the Cursor and Claude Code catalog rows. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) is the order for what is left. The tracker is [ROADMAP.md](ROADMAP.md).
 
-- A command that turns the wrapper off for the current terminal session only.
-- A persistent system-wide disable and enable, usable when a published build is broken.
-- A cross-platform GitHub Releases pipeline with an installer and direct downloads.
-- Optional auto-update, asked during `aws-guard init`, with a suggestion when a newer version is available and updates are off.
-- Tight default logging and verbose logging.
+Finish the product before further agent detection:
 
-Leave them unimplemented until a later pass pulls them into a phase.
+1. `aws-guard migrate` for older policy and grants versions. The rewrite does not enable detection.
+2. The installer and the GitHub Releases pipeline.
+3. Upgrade behavior that keeps user policy and can run migrate.
+4. Session off, then persistent disable and enable.
+5. Tight and verbose logging, then auto-update.
+6. Optional Bash and zsh integration.
 
-The later phases should be driven by actual user needs rather than being prerequisites for a useful initial release.
+The release pipeline is part of step 2. Session off and persistent disable are step 4. Logging and auto-update are step 5. Further agent detection comes after that sequence:
+
+1. `user_declared`, policy schema version 5.
+2. The OpenAI Codex CLI and Gemini CLI at pinned versions, then later products as they are checked.
+3. Parent-process detection. A macOS CI runner starts with that work.
+4. OS-level isolation, after parent-process detection.
+
+Identity verification, richer policy explanations, and audit logging stay optional. They follow a user need and do not gate the lists above.
+
+The later optional work should be driven by actual user needs rather than being a prerequisite for a useful release.
 
 ## 16. Open Design Questions
 

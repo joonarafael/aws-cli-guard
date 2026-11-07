@@ -24,3 +24,6 @@ var ErrNoPartialName = errors.New("aws-cli-guard: no free partial name")
 
 // ErrNoCorruptName is returned when no unused corrupt aside filename can be chosen.
 var ErrNoCorruptName = errors.New("aws-cli-guard: no free corrupt name")
+
+// ErrNoMigratedName is returned when no unused migrated aside filename can be chosen.
+var ErrNoMigratedName = errors.New("aws-cli-guard: no free migrated name")

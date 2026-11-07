@@ -22,7 +22,7 @@ The OpenAI Codex CLI and Gemini CLI have not been checked. `CLAUDECODE` is the o
 
 5. **`CLAUDECODE` is excluded.** The vendor sets it in IDE integrated terminals as well as in Claude Code subprocesses. An ordinary human terminal inside the IDE would match.
 
-6. **Remaining products.** The OpenAI Codex CLI and Gemini CLI stay out of the catalog until a later change records a pinned version for each. Adding, dropping, or replacing a row is a later change to this set.
+6. **Remaining products.** The OpenAI Codex CLI and Gemini CLI stay out of the catalog until a later change records a pinned version for each. That change waits until the detection tail in [ADR 0023](0023-product-finish-before-agent-detection.md). Adding, dropping, or replacing a row is a later change to this set.
 
 7. **Opt-in unchanged.** Init still writes policy version 2 and does not write `environment_markers`.
 
@@ -31,4 +31,4 @@ The OpenAI Codex CLI and Gemini CLI have not been checked. `CLAUDECODE` is the o
 - With `environment_markers = true` and `[agents]` action keys, a matching caller follows those keys ([ADR 0021](0021-policy-schema-v4.md)).
 - A shell that inherited `CLAUDE_CODE_CHILD_SESSION` is recognized. That is the inheritance the vendor documents.
 - If a human Cursor terminal also sets `CURSOR_AGENT`, a later change drops or replaces that row.
-- Codex CLI and Gemini CLI remain open work inside `AG-5`.
+- Codex CLI and Gemini CLI remain open work inside `AG-5`. [ADR 0023](0023-product-finish-before-agent-detection.md) schedules that work after installation, the operational criteria, and `user_declared`.

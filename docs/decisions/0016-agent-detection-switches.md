@@ -24,7 +24,7 @@ Three responsibilities. Each is an explicit yes or no. One switch does not turn 
 
 4. **What a match does.** A positive match from an enabled detector is a recognized agent. That status is what session-off refuses to exempt, what a denial may name as the caller, and what verbose logging may record. Those effects need the detector the user turned on. They do not need `[agents]` action keys. Allow, prompt, and deny change only when those action keys are present. With no detector on, no caller is recognized, so the session-off exception does not run.
 
-Schema version 1 rejects `[agents]` ([ADR 0010](0010-policy-schema.md)). These keys arrive with the schema version that enforces them. User-declared extra markers stay explicit entries. Declaring one does not turn the built-in set on. Turning the built-in set on does not invent markers the user did not write. Extra markers are consulted only along with the built-in set, and only when `environment_markers` is true.
+Schema version 1 rejects `[agents]` ([ADR 0010](0010-policy-schema.md)). These keys arrive with the schema version that enforces them. User-declared extra markers stay explicit entries under `[agents.detection] user_declared` ([ADR 0023](0023-product-finish-before-agent-detection.md)). Declaring one does not turn the built-in set on. Turning the built-in set on does not invent markers the user did not write. Extra markers are consulted only along with the built-in set, and only when `environment_markers` is true. They are not a fourth switch.
 
 ## Consequences
 
