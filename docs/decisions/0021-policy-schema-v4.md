@@ -14,7 +14,7 @@ Epic `AG-3` needs a schema version that accepts and enforces `[agents]` profile 
 
 1. **Versions.** The binary accepts integer `version` 1, 2, 3, and 4. Version 5 and other unsupported values follow the strict decode path in `internal/decode`. The `aws` wrapper never migrates or rewrites an on-disk file. `aws-guard init` and `aws-guard recover policy` write version 2 when they create a fresh file.
 
-2. **Versions 1 through 3.** Unchanged from [ADR 0010](0010-policy-schema.md), [ADR 0019](0019-policy-schema-v2.md), and [ADR 0020](0020-policy-schema-v3.md). Version 3 still rejects `[agents] default` and `[agents.profiles]` with `KindInvalid`. Keys `parent_process` and user-declared extra markers remain unknown until later epics.
+2. **Versions 1 through 3.** Unchanged from [ADR 0010](0010-policy-schema.md), [ADR 0019](0019-policy-schema-v2.md), and [ADR 0020](0020-policy-schema-v3.md). Version 3 still rejects `[agents] default` and `[agents.profiles]` with `KindInvalid`. Keys `parent_process` and `user_declared` remain unknown in version 4. `user_declared` is specified in [ADR 0023](0023-product-finish-before-agent-detection.md) and arrives in version 5.
 
 3. **Version 4 document.** Version 3 plus optional agent authorization keys under `[agents]`:
    - Optional top-level `default` under `[agents]` with values `allow`, `prompt`, or `deny`.
@@ -34,4 +34,4 @@ Epic `AG-3` needs a schema version that accepts and enforces `[agents]` profile 
 - [ADR 0020](0020-policy-schema-v3.md) remains the version 3 record. Version 4 extends it here.
 - `AG-4` adds `parent_process` when a schema change accepts it.
 - The first built-in marker names are [ADR 0022](0022-cursor-and-claude-code-markers.md). Authorization uses this ADR once recognition is possible.
-- `FS-5` `aws-guard migrate` may later rewrite older policy to version 4. The live `aws` path does not.
+- `FS-5` `aws-guard migrate` rewrites an older supported policy file to the newest version that binary enforces. Today that is version 4. It does not enable detection and does not write `user_declared` ([ADR 0023](0023-product-finish-before-agent-detection.md)). The live `aws` path does not migrate.

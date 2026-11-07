@@ -2,15 +2,15 @@
 
 A high-level overview of the epics needed to build AWS CLI Guard as described in [DESIGN.md](DESIGN.md). It tracks progress and shows what can be picked up next. Technical detail stays in the design document and in the code.
 
-> **Subject to change.** The ordering and dependencies below are a best current guess, not a plan of record. This is not a waterfall. Implementation will surface surprises, and epics will be split, merged, reordered, or dropped as we learn. Update this file when that happens.
+> **Subject to change.** Implementation will surface surprises, and epics will be split, merged, reordered, or dropped as we learn. Update this file when that happens. The order for unfinished work is [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) until a later ADR changes it.
 
 ## How to read this
 
 - **ID** is an area prefix and a number, for example `PO-3`. IDs are stable. A dropped epic keeps its ID and is marked dropped rather than renumbered.
 - **Status** is one of `Done`, `In progress`, `To do`, or `Dropped`.
-- **Milestone** maps to the phases in the [Initial Roadmap](DESIGN.md#15-initial-roadmap). `MVP` is Phase 1. `Backlog` holds Phase 6 and the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria), which are intentionally not scheduled yet.
+- **Milestone** maps to the phases in the [Initial Roadmap](DESIGN.md#15-initial-roadmap). `MVP` is Phase 1. `Backlog` holds Phase 6. The operational criteria are in Phase 5.
 - **Blocked by** lists what has to be done, or decided, first. **Blocks** is the reverse link. Keep both sides in sync when editing.
-- An epic is ready to start when everything in its **Blocked by** column is `Done` or answered.
+- An epic is ready to start when everything in its **Blocked by** column is `Done` or answered. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) is stricter than that: a later step in the remaining order waits even when its blockers are already done.
 - `Q-n` items are design decisions. An open one blocks epics just like another epic does. An answered one points at an ADR and no longer blocks.
 
 | Prefix | Area |
@@ -31,15 +31,13 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 ## Next up
 
-Phase 3 is complete. `AG-3` is done. `AG-5` is in progress. Shipped rows are Cursor and Claude Code ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Still open in that epic:
+Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-- OpenAI Codex CLI and Gemini CLI at pinned versions.
+Next is `FS-5`. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
 
-Also unblocked, but in later milestones: `FS-5`, `IN-1`, `OP-3`, `OP-5`, `AD-2`.
+`user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
 `Q-1` through `Q-9` are answered. None of them block current work.
-
-`CI-1` is unblocked too. Leave it until `AG-4`. The note on `CI-1` says why.
 
 ## Suggested order for the MVP
 
@@ -51,7 +49,33 @@ Each wave only depends on earlier waves. Items within a wave can run in parallel
 4. `PO-4`, `GR-4`. Done.
 5. `MV-1`. Done.
 
-After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant operations), Phase 4 (agent awareness), and Phase 5 (installation), in that order. The design also says later phases should follow actual user needs, so that order is a default rather than a commitment.
+Phases 2 and 3 are done. The detection engine through `AG-3`, plus the Cursor and Claude Code rows, is done. What is left follows [Remaining order](#remaining-order).
+
+## Remaining order
+
+[ADR 0023](decisions/0023-product-finish-before-agent-detection.md) is the record. Technical blockers stay in the epic tables. This list is the schedule.
+
+### Finish the product
+
+1. `FS-5`. Migrate rewrites older supported files to the newest version the binary already enforces. It does not enable detection and does not write `user_declared`.
+2. `IN-1` and `OP-3`. The installer and the release pipeline ship together. The installer lays down the persistent-disable script.
+3. `IN-3`. Upgrade keeps user policy and can run migrate.
+4. `OP-1`, then `OP-2`. Session off keys off the existing recognized-agent status. Persistent disable needs the script and manifest from `IN-1`.
+5. `OP-5`, then `OP-4`. Verbose logging records the caller signals that exist today. Auto-update waits until releases exist, and init asks about updates only once the updater ships.
+6. `IN-2`. Bash and zsh, after PATH install works.
+
+### Agent detection last
+
+The catalog and parent-process inspection continue as tools change. The engine they plug into is already shipped.
+
+1. `AG-6`. User-declared markers, key `user_declared`, policy schema version 5.
+2. The rest of `AG-5`: OpenAI Codex CLI and Gemini CLI at pinned versions. `AD-5` is the same kind of change after that.
+3. `CI-1`, then `AG-4`. Leave the macOS runner until parent-process detection. The note on `CI-1` says why.
+4. `AD-3`, after `AG-4`.
+
+### Optional, when a user need shows up
+
+`AD-1`, `AD-4`, and `AD-2`. They do not gate the finish sequence or the detection tail.
 
 ## Milestones
 
@@ -60,9 +84,9 @@ After the MVP, the design suggests Phase 2 (profile awareness), Phase 3 (grant o
 | MVP (Phase 1) | `FD-1`, `FD-2`, `FD-3`, `FD-4`, `PR-1`, `PR-2`, `PR-3`, `PR-4`, `FS-1`, `FS-2`, `FS-3`, `FS-4`, `PO-1`, `PO-2`, `PO-3`, `PO-4`, `GR-1`, `GR-2`, `GR-3`, `GR-4`, `MV-1`, `MV-2` |
 | Phase 2: Better profile awareness | `FD-5`, `FD-6`, `FD-7`, `FD-8`, `PR-5`, `PR-6`, `FS-6`, `PO-5`, `PO-6`, `GR-7`, `SS-1` |
 | Phase 3: Grant operations | `GR-5`, `GR-6` |
-| Phase 4: AI-agent awareness | `FS-5`, `AG-1`, `AG-2`, `AG-3`, `CI-1`, `AG-4`, `AG-5` |
-| Phase 5: Installation and portability | `IN-1`, `IN-2`, `IN-3` |
-| Backlog | `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5`, `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
+| Phase 4: AI-agent awareness | `AG-1`, `AG-2`, `AG-3`, `AG-4`, `AG-5`, `AG-6`, `CI-1` |
+| Phase 5: Installation, upgrades, and operations | `FS-5`, `IN-1`, `IN-2`, `IN-3`, `OP-1`, `OP-2`, `OP-3`, `OP-4`, `OP-5` |
+| Backlog | `AD-1`, `AD-2`, `AD-3`, `AD-4`, `AD-5` |
 
 The MVP is complete when every MVP epic is `Done`.
 
@@ -147,11 +171,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FS-2 | Strict, versioned file decoding | Done | MVP | — | `FD-7`, `FS-3`, `FS-5`, `FS-6`, `PO-1`, `GR-1` |
 | FS-3 | Diagnosis of corrupted files | Done | MVP | `FS-2`, `FD-3` | `FS-4`, `FS-6`, `MV-1` |
 | FS-4 | `aws-guard recover` | Done | MVP | `FS-1`, `FS-3`, `FD-4` | `FS-6` |
-| FS-5 | Migrate command for older file versions | To do | Phase 4 | `FS-1`, `FS-2`, `PR-5`, `PO-6`, `AG-3` | `IN-3` |
+| FS-5 | Migrate command for older file versions | To do | Phase 5 | `FS-1`, `FS-2`, `PR-5`, `PO-6`, `AG-3` | `IN-3` |
 | FS-6 | Preference settings file | Done | Phase 2 | `FS-1`, `FS-2`, `FS-3`, `FS-4` | `AD-1`, `OP-4` |
 
 - `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md), pulled into Phase 2 because `aws-guard init` (`PO-2`) already creates `settings.toml` on disk. Identity verification and the auto-update answer live there. `FS-6` adds `settings.Load`, strict validation (rejecting `verify = true` until `AD-1` enforces it), corrupt-file diagnosis on the `aws` path (`settings.Corruption` and `diagnose.Write` in `internal/gate`), and `aws-guard recover settings`.
-- `FS-5` is placed in Phase 4 so `aws-guard migrate` has real schema transitions to rewrite after `PR-5` (`grants.json` v2), `PO-6` (`config.toml` v2), and `AG-3` (`[agents]` rules) land.
+- `FS-5` is next ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). The schema transitions already exist: `grants.json` version 2, and `config.toml` versions 2, 3, and 4. Migrate rewrites an older supported file to the newest version this binary enforces, after copying it aside. It does not enable detection and does not write `user_declared`. When `AG-6` or `AG-4` bumps the policy schema, migrate learns that version and stays an explicit command. The live `aws` path never calls it.
 - `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper prints the note after `output.Cancel` when a load is corrupt. `FS-4` adds `aws-guard recover policy`, `recover grants`, and `recover cache`. `aws-guard recover settings` lands with `FS-6`.
 
 ### PO: Policy
@@ -220,7 +244,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | CI-1 | macOS runner for tests and the native build | To do | Phase 4 | — | `AG-4` |
 
-- Leave `CI-1` until `AG-4`. Ubuntu already runs the shared `unix` tests, and `make vet` / `make lint` type-check Darwin sources there via `GOOS=darwin`. [ADR 0001](decisions/0001-linux-and-macos-first.md) covers platform-sensitive edits with a laptop `make check`. A standing `macos-15` job would add queue time on every pull request for that same source. Parent-process detection is the first planned code a green Ubuntu run will not compile: macOS has no `/proc`. Start `CI-1` as the first step of `AG-4`. If `OP-1` needs a Darwin-only session or terminal implementation sooner, start `CI-1` with that work instead.
+- Leave `CI-1` until `AG-4`. That is after the product-finish sequence, after `AG-6`, and after the rest of `AG-5` ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). Ubuntu already runs the shared `unix` tests, and `make vet` / `make lint` type-check Darwin sources there via `GOOS=darwin`. [ADR 0001](decisions/0001-linux-and-macos-first.md) covers platform-sensitive edits with a laptop `make check`. A standing `macos-15` job would add queue time on every pull request for that same source. Parent-process detection is the first planned code a green Ubuntu run will not compile: macOS has no `/proc`. Start `CI-1` as the first step of `AG-4`. `OP-1` can be tested on Linux with `getsid`. If that epic needs a Darwin-only session or terminal implementation sooner, start `CI-1` with that work instead.
 - The macOS job runs `make test` and `make build` on the standard `macos-15` runner. Gitleaks, actionlint, ShellCheck, and govulncheck stay on `ubuntu-24.04`. That runner is free while this repository is public.
 
 ### AG: Agent awareness
@@ -228,16 +252,18 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | AG-1 | Caller context, including whether a terminal is attached | Done | Phase 4 | — | `AG-2`, `AG-4`, `OP-1` |
-| AG-2 | Environment-variable markers for agents | Done | Phase 4 | `AG-1` | `AG-3`, `AG-5` |
+| AG-2 | Environment-variable markers for agents | Done | Phase 4 | `AG-1` | `AG-3`, `AG-5`, `AG-6` |
 | AG-3 | Agent-specific policy rules | Done | Phase 4 | `AG-2`, `PO-3` | `FS-5`, `AD-3` |
 | AG-4 | Parent-process detection | To do | Phase 4 | `AG-1`, `CI-1` | — |
 | AG-5 | Tested integrations for selected agents | In progress | Phase 4 | `AG-2` | `AD-5` |
+| AG-6 | User-declared environment markers | To do | Phase 4 | `AG-2` | — |
 
 - `AG-1` adds `internal/agent` with `Observe` and stdin classes `undetermined`, `interactive`, and `non-interactive`. Linux uses `TCGETS`; Darwin uses `TIOCGETA`. `ENOTTY`, `EINVAL`, `ENXIO`, and `ENODEV` mean non-interactive; other ioctl errors mean undetermined. Darwin returns `ENODEV` for non-terminal devices such as `/dev/null`. Non-unix builds always report undetermined. After settings, policy, and grants load, `gate.Decide` calls `agent.Observe(os.Stdin)` before export and profile rules. The three known classes leave allow, prompt, and deny unchanged. An out-of-range class cancels with status 3. The check does not read stdin and does not open `/dev/tty`. Agent recognition stays unknown until a detector is enabled. `[agents]` remains rejected in policy schema versions 1 and 2.
 - `AG-2` adds policy schema version 3 ([ADR 0020](decisions/0020-policy-schema-v3.md)) with optional `[agents.detection]` and required boolean `environment_markers` when that table is present. Versions 1 and 2 reject `[agents]`. `internal/agent.ApplyMarkers` consults the built-in catalog only when the switch is true; a non-empty env value on a catalog name sets recognition without changing allow, prompt, or deny. The catalog was empty in `AG-2`. Init still writes version 2. `aws-guard policy list` prints the switch when the detection table was present. Pinned names arrive in `AG-5` ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)); that work does not change authorization until `AG-3`.
 - `AG-3` adds policy schema version 4 ([ADR 0021](decisions/0021-policy-schema-v4.md)) with optional `[agents] default` and `[agents.profiles]` action keys, valid only when `environment_markers = true`. `policy.EvaluateForCaller` applies those rules to a positively recognized named profile; agent `deny` runs before credential export and grants. Refusals name `caller: recognized AI agent`. Init still writes version 2. The production marker catalog stayed empty until `AG-5`.
-- `AG-4` inspects parent processes only when `[agents.detection] parent_process` is true.
-- `AG-5` records pinned environment markers in the production catalog. [ADR 0022](decisions/0022-cursor-and-claude-code-markers.md) adds Cursor (`CURSOR_AGENT`, observed on Cursor 3.29.9) and Claude Code (`CLAUDE_CODE_CHILD_SESSION`, vendor-documented for v2.1.172 and later). `CLAUDECODE` is not a row, because IDE extensions set it in integrated terminals. The OpenAI Codex CLI and Gemini CLI are still open. Adding or dropping a product remains a later change to the set in [ADR 0015](decisions/0015-initial-agent-integrations.md).
+- `AG-4` inspects parent processes only when `[agents.detection] parent_process` is true. It is scheduled after `AG-6` and the rest of `AG-5` ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). Start `CI-1` as its first step. The key stays unknown until that schema version. The version accepts `parent_process` and widens the `[agents]` action-key rule from "`environment_markers` must be true" to "at least one detector is on." A miss still does not fall through to another detector.
+- `AG-5` records pinned environment markers in the production catalog. [ADR 0022](decisions/0022-cursor-and-claude-code-markers.md) adds Cursor (`CURSOR_AGENT`, observed on Cursor 3.29.9) and Claude Code (`CLAUDE_CODE_CHILD_SESSION`, vendor-documented for v2.1.172 and later). `CLAUDECODE` is not a row, because IDE extensions set it in integrated terminals. The OpenAI Codex CLI and Gemini CLI stay out of the catalog until the detection tail. Adding or dropping a product remains a later change to the set in [ADR 0015](decisions/0015-initial-agent-integrations.md).
+- `AG-6` adds policy schema version 5 and `[agents.detection] user_declared`, an array of environment variable names ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). It is the first detection epic after the product-finish sequence. Names are consulted only when `environment_markers = true`, together with the built-in catalog, and a match is the same recognized caller. The key is invalid when the switch is off or absent. Versions 1 through 4 keep rejecting it. Init does not write it. `parent_process` is not part of version 5.
 
 ### IN: Installation
 
@@ -255,14 +281,16 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| OP-1 | Turn the wrapper off for one terminal session | To do | Backlog | `AG-1`, `FS-1`, `FD-4` | — |
-| OP-2 | Persistent disable and enable | To do | Backlog | `IN-1` | — |
-| OP-3 | GitHub Releases pipeline | To do | Backlog | — | `OP-4` |
-| OP-4 | Auto-update and update notices | To do | Backlog | `FS-6`, `OP-3` | — |
-| OP-5 | Tight and verbose logging | To do | Backlog | `FD-3` | — |
+| OP-1 | Turn the wrapper off for one terminal session | To do | Phase 5 | `AG-1`, `FS-1`, `FD-4` | — |
+| OP-2 | Persistent disable and enable | To do | Phase 5 | `IN-1` | — |
+| OP-3 | GitHub Releases pipeline | To do | Phase 5 | — | `OP-4` |
+| OP-4 | Auto-update and update notices | To do | Phase 5 | `FS-6`, `OP-3` | — |
+| OP-5 | Tight and verbose logging | To do | Phase 5 | `FD-3` | — |
 
-- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). The design keeps them out of Phases 1 to 6 until a later pass pulls them into a phase.
+- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them in Phase 5, after `FS-5` and with installation, before further agent detection. Publish, auto-update, and logging are specified in the design and are not designed in detail yet.
 - `OP-2` is the swap in [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md): disable, enable, the stand-in `aws`, and the marker file. `IN-1` has to lay down the script and the manifest fields first.
+- `OP-1` honors the latest session record unless `agent.Context.Recognized` is true. With no detector on, nobody is recognized, so the exception does not run. A later detector inherits it.
+- `OP-5` verbose logging records how the profile was resolved, which rule matched, the stdin class, whether the caller was recognized, and which real AWS CLI binary was selected. It does not invent a parent-process field before `AG-4`.
 
 ### AD: Advanced features
 
@@ -274,4 +302,4 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | AD-4 | More detailed policy explanations | To do | Backlog | `PO-5` | — |
 | AD-5 | Additional agent integrations | To do | Backlog | `AG-5` | — |
 
-- These are Phase 6 in the design.
+- These are Phase 6 in the design. `AD-1`, `AD-4`, and `AD-2` follow a user need and do not gate Phase 5 or the detection tail ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). `AD-3` waits until after `AG-4`. `AD-5` waits until the rest of `AG-5`.
