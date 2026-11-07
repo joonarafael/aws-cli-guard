@@ -30,3 +30,7 @@ func partialPathCandidates(livePath string, now time.Time) []string {
 func corruptPathCandidates(livePath string, now time.Time) []string {
 	return siblingPathCandidates(livePath, "corrupt", now)
 }
+
+func migratedPathCandidates(livePath string, now time.Time) []string {
+	return siblingPathCandidates(livePath, "migrated", now)
+}

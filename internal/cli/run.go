@@ -39,6 +39,8 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runConfig(args, env, stdout, stderr)
 	case grantsCommand:
 		return runGrants(args, env, stdout, stderr)
+	case migrateCommand:
+		return runMigrate(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

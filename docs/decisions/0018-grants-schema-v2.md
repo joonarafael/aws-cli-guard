@@ -39,4 +39,4 @@ Accepted
 - [ADR 0011](0011-grants-schema.md) remains the version 1 record. Version 2 extends it here.
 - [ADR 0012](0012-credential-source-fingerprint.md) remains the version 1 fill rule. Chain and SSO-session binding live in this ADR and `ResolveProfile`.
 - `PR-6` refusal detail lines and `PO-5` `policy explain` can reuse `ResolveProfile`.
-- `FS-5` `aws-guard migrate` may later rewrite version 1 grants to version 2 with fresh fingerprints. The live `aws` path does not.
+- `FS-5` `aws-guard migrate` rewrites version 1 grants to version 2 with stored sources unchanged ([ADR 0024](0024-migrate-command.md)). The live `aws` path does not.

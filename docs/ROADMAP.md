@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-Next is `FS-5`. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
+Next are `IN-1` and `OP-3`. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md). `FS-5` is done ([ADR 0024](decisions/0024-migrate-command.md)).
 
 `user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
@@ -171,11 +171,11 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | FS-2 | Strict, versioned file decoding | Done | MVP | — | `FD-7`, `FS-3`, `FS-5`, `FS-6`, `PO-1`, `GR-1` |
 | FS-3 | Diagnosis of corrupted files | Done | MVP | `FS-2`, `FD-3` | `FS-4`, `FS-6`, `MV-1` |
 | FS-4 | `aws-guard recover` | Done | MVP | `FS-1`, `FS-3`, `FD-4` | `FS-6` |
-| FS-5 | Migrate command for older file versions | To do | Phase 5 | `FS-1`, `FS-2`, `PR-5`, `PO-6`, `AG-3` | `IN-3` |
+| FS-5 | Migrate command for older file versions | Done | Phase 5 | `FS-1`, `FS-2`, `PR-5`, `PO-6`, `AG-3` | `IN-3` |
 | FS-6 | Preference settings file | Done | Phase 2 | `FS-1`, `FS-2`, `FS-3`, `FS-4` | `AD-1`, `OP-4` |
 
 - `FS-6` is `settings.toml` from [ADR 0006](decisions/0006-identity-verification-off-by-default.md), pulled into Phase 2 because `aws-guard init` (`PO-2`) already creates `settings.toml` on disk. Identity verification and the auto-update answer live there. `FS-6` adds `settings.Load`, strict validation (rejecting `verify = true` until `AD-1` enforces it), corrupt-file diagnosis on the `aws` path (`settings.Corruption` and `diagnose.Write` in `internal/gate`), and `aws-guard recover settings`.
-- `FS-5` is next ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)). The schema transitions already exist: `grants.json` version 2, and `config.toml` versions 2, 3, and 4. Migrate rewrites an older supported file to the newest version this binary enforces, after copying it aside. It does not enable detection and does not write `user_declared`. When `AG-6` or `AG-4` bumps the policy schema, migrate learns that version and stays an explicit command. The live `aws` path never calls it.
+- `FS-5` is done ([ADR 0024](decisions/0024-migrate-command.md)). `aws-guard migrate` copies aside with `.migrated.`, rewrites policy to version 4 and grants to version 2, and does not enable detection or re-fingerprint grants. When `AG-6` or `AG-4` bumps the policy schema, migrate’s target version moves with the binary. The live `aws` path never calls it.
 - `FS-3` adds `policy.Corruption` and `diagnose.Write` for policy loads. The wrapper prints the note after `output.Cancel` when a load is corrupt. `FS-4` adds `aws-guard recover policy`, `recover grants`, and `recover cache`. `aws-guard recover settings` lands with `FS-6`.
 
 ### PO: Policy
