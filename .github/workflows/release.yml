@@ -1,0 +1,80 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - v*
+
+permissions:
+    contents: write
+
+env:
+    GO_VERSION: 1.26.3
+
+jobs:
+    release:
+        name: Build & Upload Draft Release
+        runs-on: ubuntu-24.04
+        timeout-minutes: 30
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Validate Release Tag
+              id: version
+              run: |
+                  set -euo pipefail
+                  ref="${GITHUB_REF_NAME}"
+                  case "$ref" in
+                  v*)
+                      version="${ref#v}"
+                      ;;
+                  *)
+                      echo "tag must be vX.Y.Z, got ${ref}" >&2
+                      exit 1
+                      ;;
+                  esac
+                  if ! printf '%s\n' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                      echo "version must match X.Y.Z" >&2
+                      exit 1
+                  fi
+                  echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+            - name: Setup Go
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+                  cache-dependency-path: go.sum
+
+            - name: Use Readonly Go Modules
+              run: echo 'GOFLAGS=-mod=readonly' >> "$GITHUB_ENV"
+
+            - name: Build Release Assets
+              env:
+                  CGO_ENABLED: "0"
+              run: |
+                  set -euo pipefail
+                  mkdir -p dist
+                  ./scripts/release-assets.sh "${{ steps.version.outputs.version }}" dist
+
+            - name: Create Draft Release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  set -euo pipefail
+                  version="${{ steps.version.outputs.version }}"
+                  tag="${GITHUB_REF_NAME}"
+                  gh release create "${tag}" \
+                      --draft \
+                      --title "${tag}" \
+                      --notes "Draft release. Publish manually after verification." \
+                      "dist/aws-cli-guard_${version}_linux_amd64.tar.gz" \
+                      "dist/aws-cli-guard_${version}_linux_arm64.tar.gz" \
+                      "dist/aws-cli-guard_${version}_darwin_amd64.tar.gz" \
+                      "dist/aws-cli-guard_${version}_darwin_arm64.tar.gz" \
+                      dist/checksums.txt \
+                      install.sh
