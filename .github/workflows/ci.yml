@@ -85,7 +85,9 @@ jobs:
                   shellcheck --version
 
             - name: Run ShellCheck
-              run: shellcheck -S warning scripts/lint/*.sh
+              run: |
+                  shellcheck -S warning scripts/lint/*.sh
+                  shellcheck -S warning install.sh scripts/aws-cli-guard-disable
 
             - name: Run govulncheck
               run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...

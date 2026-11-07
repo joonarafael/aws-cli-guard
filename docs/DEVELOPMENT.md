@@ -37,7 +37,7 @@ Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENT
 
 ### Dogfooding without installing
 
-Do not copy the binary into `~/.local/bin` until an installer exists. Prepend the build output to `PATH` for the current shell session:
+Prepend the build output to `PATH` for the current shell session:
 
 ```bash
 export PATH="$PWD/bin:$PATH"
@@ -47,6 +47,22 @@ aws --version        # runs the real CLI when policy allows (see below)
 ```
 
 The wrapper walks `PATH`, skips every AWS CLI Guard wrapper copy (including a second build earlier on `PATH`), and execs the next real `aws` it finds.
+
+`make build` also stages `bin/aws-cli-guard-disable`, the persistent-disable stub for local install ([ADR 0025](decisions/0025-installer-and-releases.md)).
+
+### Installing from a local build
+
+With the real AWS CLI on `PATH`, install the three siblings together:
+
+```bash
+make build
+aws-guard install
+# or: aws-guard install --prefix /path/to/dir
+```
+
+The default prefix is `~/.local/share/aws-cli-guard` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). A second install refuses while any install file remains in that prefix. Paste the printed `export PATH='...'` line into your shell, then run `aws-guard init` when needed.
+
+Release builds stamp the version with `-ldflags '-X aws-cli-guard/internal/version.Version=X.Y.Z'`. The GitHub Releases workflow that applies that stamp is not implemented yet (`OP-3`).
 
 Every guarded command, including `aws --version`, goes through policy. Without a policy file, the wrapper cancels and asks you to run `aws-guard init`. After init, the `default` profile still needs an allow rule or a grant before the real CLI runs.
 

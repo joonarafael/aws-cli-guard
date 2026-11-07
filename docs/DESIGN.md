@@ -1141,7 +1141,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 ### Phase 5: Installation, upgrades, and operations
 
 - Explicit migrate command for older policy and grants file versions the binary still understands. It runs before the installer work. It does not enable detection and does not write `user_declared`.
-- Install command or script. Uninstall stays out of scope.
+- `aws-guard install` and the release `install.sh` ([ADR 0025](decisions/0025-installer-and-releases.md)). Uninstall stays out of scope.
 - PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The directory, the exclusive create, and the release assets are [ADR 0025](decisions/0025-installer-and-releases.md). Shell startup edits stay with the later Bash and zsh work.
 - Safe detection of the actual AWS CLI executable. Skipping every wrapper copy is already done.
 - Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
