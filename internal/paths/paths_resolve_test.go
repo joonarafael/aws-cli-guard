@@ -10,6 +10,8 @@ import (
 
 var errLookupFailed = errors.New("lookup failed")
 
+const ignoredHomeEnvEntry = "HOME=/should/not/use"
+
 func lookupReturning(home string) homeLookup {
 	return func() (string, error) {
 		return home, nil
@@ -102,7 +104,7 @@ func TestHomeDirErrWhenNoAbsoluteHome(t *testing.T) {
 func TestGuardPathsLayout(t *testing.T) {
 	t.Parallel()
 
-	env := []string{"HOME=/should/not/use"}
+	env := []string{ignoredHomeEnvEntry}
 	lookup := lookupReturning("/db/home")
 
 	configDir, err := configDirWithLookup(env, lookup)
@@ -159,6 +161,36 @@ func TestGuardPathsLayout(t *testing.T) {
 
 	if cacheViaLookup != wantCache {
 		t.Fatalf("cache got %q, want %q", cacheViaLookup, wantCache)
+	}
+}
+
+func TestDefaultInstallPrefixLayout(t *testing.T) {
+	t.Parallel()
+
+	env := []string{ignoredHomeEnvEntry}
+	lookup := lookupReturning("/db/home")
+
+	installViaLookup, err := defaultInstallPrefixWithLookup(env, lookup)
+	if err != nil {
+		t.Fatalf("defaultInstallPrefixWithLookup: %v", err)
+	}
+
+	wantInstall := filepath.Join("/db/home", ".local", "share", "aws-cli-guard")
+	if installViaLookup != wantInstall {
+		t.Fatalf("install prefix got %q, want %q", installViaLookup, wantInstall)
+	}
+}
+
+func TestDefaultInstallPrefixErrHomeUnset(t *testing.T) {
+	t.Parallel()
+
+	_, err := defaultInstallPrefixWithLookup(nil, lookupFailing())
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !errors.Is(err, ErrHomeUnset) {
+		t.Fatalf("expected ErrHomeUnset, got %v", err)
 	}
 }
 

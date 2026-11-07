@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+printf '%s\n' 'aws-cli-guard: error: persistent disable is not available in this installation yet' >&2
+exit 3

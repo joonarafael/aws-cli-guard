@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-Next are `IN-1` and `OP-3`. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md). `FS-5` is done ([ADR 0024](decisions/0024-migrate-command.md)).
+`IN-1` is done: `aws-guard install`, the install manifest, the disable stub, and `install.sh`. Next is `OP-3`, the GitHub Releases pipeline that publishes those assets. The layout is [ADR 0025](decisions/0025-installer-and-releases.md). The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
 
 `user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
@@ -58,7 +58,7 @@ Phases 2 and 3 are done. The detection engine through `AG-3`, plus the Cursor an
 ### Finish the product
 
 1. `FS-5`. Migrate rewrites older supported files to the newest version the binary already enforces. It does not enable detection and does not write `user_declared`.
-2. `IN-1` and `OP-3`. The installer and the release pipeline ship together. The installer lays down the persistent-disable script.
+2. `IN-1` and `OP-3`. The installer and the release pipeline ship together ([ADR 0025](decisions/0025-installer-and-releases.md)). The installer lays down the persistent-disable script.
 3. `IN-3`. Upgrade keeps user policy and can run migrate.
 4. `OP-1`, then `OP-2`. Session off keys off the existing recognized-agent status. Persistent disable needs the script and manifest from `IN-1`.
 5. `OP-5`, then `OP-4`. Verbose logging records the caller signals that exist today. Auto-update waits until releases exist, and init asks about updates only once the updater ships.
@@ -269,12 +269,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| IN-1 | Installer with manifest and `PATH` setup | To do | Phase 5 | — | `IN-2`, `IN-3`, `OP-2` |
+| IN-1 | Installer with manifest and `PATH` setup | Done | Phase 5 | — | `IN-2`, `IN-3`, `OP-2` |
 | IN-2 | Shell integration | To do | Phase 5 | `IN-1` | — |
 | IN-3 | Upgrade behavior | To do | Phase 5 | `IN-1`, `FS-5` | — |
 
-- `IN-1` overlaps with the `install.sh` that the release pipeline in `OP-3` ships, as described in [Publish pipeline](DESIGN.md#123-publish-pipeline). They are related and may end up as one epic.
-- `IN-1` records the Go wrapper path, the `aws` path, and the real AWS CLI path, and installs the POSIX disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The enabled `aws` is the Go wrapper.
+- `IN-1` shipped `aws-guard install`, `install.sh`, the manifest, exclusive create, and the disable stub. `OP-3` still has to build release archives and upload draft releases. The directory and asset names are [ADR 0025](decisions/0025-installer-and-releases.md). The publish shape is [Publish pipeline](DESIGN.md#123-publish-pipeline).
+- `IN-1` records the Go wrapper path, the `aws` path, and the real AWS CLI path, and installs the POSIX disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The enabled `aws` is the Go wrapper. A chosen prefix never replaces an existing file.
 - `IN-2` is Bash and zsh, with shared POSIX `sh`, per [ADR 0005](decisions/0005-bash-and-zsh.md).
 
 ### OP: Operational criteria
@@ -287,7 +287,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | OP-4 | Auto-update and update notices | To do | Phase 5 | `FS-6`, `OP-3` | — |
 | OP-5 | Tight and verbose logging | To do | Phase 5 | `FD-3` | — |
 
-- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them in Phase 5, after `FS-5` and with installation, before further agent detection. Publish, auto-update, and logging are specified in the design and are not designed in detail yet.
+- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them in Phase 5, after `FS-5` and with installation, before further agent detection. The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Auto-update and logging are not designed in detail yet.
 - `OP-2` is the swap in [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md): disable, enable, the stand-in `aws`, and the marker file. `IN-1` has to lay down the script and the manifest fields first.
 - `OP-1` honors the latest session record unless `agent.Context.Recognized` is true. With no detector on, nobody is recognized, so the exception does not run. A later detector inherits it.
 - `OP-5` verbose logging records how the profile was resolved, which rule matched, the stdin class, whether the caller was recognized, and which real AWS CLI binary was selected. It does not invent a parent-process field before `AG-4`.

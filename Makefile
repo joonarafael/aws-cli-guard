@@ -16,11 +16,15 @@ build: ## Build the wrapper and aws-guard binaries (no cgo)
 	mkdir -p bin
 	CGO_ENABLED=0 go build -o bin/aws ./cmd/aws
 	CGO_ENABLED=0 go build -o bin/aws-guard ./cmd/aws-guard
+	cp scripts/aws-cli-guard-disable bin/aws-cli-guard-disable
+	chmod 755 bin/aws-cli-guard-disable
 
 build-race: ## Build the wrapper and aws-guard binaries with the race detector
 	mkdir -p bin
 	CGO_ENABLED=1 go build -race -o bin/aws ./cmd/aws
 	CGO_ENABLED=1 go build -race -o bin/aws-guard ./cmd/aws-guard
+	cp scripts/aws-cli-guard-disable bin/aws-cli-guard-disable
+	chmod 755 bin/aws-cli-guard-disable
 
 TESTPATHS_GO_TAGS := -tags=awsguard_testpaths
 TESTPATHS_LINT_TAGS := --build-tags=awsguard_testpaths
@@ -69,6 +73,6 @@ md-fmt: ## Auto-fix Markdown with pinned rumdl
 	./scripts/lint/rumdl.sh fmt --deny-config-warnings .
 
 clean: ## Remove build artifacts
-	rm -f bin/aws bin/aws-guard
+	rm -f bin/aws bin/aws-guard bin/aws-cli-guard-disable
 
 check: lint file-length md-lint vet test ## Run Go lint, file-length, Markdown lint, vet, and tests

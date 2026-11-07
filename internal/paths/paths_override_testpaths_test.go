@@ -14,7 +14,7 @@ func TestConfigDirOverrideReplacesHome(t *testing.T) {
 
 	env := []string{
 		"AWS_CLI_GUARD_CONFIG_DIR=/custom/config",
-		"HOME=/should/not/use",
+		ignoredHomeEnvEntry,
 	}
 
 	dir, err := configDirWithLookup(env, lookupReturning("/db/home"))

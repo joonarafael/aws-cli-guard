@@ -45,6 +45,20 @@ func CacheDir(env []string) (string, error) {
 	return abs(dir)
 }
 
+// DefaultInstallPrefix returns the default install directory for aws-guard install.
+func DefaultInstallPrefix(env []string) (string, error) {
+	return defaultInstallPrefixWithLookup(env, defaultUserHomeLookup)
+}
+
+func defaultInstallPrefixWithLookup(env []string, lookup homeLookup) (string, error) {
+	home, err := homeDir(env, lookup)
+	if err != nil {
+		return "", err
+	}
+
+	return abs(filepath.Join(home, ".local", "share", "aws-cli-guard"))
+}
+
 func abs(path string) (string, error) {
 	clean := filepath.Clean(path)
 

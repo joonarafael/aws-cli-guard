@@ -33,6 +33,20 @@ Status 3 is reserved for this. The real AWS CLI keeps its own codes, including 0
 
 The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Recognized `aws sso login` is handed through without policy ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
 
+## Install
+
+Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, a persistent-disable stub script, and an install manifest under a new directory. The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory ([ADR 0025](docs/decisions/0025-installer-and-releases.md)).
+
+On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH`. Run `aws-guard init` if you have not already.
+
+After a release is published, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page:
+
+```bash
+sh install.sh --version X.Y.Z
+```
+
+Optional `--prefix` and `--base-url` follow [ADR 0025](docs/decisions/0025-installer-and-releases.md). Releases are not published until the GitHub Releases pipeline (`OP-3`) lands.
+
 ## Developing
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS. Working agreements for changing the repo are in [AGENTS.md](AGENTS.md).
