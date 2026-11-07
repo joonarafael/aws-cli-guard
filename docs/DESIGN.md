@@ -136,7 +136,7 @@ Limitations:
 - Behavior differs between Bash, Zsh, Fish, PowerShell, and other shells.
 - A child process can bypass the function.
 
-The installation process may let users select either mode. PATH-based installation should be the initial implementation priority.
+The installation process may let users select either mode. PATH-based installation should be the initial implementation priority. The default directory, a user-chosen directory, and the rule that an existing file is never replaced are [ADR 0025](decisions/0025-installer-and-releases.md).
 
 First-class shell integration is Bash and zsh. Shared logic is POSIX `sh`, and shell-specific code stays in the startup snippet that shell must source. Other shells get PATH installation only. See [ADR 0005](decisions/0005-bash-and-zsh.md).
 
@@ -146,7 +146,7 @@ Neither mode should be described as complete enforcement.
 
 Uninstall is out of scope. Anything the software changes on the machine still has to be reversible later, without guessing and without a working wrapper binary.
 
-- The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI. Both files remain, which is also how the wrapper finds the real one. Disabling the installation moves that wrapper aside and leaves the real AWS CLI in place ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
+- The installer adds the wrapper as a separate `aws` earlier on `PATH`. It never replaces or overwrites the real AWS CLI, including when the user chooses the install directory ([ADR 0025](decisions/0025-installer-and-releases.md)). Both files remain, which is also how the wrapper finds the real one. Disabling the installation moves that wrapper aside and leaves the real AWS CLI in place ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
 - Every path an installer creates or edits is recorded in a manifest next to the installation. A later uninstall reads that manifest.
 - Edits to shell startup files sit between marked begin and end comments, so only those lines need to be removed.
 - Policy, settings, grants, cache, and session-off records live only under the directories in [On-disk files](#on-disk-files). The tool does not write into `~/.aws` or into another program's files. The persistent-disable marker and the aside copy of the wrapper live in the installation, next to the manifest.
@@ -845,7 +845,7 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline, auto-update, and logging are not designed in detail yet.
+These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Auto-update and logging are not designed in detail yet.
 
 ### 12.1 Turn the wrapper off for one terminal session
 
@@ -914,11 +914,11 @@ Safe-chain publishes versioned release assets and treats those URLs as immutable
 - A release builds a binary for every platform the project supports at that time. Today that is Linux and macOS, amd64 and arm64, per [ADR 0001](decisions/0001-linux-and-macos-first.md). A later platform, including Windows once the project supports it, is added by extending that build matrix. The channel stays GitHub Releases.
 - Artifacts are attached to a GitHub Release. The versioned asset URL is the canonical download. After publication, that version's bytes stay fixed.
 - Producing the build can be automated. Publishing the release that new installs fetch is a deliberate step, so a broken build can be held back.
-- Each release includes an installer that detects OS and architecture, downloads the matching binary, and verifies a checksum published with the release.
+- Each release includes an installer that detects OS and architecture, downloads the matching archive, and verifies a checksum published with the release.
 - Each release also includes the binaries and checksums as direct downloads, without the installer.
-- Documentation install snippets name a specific version. The releases page lists the other versions. A latest-release URL may exist as a convenience. Installing a pinned version stays possible, including an older version during recovery.
+- Documentation install snippets name a specific version. The releases page lists the other versions. Installing a pinned version stays possible, including an older version during recovery. A floating latest URL is not the install path.
 
-Illustrative asset layout, not a final naming scheme:
+Asset names, the install directory, and the draft-release workflow are [ADR 0025](decisions/0025-installer-and-releases.md):
 
 ```text
 aws-cli-guard_<version>_linux_amd64.tar.gz
@@ -1142,7 +1142,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 
 - Explicit migrate command for older policy and grants file versions the binary still understands. It runs before the installer work. It does not enable detection and does not write `user_declared`.
 - Install command or script. Uninstall stays out of scope.
-- PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)).
+- PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The directory, the exclusive create, and the release assets are [ADR 0025](decisions/0025-installer-and-releases.md). Shell startup edits stay with the later Bash and zsh work.
 - Safe detection of the actual AWS CLI executable. Skipping every wrapper copy is already done.
 - Upgrade behavior that keeps user policy in place and can run the explicit migrate command.
 - The recorded operational criteria, in the order in [Remaining order](#remaining-order): the release pipeline ships with the installer, then session off, persistent disable and enable, tight and verbose logging, and auto-update.
