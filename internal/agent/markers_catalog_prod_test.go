@@ -17,3 +17,22 @@ func TestApplyMarkersIgnoresTestAgentMarkerInProductionBuild(t *testing.T) {
 		t.Fatal("production build must not recognize test marker")
 	}
 }
+
+func TestApplyMarkersRecognizesProductMarkersInProductionBuild(t *testing.T) {
+	t.Parallel()
+
+	markers := []string{"CLAUDE_CODE_CHILD_SESSION", "CURSOR_AGENT"}
+
+	for _, marker := range markers {
+		t.Run(marker, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := agent.ContextWithStdin(agent.StdinInteractive)
+			ctx = agent.ApplyMarkers(ctx, []string{marker + "=1"}, true)
+
+			if !ctx.Recognized() {
+				t.Fatal("want recognized")
+			}
+		})
+	}
+}

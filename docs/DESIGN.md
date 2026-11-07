@@ -626,7 +626,7 @@ Detection will therefore be heuristic and extensible. The initial products, and 
 
 Many coding agents expose environment variables to processes they launch.
 
-The initial built-in integrations are Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). That set is a starting point. Agents, harnesses, IDEs, and models change often, and the set is expected to change with them. Variable names are not fixed in this document. Each integration records the command-scoped variables of one pinned version. A variable that also appears in an ordinary human terminal is not the signal for that product.
+The initial built-in integrations are Claude Code, the OpenAI Codex CLI, Cursor, and Gemini CLI ([ADR 0015](decisions/0015-initial-agent-integrations.md)). That set is a starting point. Agents, harnesses, IDEs, and models change often, and the set is expected to change with them. Variable names are not fixed in this document. Each integration records the command-scoped variables of one pinned version. A variable that also appears in an ordinary human terminal is not the signal for that product. The first recorded rows are Cursor and Claude Code ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). The OpenAI Codex CLI and Gemini CLI are not in the catalog yet.
 
 The implementation should:
 
@@ -1132,7 +1132,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Agent-specific profile rules, opt-in by the presence of `[agents]` actions, applied only to a positively recognized caller.
 - Unknown and uncertain callers follow the normal profile policy, as specified in [Agent-specific policy](#85-agent-specific-policy).
 - Explicit migrate command for older policy and grants file versions the binary still understands.
-- Tests against pinned versions of the initial products.
+- Tests against pinned versions of the initial products. Cursor and Claude Code are recorded in [ADR 0022](decisions/0022-cursor-and-claude-code-markers.md). The OpenAI Codex CLI and Gemini CLI are still open.
 
 ### Phase 5: Installation and portability
 

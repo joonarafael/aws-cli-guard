@@ -63,14 +63,67 @@ func TestApplyMarkersDisabledLeavesUnknown(t *testing.T) {
 	}
 }
 
-func TestApplyMarkersBuiltinCatalogEmpty(t *testing.T) {
+func TestApplyMarkersUnknownNameStaysUnrecognized(t *testing.T) {
 	t.Parallel()
 
 	ctx := ContextWithStdin(StdinInteractive)
 	ctx = ApplyMarkers(ctx, []string{"ANY_VAR=1"}, true)
 
 	if ctx.Recognized() {
-		t.Fatal("empty builtin catalog should not recognize")
+		t.Fatal("unknown name should not recognize")
+	}
+}
+
+func TestProductionBuiltinMarkerNames(t *testing.T) {
+	t.Parallel()
+
+	if claudeCodeChildSessionEnv != "CLAUDE_CODE_CHILD_SESSION" ||
+		cursorAgentEnv != "CURSOR_AGENT" {
+		t.Fatal("production marker name changed")
+	}
+
+	want := []string{claudeCodeChildSessionEnv, cursorAgentEnv}
+	got := productionBuiltinMarkerNames()
+
+	if len(got) != len(want) {
+		t.Fatalf("len = %d, want %d", len(got), len(want))
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("names[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestApplyMarkersProductionNames(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range productionBuiltinMarkerNames() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := ContextWithStdin(StdinInteractive)
+			ctx = ApplyMarkers(ctx, []string{name + "=1"}, true)
+
+			if !ctx.Recognized() {
+				t.Fatal("want recognized")
+			}
+
+			ctx = ContextWithStdin(StdinInteractive)
+			ctx = ApplyMarkers(ctx, []string{name + "="}, true)
+
+			if ctx.Recognized() {
+				t.Fatal("empty value should not match")
+			}
+
+			ctx = ContextWithStdin(StdinInteractive)
+			ctx = ApplyMarkers(ctx, []string{name + "=1"}, false)
+
+			if ctx.Recognized() {
+				t.Fatal("want unknown when disabled")
+			}
+		})
 	}
 }
 

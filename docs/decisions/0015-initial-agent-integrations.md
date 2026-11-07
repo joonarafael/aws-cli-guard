@@ -22,6 +22,6 @@ The design listed candidate variables, not a committed set. Coding agents, the h
 
 ## Consequences
 
-- `AG-5` tests these four products at pinned versions. A later product is further work (`AD-5` or a change to this set), not part of the first integration pass.
+- `AG-5` tests these four products at pinned versions. A later product is further work (`AD-5` or a change to this set), not part of the first integration pass. The first recorded variables are [ADR 0022](0022-cursor-and-claude-code-markers.md).
 - An inherited marker can outlive the agent and classify a later shell as that agent. The integration documents the inheritance it observed on the pinned version.
 - The candidate variable list in earlier drafts of the design is retired. The current text points here.

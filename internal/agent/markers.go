@@ -5,9 +5,16 @@ import "aws-cli-guard/internal/environ"
 const recognitionAgent recognition = 1
 
 // builtinMarkerNames lists command-scoped environment variable names for built-in
-// agent integrations. Add a name only with the product and pinned version that sets it.
+// agent integrations. Production rows are recorded with the product and pinned
+// version in ADR 0022. Test builds may append one extra name.
 func builtinMarkerNames() []string {
-	return extraBuiltinMarkerNames()
+	prod := productionBuiltinMarkerNames()
+	extra := extraBuiltinMarkerNames()
+	names := make([]string, 0, len(prod)+len(extra))
+	names = append(names, prod...)
+	names = append(names, extra...)
+
+	return names
 }
 
 // ApplyMarkers updates ctx when enabled and a built-in marker name is set to a
