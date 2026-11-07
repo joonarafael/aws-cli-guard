@@ -25,7 +25,7 @@ Epic `AG-3` needs a schema version that accepts and enforces `[agents]` profile 
 
 5. **Evaluation.** For a positively recognized caller and a named profile subject, the wrapper uses `[agents.profiles.<name>]` when present, else `[agents] default` when present, else the normal profile policy. Environment and unresolved subjects ignore agent keys. There is no implied agent default of `deny`. Agent `deny` is evaluated before credential export and before grants. Agent `allow` and `prompt` still follow credential export, then grant checking for `prompt`.
 
-6. **Production markers.** The built-in environment-marker catalog stays empty in production builds until pinned product variables ship (`AG-5`). Test builds may add a single test marker behind the `awsguard_testpaths` tag.
+6. **Production markers.** The built-in environment-marker catalog stays empty in production builds until pinned product variables ship (`AG-5`). Test builds may add a single test marker behind the `awsguard_testpaths` tag. The first shipped rows are [ADR 0022](0022-cursor-and-claude-code-markers.md).
 
 7. **Inspection.** `aws-guard policy list` prints `agents_default` and each `agent_profile` / `agent_action` when those keys were present on load. `aws-guard policy explain` prints normal profile action and basis, and when a recognized caller would use an agent rule, `agent_action` and `agent_basis`.
 
@@ -33,5 +33,5 @@ Epic `AG-3` needs a schema version that accepts and enforces `[agents]` profile 
 
 - [ADR 0020](0020-policy-schema-v3.md) remains the version 3 record. Version 4 extends it here.
 - `AG-4` adds `parent_process` when a schema change accepts it.
-- `AG-5` adds built-in marker names; authorization uses this ADR once recognition is possible.
+- The first built-in marker names are [ADR 0022](0022-cursor-and-claude-code-markers.md). Authorization uses this ADR once recognition is possible.
 - `FS-5` `aws-guard migrate` may later rewrite older policy to version 4. The live `aws` path does not.

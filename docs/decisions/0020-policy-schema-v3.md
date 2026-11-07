@@ -29,5 +29,5 @@ Versions 1 and 2 reject any `[agents]` table so a file cannot claim agent guaran
 - [ADR 0019](0019-policy-schema-v2.md) remains the version 2 record. Version 3 extends it here.
 - `AG-3` adds `[agents]` action keys and evaluation for recognized callers only.
 - `AG-4` adds `parent_process` behind the same detection table when a schema change accepts it.
-- `AG-5` may append built-in catalog rows at pinned product versions; that does not change profile authorization until `AG-3`.
+- The first built-in catalog rows are [ADR 0022](0022-cursor-and-claude-code-markers.md). Those rows do not change profile authorization until `AG-3`.
 - `FS-5` `aws-guard migrate` may later rewrite older policy to version 3. The live `aws` path does not.
