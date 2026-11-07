@@ -7,7 +7,7 @@ GOLANGCI_LINT_VERSION ?= v2.14.0
 RUMDL_VERSION ?= 0.3.0
 export RUMDL_VERSION
 
-.PHONY: help build build-race test vet tidy lint lint-fix lint-config file-length md-lint md-fmt clean check
+.PHONY: help build build-race dist test vet tidy lint lint-fix lint-config file-length md-lint md-fmt clean check
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
@@ -18,6 +18,11 @@ build: ## Build the wrapper and aws-guard binaries (no cgo)
 	CGO_ENABLED=0 go build -o bin/aws-guard ./cmd/aws-guard
 	cp scripts/aws-cli-guard-disable bin/aws-cli-guard-disable
 	chmod 755 bin/aws-cli-guard-disable
+
+dist: ## Build release archives into dist/ (requires VERSION=X.Y.Z)
+	@test -n "$(VERSION)" || (echo 'VERSION=X.Y.Z is required' >&2 && exit 1)
+	mkdir -p dist
+	./scripts/release-assets.sh "$(VERSION)" dist
 
 build-race: ## Build the wrapper and aws-guard binaries with the race detector
 	mkdir -p bin
@@ -74,5 +79,6 @@ md-fmt: ## Auto-fix Markdown with pinned rumdl
 
 clean: ## Remove build artifacts
 	rm -f bin/aws bin/aws-guard bin/aws-cli-guard-disable
+	rm -rf dist
 
 check: lint file-length md-lint vet test ## Run Go lint, file-length, Markdown lint, vet, and tests

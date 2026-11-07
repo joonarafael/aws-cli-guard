@@ -62,7 +62,15 @@ aws-guard install
 
 The default prefix is `~/.local/share/aws-cli-guard` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). A second install refuses while any install file remains in that prefix. Paste the printed `export PATH='...'` line into your shell, then run `aws-guard init` when needed.
 
-Release builds stamp the version with `-ldflags '-X aws-cli-guard/internal/version.Version=X.Y.Z'`. The GitHub Releases workflow that applies that stamp is not implemented yet (`OP-3`).
+Release builds stamp the version with `-ldflags '-X aws-cli-guard/internal/version.Version=X.Y.Z'`. Local release assets use the same stamp:
+
+```bash
+make dist VERSION=X.Y.Z
+```
+
+That writes the four platform archives, `checksums.txt`, and a copy of `install.sh` under `dist/`. The helper is [scripts/release-assets.sh](../scripts/release-assets.sh).
+
+Pushing a tag `vX.Y.Z` runs [.github/workflows/release.yml](../.github/workflows/release.yml), which builds those assets and creates a **draft** GitHub Release. Publish the draft manually after verification. If a draft for that tag already exists or the upload failed partway, delete the draft release on GitHub before pushing the tag again.
 
 Every guarded command, including `aws --version`, goes through policy. Without a policy file, the wrapper cancels and asks you to run `aws-guard init`. After init, the `default` profile still needs an allow rule or a grant before the real CLI runs.
 

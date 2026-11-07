@@ -39,13 +39,13 @@ Local install uses `aws-guard install`, which writes the wrapper, the control pl
 
 On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH`. Run `aws-guard init` if you have not already.
 
-After a release is published, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page:
+After a maintainer publishes a draft release from GitHub, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page:
 
 ```bash
 sh install.sh --version X.Y.Z
 ```
 
-Optional `--prefix` and `--base-url` follow [ADR 0025](docs/decisions/0025-installer-and-releases.md). Releases are not published until the GitHub Releases pipeline (`OP-3`) lands.
+Optional `--prefix` and `--base-url` follow [ADR 0025](docs/decisions/0025-installer-and-releases.md). Tag pushes create a draft release only; publishing it is a manual step on GitHub.
 
 ## Developing
 
