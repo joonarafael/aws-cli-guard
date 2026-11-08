@@ -5,6 +5,7 @@ import (
 	"aws-cli-guard/internal/invocation"
 	"aws-cli-guard/internal/output"
 	"aws-cli-guard/internal/policy"
+	"aws-cli-guard/internal/session"
 	"aws-cli-guard/internal/subject"
 	"io"
 )
@@ -20,6 +21,19 @@ func decideAfterLoads(
 	caller, ok := observeCaller(env, pol, stderr)
 	if !ok {
 		return false
+	}
+
+	if !caller.Recognized() {
+		skipped, sessOK := sessionOffPermits(env, stderr)
+		if !sessOK {
+			return false
+		}
+
+		if skipped {
+			output.Warning(stderr, session.SessionOffWarning)
+
+			return true
+		}
 	}
 
 	decision := policy.EvaluateForCaller(pol, subj, caller.Recognized())

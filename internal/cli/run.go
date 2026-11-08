@@ -2,6 +2,7 @@ package cli
 
 import (
 	"aws-cli-guard/internal/output"
+	"aws-cli-guard/internal/session"
 	"aws-cli-guard/internal/terminal"
 	"io"
 )
@@ -45,6 +46,10 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runInstall(args, env, stdout, stderr)
 	case upgradeCommand:
 		return runUpgrade(args, env, stdout, stderr)
+	case offCommand:
+		return runOff(args, env, stdout, stderr, confirm, session.CaptureControllingTTY)
+	case onCommand:
+		return runOn(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

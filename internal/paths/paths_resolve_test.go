@@ -164,6 +164,22 @@ func TestGuardPathsLayout(t *testing.T) {
 	}
 }
 
+func TestSessionsFileLayout(t *testing.T) {
+	t.Parallel()
+
+	env := []string{ignoredHomeEnvEntry}
+
+	got, err := SessionsFile(env)
+	if err != nil {
+		t.Fatalf("SessionsFile: %v", err)
+	}
+
+	want := filepath.Join("/db/home", ".local", "state", "aws-cli-guard", "sessions.json")
+	if got != want {
+		t.Fatalf("sessions got %q, want %q", got, want)
+	}
+}
+
 func TestDefaultInstallPrefixLayout(t *testing.T) {
 	t.Parallel()
 

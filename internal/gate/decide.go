@@ -23,6 +23,9 @@ const (
 	reasonSettingsUnusable  = "the settings file is unusable"
 	reasonSettingsPathUnset = "the settings path could not be resolved"
 	reasonSettingsReadFail  = "the settings file could not be read"
+	reasonSessionsUnusable  = "the session file is unusable"
+	reasonSessionsPathUnset = "the session path could not be resolved"
+	reasonSessionsReadFail  = "the session file could not be read"
 )
 
 // Decide reports whether the wrapper may exec the real AWS CLI for args and env.

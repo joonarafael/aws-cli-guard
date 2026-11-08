@@ -279,6 +279,9 @@ aws-guard recover policy
 aws-guard recover grants
 aws-guard recover settings
 aws-guard recover cache
+aws-guard recover sessions
+aws-guard off
+aws-guard on
 ```
 
 ### On-disk files
@@ -292,6 +295,7 @@ The same paths are used on Linux and macOS. The tool does not call `os.UserConfi
 | User policy | `~/.config/aws-cli-guard/config.toml` | `AWS_CLI_GUARD_CONFIG_DIR` |
 | Preferences | `~/.config/aws-cli-guard/settings.toml` | `AWS_CLI_GUARD_CONFIG_DIR` |
 | Grants | `~/.local/state/aws-cli-guard/grants.json` | `AWS_CLI_GUARD_STATE_DIR` |
+| Session off | `~/.local/state/aws-cli-guard/sessions.json` | `AWS_CLI_GUARD_STATE_DIR` |
 | Cache | `~/.cache/aws-cli-guard/` | `AWS_CLI_GUARD_CACHE_DIR` |
 
 `~` is the home directory of the process's user in the user database (`os/user.Current()`, looked up by user id). It is not `HOME`. Any process can set an environment variable on the same command that runs `aws`, so an environment variable must not be able to point the wrapper at a policy or grants file the caller wrote. [ADR 0014](decisions/0014-guard-paths-from-user-database.md) is the record.
@@ -345,9 +349,9 @@ The user has two choices:
 
 Those two choices apply to the policy file, the settings file, the grants file, and the cache. Choice 2 always moves the previous file aside for later diagnosis. The tool does not delete user data from these directories.
 
-An `aws` invocation that hits a corrupt policy file, a corrupt settings file, or a corrupt grants file takes choice 1. It prints the diagnosis, explains both choices, and exits without executing AWS and without modifying the file. Choice 2 is an explicit command (`aws-guard recover policy`, `aws-guard recover settings`, `aws-guard recover grants`, or `aws-guard recover cache`). That command requires a terminal and a confirmation, so a headless process cannot reset policy, settings, or grants.
+An `aws` invocation that hits a corrupt policy file, a corrupt settings file, a corrupt grants file, or a corrupt sessions file takes choice 1. It prints the diagnosis, explains both choices, and exits without executing AWS and without modifying the file. Choice 2 is an explicit command (`aws-guard recover policy`, `aws-guard recover settings`, `aws-guard recover grants`, `aws-guard recover cache`, or `aws-guard recover sessions`). That command requires a terminal and a confirmation, so a headless process cannot reset policy, settings, grants, or session records.
 
-While the policy file is corrupt, nothing is executed. While the settings file is corrupt, nothing is executed either: a half-read preferences file must not turn identity verification or auto-update on. While the grants file is corrupt, nothing is executed either: a half-read grant file must not become an implicit allow. Cache corruption does not block `aws`. The wrapper prints a short warning and continues. The same recover command is available when the user wants a fresh cache.
+While the policy file is corrupt, nothing is executed. While the settings file is corrupt, nothing is executed either: a half-read preferences file must not turn identity verification or auto-update on. While the grants file is corrupt, nothing is executed either: a half-read grant file must not become an implicit allow. While the sessions file is corrupt, nothing is executed either: a half-read session file must not become an implicit off. Cache corruption does not block `aws`. The wrapper prints a short warning and continues. The same recover command is available when the user wants a fresh cache.
 
 ## 5. Grants
 
@@ -849,7 +853,7 @@ These behaviors are part of the intended product. [ADR 0023](decisions/0023-prod
 
 ### 12.1 Turn the wrapper off for one terminal session
 
-The user can turn the wrapper off for the current terminal session with a dedicated command.
+The user can turn the wrapper off for the current terminal session with a dedicated command. The on-disk record, token shape, and honor rule are [ADR 0027](decisions/0027-session-off.md).
 
 - The off state ends with that session. A new terminal, login, or shell starts with the wrapper on.
 - The command writes no policy. It writes a session record under the state directory from [On-disk files](#on-disk-files). A record for another session id has no effect, so a leftover file does not turn a new terminal off.

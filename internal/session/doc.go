@@ -1,2 +1,2 @@
-// Package session identifies the current terminal session for per-session caches.
+// Package session identifies the current terminal session and applies session-off records.
 package session
