@@ -168,10 +168,16 @@ func TestSessionsFileLayout(t *testing.T) {
 	t.Parallel()
 
 	env := []string{ignoredHomeEnvEntry}
+	lookup := lookupReturning("/db/home")
 
-	got, err := SessionsFile(env)
+	stateDir, err := stateDirWithLookup(env, lookup)
 	if err != nil {
-		t.Fatalf("SessionsFile: %v", err)
+		t.Fatalf("stateDirWithLookup: %v", err)
+	}
+
+	got, err := abs(filepath.Join(stateDir, "sessions.json"))
+	if err != nil {
+		t.Fatalf("abs sessions: %v", err)
 	}
 
 	want := filepath.Join("/db/home", ".local", "state", "aws-cli-guard", "sessions.json")
