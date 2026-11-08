@@ -23,7 +23,7 @@ AWS CLI Guard is a PATH-based local wrapper. It makes accidental misuse less lik
 - An AWS CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning, with no policy ([ADR 0002](docs/decisions/0002-aws-cli-version-floor.md)).
 - This build recognizes `aws sso login`, including with `--profile` or `--sso-session`, and hands it through with no policy and no grant. A login form this build does not recognize follows the normal guarded path. A later command that uses a profile is still subject to policy ([ADR 0004](docs/decisions/0004-login-out-of-scope.md)).
 
-Purposeful off switches are separate operator controls. They are specified in the design and are not part of this list. For actual authorization, AWS-side controls remain authoritative.
+For the current terminal session only, `aws-guard off` (with confirmation on the controlling terminal) and `aws-guard on` turn policy off and on. A new terminal starts with policy on. A recognized AI agent still follows policy when detection is on. Writing `sessions.json` under the state directory is a same-user bypass, like editing policy or grants locally. Persistent installation-wide disable is separate ([ADR 0017](docs/decisions/0017-persistent-disable-swaps-aws.md)). For actual authorization, AWS-side controls remain authoritative.
 
 ## When the wrapper stops a command
 

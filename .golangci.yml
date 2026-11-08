@@ -61,6 +61,9 @@ linters:
                     - pkg: internal/cache
                       rules:
                           json: snake
+                    - pkg: internal/sessions
+                      rules:
+                          json: snake # ADR 0027 sessions.json wire format
         wsl_v5:
             allow-first-in-block: true
             allow-whole-block: false

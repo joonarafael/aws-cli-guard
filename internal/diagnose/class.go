@@ -37,3 +37,11 @@ func ClassSettings() Class {
 		Recover: "aws-guard recover settings",
 	}
 }
+
+// ClassSessions returns the session-off record file at sessions.json.
+func ClassSessions() Class {
+	return Class{
+		Name:    "sessions",
+		Recover: "aws-guard recover sessions",
+	}
+}

@@ -21,7 +21,7 @@ const (
 	recoverTargetSettings = "settings"
 	recoverTargetCache    = "cache"
 
-	reasonRecoverUsage         = "usage: aws-guard recover policy|grants|settings|cache"
+	reasonRecoverUsage         = "usage: aws-guard recover policy|grants|settings|cache|sessions"
 	reasonRecoverPolicyMiss    = "the policy file does not exist"
 	reasonRecoverGrantsMiss    = "the grants file does not exist"
 	reasonRecoverSettingsMiss  = "the settings file does not exist"
@@ -53,6 +53,8 @@ func runRecover(args []string, env []string, stdout, stderr io.Writer, confirm c
 		return recoverSettings(env, stdout, stderr, confirm)
 	case recoverTargetCache:
 		return recoverCache(env, stdout, stderr, confirm)
+	case recoverTargetSessions:
+		return recoverSessions(env, stdout, stderr, confirm)
 	default:
 		output.Error(stderr, reasonRecoverUsage)
 

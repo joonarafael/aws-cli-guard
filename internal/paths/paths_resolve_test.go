@@ -164,6 +164,28 @@ func TestGuardPathsLayout(t *testing.T) {
 	}
 }
 
+func TestSessionsFileLayout(t *testing.T) {
+	t.Parallel()
+
+	env := []string{ignoredHomeEnvEntry}
+	lookup := lookupReturning("/db/home")
+
+	stateDir, err := stateDirWithLookup(env, lookup)
+	if err != nil {
+		t.Fatalf("stateDirWithLookup: %v", err)
+	}
+
+	got, err := abs(filepath.Join(stateDir, "sessions.json"))
+	if err != nil {
+		t.Fatalf("abs sessions: %v", err)
+	}
+
+	want := filepath.Join("/db/home", ".local", "state", "aws-cli-guard", "sessions.json")
+	if got != want {
+		t.Fatalf("sessions got %q, want %q", got, want)
+	}
+}
+
 func TestDefaultInstallPrefixLayout(t *testing.T) {
 	t.Parallel()
 

@@ -35,6 +35,16 @@ func GrantsFile(env []string) (string, error) {
 	return abs(filepath.Join(dir, "grants.json"))
 }
 
+// SessionsFile returns the absolute path to the session-off record file.
+func SessionsFile(env []string) (string, error) {
+	dir, err := stateDir(env)
+	if err != nil {
+		return "", err
+	}
+
+	return abs(filepath.Join(dir, "sessions.json"))
+}
+
 // CacheDir returns the absolute path to the cache directory.
 func CacheDir(env []string) (string, error) {
 	dir, err := cacheRoot(env)
