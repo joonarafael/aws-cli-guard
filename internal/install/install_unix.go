@@ -9,21 +9,22 @@ import (
 	"path/filepath"
 )
 
-// Options configures aws-guard install.
+// Options configures aws-guard install and upgrade.
 type Options struct {
-	Env        []string
-	Prefix     string
-	Executable string
+	Env           []string
+	Prefix        string
+	Executable    string
+	BeforeUpgrade func() error
 }
 
-// Run installs AWS CLI Guard into the chosen prefix.
-func Run(opts Options, stdout io.Writer) error {
-	inputs, err := prepareInstall(opts)
-	if err != nil {
-		return err
-	}
+// Run installs into the chosen prefix or upgrades when that prefix is already installed.
+func Run(opts Options, stdout io.Writer) (Result, error) {
+	return installOrUpgrade(opts, stdout)
+}
 
-	return writeInstallLayout(inputs, stdout)
+// Upgrade replaces an existing installation in the chosen prefix.
+func Upgrade(opts Options, stdout io.Writer) (Result, error) {
+	return runUpgrade(opts, stdout)
 }
 
 func resolveExecutable(explicit string) (string, error) {

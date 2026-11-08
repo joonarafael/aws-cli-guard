@@ -47,6 +47,20 @@ sh install.sh --version X.Y.Z
 
 Optional `--prefix` and `--base-url` follow [ADR 0025](docs/decisions/0025-installer-and-releases.md). Tag pushes create a draft release only; publishing it is a manual step on GitHub.
 
+## Upgrade
+
+When the install prefix already holds a valid installation, a second install upgrades in place:
+
+```bash
+sh install.sh --version X.Y.Z
+# or, with the same prefix on PATH:
+aws-guard install
+```
+
+You can also run `aws-guard upgrade` explicitly (`aws-guard upgrade [--prefix dir]`). Upgrade refreshes `aws`, `aws-guard`, the disable stub, and the manifest. It does not change the recorded real AWS CLI path. After a successful replace it runs `aws-guard migrate` logic on your policy and grants files in `~/.config/aws-cli-guard` and `~/.local/state/aws-cli-guard` (or your user-database paths).
+
+If migrate fails after upgrade, stderr prints diagnosis plus recovery steps: use a `*.migrated.*` sibling if one was created, fix the file and run `aws-guard migrate`, use `aws-guard recover policy` or `aws-guard recover grants` on a terminal for corrupt files, or move the config, state, and cache directories aside and run `aws-guard init` to start over. Moving config also moves `settings.toml`; you can move that file back. A broken install prefix can be moved aside and reinstalled without deleting policy. See [ADR 0026](docs/decisions/0026-upgrade-behavior.md).
+
 ## Developing
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and dogfooding the wrapper on Linux and macOS. Working agreements for changing the repo are in [AGENTS.md](AGENTS.md).

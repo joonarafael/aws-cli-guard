@@ -43,6 +43,8 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runMigrate(args, env, stdout, stderr)
 	case installCommand:
 		return runInstall(args, env, stdout, stderr)
+	case upgradeCommand:
+		return runUpgrade(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

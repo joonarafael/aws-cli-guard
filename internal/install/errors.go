@@ -31,3 +31,25 @@ var ErrResolveExecutable = errors.New("aws-cli-guard: cannot resolve running exe
 var ErrPlatformUnsupported = errors.New(
 	"aws-cli-guard: install is not supported on this platform yet",
 )
+
+// ErrNotInstalled is returned when upgrade is run on a prefix with no installation.
+var ErrNotInstalled = errors.New("aws-cli-guard: install prefix has no installation")
+
+// ErrNotOurInstallation is returned when installed files are not wrappers this binary can replace.
+var ErrNotOurInstallation = errors.New(
+	"aws-cli-guard: installed files are not a wrapper this binary can replace",
+)
+
+// ErrDisableLayout is returned when persistent-disable paths are present in the prefix.
+var ErrDisableLayout = errors.New(
+	"aws-cli-guard: persistent-disable layout is present in the install prefix",
+)
+
+// ErrManifestInvalid is returned when the install manifest is missing or invalid.
+var ErrManifestInvalid = errors.New("aws-cli-guard: install manifest is invalid")
+
+// ErrUpgradePartial is returned when upgrade replaced some files but not all.
+var ErrUpgradePartial = errors.New("aws-cli-guard: upgrade did not finish")
+
+// ErrReplacePartial is returned when no partial filename is available for replace.
+var ErrReplacePartial = errors.New("aws-cli-guard: replace: no partial name")

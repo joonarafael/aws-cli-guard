@@ -50,7 +50,7 @@ The default install directory is a private directory under the user's home. The 
 ## Consequences
 
 - A custom prefix is safe because the installer only adds new names, and an occupied name aborts before any write. Choosing `/usr/local/bin` when `aws` is already there refuses. Choosing it when `aws` is absent adds a new file and leaves every other entry alone.
-- `IN-3` is the first later step that may replace bytes inside a prefix. It may replace `aws` and `aws-guard` only when that prefix's manifest records those paths and the files are still the installed wrapper. It still must not write `real_aws`. Until `IN-3` exists, a second install refuses and does not run migrate.
+- `IN-3` may replace bytes inside a verified prefix ([ADR 0026](0026-upgrade-behavior.md)). A second `aws-guard install` or `install.sh` run on that prefix upgrades instead of refusing. It still must not write `real_aws`.
 - `OP-2` may rename the installed wrapper to the recorded aside path and write the stand-in at the recorded `aws` path. It must not rename or replace `real_aws`.
 - Shell startup edits stay in `IN-2`. Until the user changes `PATH`, the new directory is not selected.
 - Dogfooding from `bin/` stays the development path until the implementation lands. A local `aws-guard install` works when the three siblings are staged together, which is what the release archive does.

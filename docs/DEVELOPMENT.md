@@ -119,4 +119,4 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0026`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0027`.
