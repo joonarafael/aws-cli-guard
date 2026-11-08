@@ -27,11 +27,7 @@ func TestInstallSuccess(t *testing.T) {
 
 	var stdout bytes.Buffer
 
-	err := install.Run(install.Options{
-		Env:        env,
-		Prefix:     prefix,
-		Executable: guard,
-	}, &stdout)
+	_, err := install.Run(testOpts(env, prefix, guard), &stdout)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -71,11 +67,7 @@ func TestInstallSkipsEarlierWrapperOnPATH(t *testing.T) {
 	pathEnv := extraWrapperDir + string(os.PathListSeparator) + realDir
 	env := []string{"PATH=" + pathEnv}
 
-	err = install.Run(install.Options{
-		Env:        env,
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err = install.Run(testOpts(env, prefix, guard), &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -110,11 +102,7 @@ func TestInstallIgnoresRealAWSEnv(t *testing.T) {
 		"AWS_CLI_GUARD_REAL_AWS=" + filepath.Join(decoyDir, "aws"),
 	}
 
-	err := install.Run(install.Options{
-		Env:        env,
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err := install.Run(testOpts(env, prefix, guard), &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -151,11 +139,7 @@ func TestInstallRefusesOccupiedAWS(t *testing.T) {
 	realDir := filepath.Join(work, "real-bin")
 	buildFakeAWS(t, root, realDir)
 
-	err = install.Run(install.Options{
-		Env:        []string{"PATH=" + realDir},
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err = install.Run(testOpts([]string{"PATH=" + realDir}, prefix, guard), &bytes.Buffer{})
 	if !errors.Is(err, install.ErrPathOccupied) {
 		t.Fatalf("Run err = %v, want ErrPathOccupied", err)
 	}
@@ -185,11 +169,7 @@ func TestInstallRefusesMissingSibling(t *testing.T) {
 	realDir := filepath.Join(work, "real-bin")
 	buildFakeAWS(t, root, realDir)
 
-	err = install.Run(install.Options{
-		Env:        []string{"PATH=" + realDir},
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err = install.Run(testOpts([]string{"PATH=" + realDir}, prefix, guard), &bytes.Buffer{})
 	if !errors.Is(err, install.ErrSiblingMissing) {
 		t.Fatalf("Run err = %v, want ErrSiblingMissing", err)
 	}
@@ -203,17 +183,16 @@ func TestInstallRefusesInvalidPrefix(t *testing.T) {
 	realDir := filepath.Join(t.TempDir(), "real-bin")
 	buildFakeAWS(t, root, realDir)
 
-	err := install.Run(install.Options{
-		Env:        []string{"PATH=" + realDir},
-		Prefix:     "/tmp/bad'prefix",
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err := install.Run(
+		testOpts([]string{"PATH=" + realDir}, "/tmp/bad'prefix", guard),
+		&bytes.Buffer{},
+	)
 	if !errors.Is(err, install.ErrPrefixInvalid) {
 		t.Fatalf("Run err = %v, want ErrPrefixInvalid", err)
 	}
 }
 
-func TestInstallSecondRunRefuses(t *testing.T) {
+func TestInstallSecondRunUpgrades(t *testing.T) {
 	t.Parallel()
 
 	root := moduleRoot(t)
@@ -225,11 +204,7 @@ func TestInstallSecondRunRefuses(t *testing.T) {
 	buildFakeAWS(t, root, realDir)
 	env := []string{"PATH=" + realDir}
 
-	err := install.Run(install.Options{
-		Env:        env,
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
+	_, err := install.Run(testOpts(env, prefix, guard), &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("first Run: %v", err)
 	}
@@ -239,13 +214,17 @@ func TestInstallSecondRunRefuses(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = install.Run(install.Options{
-		Env:        env,
-		Prefix:     prefix,
-		Executable: guard,
-	}, &bytes.Buffer{})
-	if !errors.Is(err, install.ErrPathOccupied) {
-		t.Fatalf("second Run err = %v, want ErrPathOccupied", err)
+	wantReal := parseRealAWSFromManifest(t, firstManifest)
+
+	guard2 := stageBundle(t, root)
+
+	result, err := install.Run(testOpts(env, prefix, guard2), &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("second Run: %v", err)
+	}
+
+	if !result.Upgraded {
+		t.Fatal("second Run should upgrade")
 	}
 
 	secondManifest, err := os.ReadFile(filepath.Join(prefix, "aws-cli-guard-manifest"))
@@ -253,7 +232,21 @@ func TestInstallSecondRunRefuses(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(firstManifest) != string(secondManifest) {
-		t.Fatal("manifest changed on refused second install")
+	assertInstallManifest(t, prefix, wantReal)
+
+	_ = secondManifest
+}
+
+func parseRealAWSFromManifest(t *testing.T, manifest []byte) string {
+	t.Helper()
+
+	for line := range strings.SplitSeq(string(manifest), "\n") {
+		if after, ok := strings.CutPrefix(line, "real_aws="); ok {
+			return after
+		}
 	}
+
+	t.Fatal("real_aws missing from manifest")
+
+	return ""
 }

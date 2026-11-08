@@ -3,11 +3,21 @@
 package install_test
 
 import (
+	"aws-cli-guard/internal/install"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 )
+
+func testOpts(env []string, prefix, executable string) install.Options {
+	return install.Options{
+		Env:           env,
+		Prefix:        prefix,
+		Executable:    executable,
+		BeforeUpgrade: nil,
+	}
+}
 
 const (
 	archiveMemberAWS     = "aws"

@@ -13,6 +13,11 @@ const (
 	reasonResolveExecutable   = "the running executable could not be resolved"
 	reasonPlatformUnsupported = "install is not supported on this platform"
 	reasonInstallFailed       = "install failed"
+	reasonNotInstalled        = "there is no installation to upgrade in that prefix"
+	reasonNotOurInstallation  = "the installed files are not a wrapper this binary can replace"
+	reasonDisableLayout       = "persistent disable is active or partially present in that prefix"
+	reasonManifestInvalid     = "the install manifest is invalid"
+	reasonUpgradePartial      = "upgrade did not finish; run the same command again"
 )
 
 // Reason maps an install error to a fixed user-facing reason line.
@@ -36,6 +41,16 @@ func Reason(err error) string {
 		return reasonResolveExecutable
 	case errors.Is(err, ErrPlatformUnsupported):
 		return reasonPlatformUnsupported
+	case errors.Is(err, ErrNotInstalled):
+		return reasonNotInstalled
+	case errors.Is(err, ErrNotOurInstallation):
+		return reasonNotOurInstallation
+	case errors.Is(err, ErrDisableLayout):
+		return reasonDisableLayout
+	case errors.Is(err, ErrManifestInvalid):
+		return reasonManifestInvalid
+	case errors.Is(err, ErrUpgradePartial):
+		return reasonUpgradePartial
 	default:
 		return reasonInstallFailed
 	}

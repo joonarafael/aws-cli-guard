@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-`IN-1` and `OP-3` are done: `aws-guard install`, the install manifest, the disable stub, `install.sh`, and the tag-driven draft GitHub Releases workflow ([ADR 0025](decisions/0025-installer-and-releases.md)). Next is `IN-3`, upgrade behavior. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
+`IN-1`, `OP-3`, and `IN-3` are done: install, the release pipeline, and upgrade ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0026](decisions/0026-upgrade-behavior.md)). Next is `OP-1`, session off, then `OP-2`, persistent disable. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
 
 `user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
@@ -271,9 +271,10 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | --- | --- | --- | --- | --- | --- |
 | IN-1 | Installer with manifest and `PATH` setup | Done | Phase 5 | — | `IN-2`, `IN-3`, `OP-2` |
 | IN-2 | Shell integration | To do | Phase 5 | `IN-1` | — |
-| IN-3 | Upgrade behavior | To do | Phase 5 | `IN-1`, `FS-5` | — |
+| IN-3 | Upgrade behavior | Done | Phase 5 | `IN-1`, `FS-5` | — |
 
 - `IN-1` shipped `aws-guard install`, `install.sh`, the manifest, exclusive create, and the disable stub. The directory and asset names are [ADR 0025](decisions/0025-installer-and-releases.md). The publish shape is [Publish pipeline](DESIGN.md#123-publish-pipeline).
+- `IN-3` shipped `aws-guard upgrade`, upgrade-on-second-install, in-place replacement of the four install files, and migrate after a successful replace ([ADR 0026](decisions/0026-upgrade-behavior.md)).
 - `IN-1` records the Go wrapper path, the `aws` path, and the real AWS CLI path, and installs the POSIX disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The enabled `aws` is the Go wrapper. A chosen prefix never replaces an existing file.
 - `IN-2` is Bash and zsh, with shared POSIX `sh`, per [ADR 0005](decisions/0005-bash-and-zsh.md).
 
