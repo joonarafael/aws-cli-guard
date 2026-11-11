@@ -31,10 +31,11 @@ func TestInstallScriptHappyPath(t *testing.T) {
 	writeStubGuard(t, stubGuard, record)
 
 	archiveBytes := buildReleaseArchive(t, stubGuard)
+	archiveName := hostArchiveForVersion("1.2.3")
 	sum := sha256.Sum256(archiveBytes)
-	checksums := fmt.Sprintf("%s  %s\n", hex.EncodeToString(sum[:]), linuxAmd64Archive)
+	checksums := fmt.Sprintf("%s  %s\n", hex.EncodeToString(sum[:]), archiveName)
 
-	server := httptest.NewServer(releaseTestHandler(archiveBytes, checksums))
+	server := httptest.NewServer(releaseTestHandler(archiveBytes, checksums, archiveName))
 	defer server.Close()
 
 	output, err := runInstallScript(t, root, server.URL)
@@ -62,10 +63,11 @@ func TestInstallScriptRejectsBadChecksum(t *testing.T) {
 	writeStubGuard(t, stubGuard, filepath.Join(work, "record.txt"))
 
 	archiveBytes := buildReleaseArchive(t, stubGuard)
+	archiveName := hostArchiveForVersion("1.2.3")
 	checksums := "0000000000000000000000000000000000000000000000000000000000000000  " +
-		linuxAmd64Archive + "\n"
+		archiveName + "\n"
 
-	server := httptest.NewServer(releaseTestHandler(archiveBytes, checksums))
+	server := httptest.NewServer(releaseTestHandler(archiveBytes, checksums, archiveName))
 	defer server.Close()
 
 	output, err := runInstallScript(t, root, server.URL)
@@ -78,10 +80,10 @@ func TestInstallScriptRejectsBadChecksum(t *testing.T) {
 	}
 }
 
-func releaseTestHandler(archiveBytes []byte, checksums string) http.Handler {
+func releaseTestHandler(archiveBytes []byte, checksums, archiveName string) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		switch filepath.Base(request.URL.Path) {
-		case linuxAmd64Archive:
+		case archiveName:
 			_, _ = responseWriter.Write(archiveBytes)
 		case "checksums.txt":
 			_, _ = io.WriteString(responseWriter, checksums)

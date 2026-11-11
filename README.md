@@ -35,7 +35,7 @@ The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warn
 
 ## Install
 
-Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, a persistent-disable stub script, and an install manifest under a new directory. The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory ([ADR 0025](docs/decisions/0025-installer-and-releases.md)).
+Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, the persistent-disable script, and an install manifest under a new directory. Use `aws-guard disable` and `aws-guard enable` (or run `aws-cli-guard-disable` in the install directory when the Go binary does not run) to turn policy off or on for the whole installation ([ADR 0017](docs/decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](docs/decisions/0028-persistent-disable-swap.md)). The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory ([ADR 0025](docs/decisions/0025-installer-and-releases.md)).
 
 On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH`. Run `aws-guard init` if you have not already.
 

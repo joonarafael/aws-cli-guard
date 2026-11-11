@@ -50,6 +50,10 @@ func Dispatch(args []string, env []string, stdout, stderr io.Writer, confirm con
 		return runOff(args, env, stdout, stderr, confirm, session.CaptureControllingTTY)
 	case onCommand:
 		return runOn(args, env, stdout, stderr)
+	case disableCommand:
+		return runDisable(args, env, stdout, stderr)
+	case enableCommand:
+		return runEnable(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

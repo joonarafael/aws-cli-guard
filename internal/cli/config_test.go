@@ -137,7 +137,7 @@ func TestRunConfigUsage(t *testing.T) {
 	cases := [][]string{
 		{progName, configSubcommand},
 		{progName, configSubcommand, "unknown"},
-		{progName, configSubcommand, configValidateSub, "extra"},
+		{progName, configSubcommand, configValidateSub, cliExtraArg},
 	}
 
 	for _, argv := range cases {

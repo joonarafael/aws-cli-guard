@@ -4,9 +4,11 @@ package install_test
 
 import (
 	"aws-cli-guard/internal/install"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -23,8 +25,11 @@ const (
 	archiveMemberAWS     = "aws"
 	archiveMemberGuard   = "aws-guard"
 	archiveMemberDisable = "aws-cli-guard-disable"
-	linuxAmd64Archive    = "aws-cli-guard_1.2.3_linux_amd64.tar.gz"
 )
+
+func hostArchiveForVersion(version string) string {
+	return fmt.Sprintf("aws-cli-guard_%s_%s_%s.tar.gz", version, runtime.GOOS, runtime.GOARCH)
+}
 
 func moduleRoot(t *testing.T) string {
 	t.Helper()
