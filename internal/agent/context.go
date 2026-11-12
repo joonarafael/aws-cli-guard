@@ -51,3 +51,17 @@ func (c Context) FollowsProfilePolicy() bool {
 func (c Context) Recognized() bool {
 	return c.rec != recognitionUnknown
 }
+
+// StdinLabel returns the stdin class for verbose logging, or empty when out of range.
+func (c Context) StdinLabel() string {
+	switch c.stdin {
+	case StdinInteractive:
+		return "interactive"
+	case StdinNonInteractive:
+		return "non-interactive"
+	case StdinUndetermined:
+		return "undetermined"
+	default:
+		return ""
+	}
+}

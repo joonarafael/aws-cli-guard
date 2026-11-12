@@ -36,6 +36,16 @@ func gateEnv(t *testing.T) []string {
 	}
 }
 
+func writeGateSettingsVerbose(t *testing.T, env []string) {
+	t.Helper()
+
+	writeGateSettings(t, env, `version = 1
+
+[logging]
+level = "verbose"
+`)
+}
+
 func writeGateSettings(t *testing.T, env []string, body string) {
 	t.Helper()
 

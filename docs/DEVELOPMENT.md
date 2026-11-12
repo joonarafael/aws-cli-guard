@@ -119,6 +119,8 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0029`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0030`.
+
+For troubleshooting on the `aws` path, `AWS_CLI_GUARD_LOG=verbose` prints the decision block on stderr ([ADR 0029](decisions/0029-verbose-logging.md)).
 
 Session-off tty capture (`internal/session/tty_darwin.go`) is platform-sensitive. Run `make check` on macOS before merging changes to that code. The standing macOS CI job still waits for parent-process detection ([ROADMAP.md](ROADMAP.md), `CI-1`).

@@ -50,6 +50,7 @@ action = "deny"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -93,6 +94,7 @@ action = "allow"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -124,6 +126,7 @@ action = "deny"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -156,6 +159,7 @@ action = "deny"
 			gateExportCredentialsOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {

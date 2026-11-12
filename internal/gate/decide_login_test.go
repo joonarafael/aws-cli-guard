@@ -17,7 +17,7 @@ func TestDecideSSOLoginWithoutPolicy(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(gateSSOLoginArgs(), env, &stderr)
+	permitted := gate.Decide(gateSSOLoginArgs(), env, "", &stderr)
 	if !permitted {
 		t.Fatalf("Decide = false, stderr = %q", stderr.String())
 	}
@@ -48,6 +48,7 @@ func TestDecideSSOLoginDefaultProfileNoWarning(t *testing.T) {
 	permitted := gate.Decide(
 		gateSSOLoginArgs(gateProfileFlag, "default"),
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -75,6 +76,7 @@ func TestDecideSSOLoginDenyPolicyStillPermits(t *testing.T) {
 	permitted := gate.Decide(
 		gateSSOLoginArgs(gateProfileFlag, gateTestProfile),
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -108,7 +110,7 @@ func TestDecideSSOLoginCorruptFilesUnchanged(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(gateSSOLoginArgs(), env, &stderr)
+	permitted := gate.Decide(gateSSOLoginArgs(), env, "", &stderr)
 	if !permitted {
 		t.Fatalf("Decide = false, stderr = %q", stderr.String())
 	}
@@ -146,6 +148,7 @@ func TestDecideEmptyProfileSSOLoginFailClosed(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "--profile=", gateSSOCommand, gateLoginOperation},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -166,6 +169,7 @@ func TestDecideTopLevelLoginMissingPolicy(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateLoginOperation},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -186,6 +190,7 @@ func TestDecideSSOLogoutMissingPolicy(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSSOCommand, gateLogoutOperation},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -213,6 +218,7 @@ func TestDecideSSOLogoutDenyPolicy(t *testing.T) {
 			gateHandoffProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {

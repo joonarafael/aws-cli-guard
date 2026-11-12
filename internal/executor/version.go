@@ -9,6 +9,8 @@ import (
 	"aws-cli-guard/internal/output"
 	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/session"
+	"aws-cli-guard/internal/settings"
+	"aws-cli-guard/internal/verbose"
 	"errors"
 	"fmt"
 	"io"
@@ -18,10 +20,18 @@ import (
 // PolicyGate decides whether gate.Decide runs before exec.
 // When ok is false, a cancellation was written and the process should exit 3.
 func PolicyGate(realPath string, env []string, stderr io.Writer) (bool, bool) {
+	envLevel, err := verbose.EnvLevel(env)
+	if err != nil {
+		output.Cancel(stderr, verbose.ReasonInvalid)
+
+		return false, false
+	}
+
 	sessionID := session.ID()
 
 	key, err := cliVersionKey(realPath, sessionID)
 	if err != nil {
+		writeVersionRefuse(stderr, envLevel, env, realPath)
 		output.Cancel(stderr, CancellationReason(err))
 
 		return false, false
@@ -35,7 +45,38 @@ func PolicyGate(realPath string, env []string, stderr io.Writer) (bool, bool) {
 
 	maybeWarnCLIVersion(stderr, result, env, key, fromCache)
 
-	return cliversion.PolicyApplies(result.Relation), true
+	if !cliversion.PolicyApplies(result.Relation) {
+		writeVersionHandoff(stderr, envLevel, env, realPath)
+
+		return false, true
+	}
+
+	return true, true
+}
+
+func writeVersionHandoff(stderr io.Writer, level settings.Level, env []string, realPath string) {
+	verbose.Write(stderr, level, verbose.Event{ //nolint:exhaustruct_v5 // version handoff block.
+		Home:    homeOriginLabel(env),
+		AWS:     realPath,
+		Outcome: "version handoff",
+	})
+}
+
+func writeVersionRefuse(stderr io.Writer, level settings.Level, env []string, realPath string) {
+	verbose.Write(stderr, level, verbose.Event{ //nolint:exhaustruct_v5 // version-key refuse block.
+		Home:    homeOriginLabel(env),
+		AWS:     realPath,
+		Outcome: "refuse",
+	})
+}
+
+func homeOriginLabel(env []string) string {
+	label, ok := paths.HomeOrigin(env)
+	if !ok {
+		return ""
+	}
+
+	return label
 }
 
 func lookupCLIVersion(

@@ -19,6 +19,7 @@ func TestDecideMissingPolicy(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateSecretArg},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -48,6 +49,7 @@ func TestDecideAllowProfile(t *testing.T) {
 			gateSecretArg,
 		},
 		append(env, "AWS_PROFILE=ignored"),
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -73,6 +75,7 @@ func TestDecideDenyBeatsGrant(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -95,6 +98,7 @@ func TestDecidePromptWithoutGrant(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "ec2", "describe-instances", gateProfileFlag, gateTestProfile},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -118,6 +122,7 @@ func TestDecidePromptWithCurrentGrant(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "s3", "ls", gateProfileFlag, gateTestProfile},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -142,6 +147,7 @@ func TestDecideExportRefused(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -178,6 +184,7 @@ action = "allow"
 			"AWS_ACCESS_KEY_ID=AKIAEXAMPLE",
 			"AWS_SECRET_ACCESS_KEY=secret",
 		),
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -205,6 +212,7 @@ func TestDecideCorruptPolicyUnchanged(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateGetCallerIdentityOp},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -239,7 +247,7 @@ action = "allow"
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide([]string{gateProgName, "s3", "ls"}, env, &stderr)
+	permitted := gate.Decide([]string{gateProgName, "s3", "ls"}, env, "", &stderr)
 	if permitted {
 		t.Fatal("Decide = true, want false")
 	}

@@ -35,7 +35,7 @@ func TestDecideReloadDenyBeatsCurrentGrant(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(args, env, &stderr)
+	permitted := gate.Decide(args, env, "", &stderr)
 	if !permitted {
 		t.Fatalf("first Decide = false, stderr = %q", stderr.String())
 	}
@@ -51,7 +51,7 @@ func TestDecideReloadDenyBeatsCurrentGrant(t *testing.T) {
 
 	stderr.Reset()
 
-	permitted = gate.Decide(args, env, &stderr)
+	permitted = gate.Decide(args, env, "", &stderr)
 	if permitted {
 		t.Fatal("second Decide = true, want false")
 	}
@@ -79,7 +79,7 @@ func TestDecideReloadAllowThenPromptRefuses(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(args, env, &stderr)
+	permitted := gate.Decide(args, env, "", &stderr)
 	if !permitted {
 		t.Fatalf("first Decide = false, stderr = %q", stderr.String())
 	}
@@ -88,7 +88,7 @@ func TestDecideReloadAllowThenPromptRefuses(t *testing.T) {
 
 	stderr.Reset()
 
-	permitted = gate.Decide(args, env, &stderr)
+	permitted = gate.Decide(args, env, "", &stderr)
 	if permitted {
 		t.Fatal("second Decide = true, want false")
 	}
@@ -118,7 +118,7 @@ func TestDecideReloadCorruptPolicyRefuses(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(args, env, &stderr)
+	permitted := gate.Decide(args, env, "", &stderr)
 	if !permitted {
 		t.Fatalf("first Decide = false, stderr = %q", stderr.String())
 	}
@@ -133,7 +133,7 @@ func TestDecideReloadCorruptPolicyRefuses(t *testing.T) {
 
 	stderr.Reset()
 
-	permitted = gate.Decide(args, env, &stderr)
+	permitted = gate.Decide(args, env, "", &stderr)
 	if permitted {
 		t.Fatal("second Decide = true, want false")
 	}

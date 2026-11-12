@@ -130,6 +130,7 @@ func TestDecidePromptWithoutGrantShowsAccountAndAllowGuidance(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "ec2", "describe-instances", gateProfileFlag, gateTestProfile},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -162,6 +163,7 @@ func TestDecideExportRefusalOmitsIdentity(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -198,6 +200,7 @@ action = "allow"
 			"AWS_ACCESS_KEY_ID=AKIAEXAMPLE",
 			"AWS_SECRET_ACCESS_KEY=secret",
 		),
+		"",
 		&stderr,
 	)
 	if permitted {

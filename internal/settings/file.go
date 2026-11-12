@@ -8,4 +8,5 @@ type File struct {
 	Version int
 	Mode    os.FileMode
 	Verify  bool
+	Level   Level
 }

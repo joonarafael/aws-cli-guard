@@ -61,6 +61,20 @@ func writeEnforceGrants(t *testing.T, work, body string) {
 	}
 }
 
+func allowProfilePolicy() string {
+	return `version = 1
+
+[defaults]
+action = "prompt"
+
+[credential_export]
+action = "allow"
+
+[profiles.` + enforceProfile + `]
+action = "allow"
+`
+}
+
 func denyProfilePolicy() string {
 	return `version = 1
 

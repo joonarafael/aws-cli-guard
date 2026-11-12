@@ -43,6 +43,7 @@ action = "allow"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -74,6 +75,7 @@ action = "deny"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -99,6 +101,7 @@ parent_process = false
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateGetCallerIdentityOp},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {

@@ -10,7 +10,18 @@ import (
 
 var errEmptyUserHome = errors.New("aws-cli-guard: user home directory is empty")
 
+const (
+	homeOriginUserDatabase = "user database"
+	homeOriginHOME         = "HOME"
+)
+
 type homeLookup func() (string, error)
+
+type homeResolution struct {
+	dir    string
+	origin string
+	ok     bool
+}
 
 func defaultUserHomeLookup() (string, error) {
 	current, err := user.Current()
@@ -25,18 +36,42 @@ func defaultUserHomeLookup() (string, error) {
 	return current.HomeDir, nil
 }
 
-func homeDir(env []string, lookup homeLookup) (string, error) {
+func resolveHome(env []string, lookup homeLookup) homeResolution {
+	if dirOverrideActive(env) {
+		return homeResolution{} //nolint:exhaustruct_v5 // not resolved under test overrides.
+	}
+
 	fromUser, err := lookup()
 	if err == nil && isAbsoluteHome(fromUser) {
-		return fromUser, nil
+		return homeResolution{dir: fromUser, origin: homeOriginUserDatabase, ok: true}
 	}
 
 	fallback, ok := environ.Lookup("HOME", env)
 	if ok && isAbsoluteHome(fallback) {
-		return fallback, nil
+		return homeResolution{dir: fallback, origin: homeOriginHOME, ok: true}
 	}
 
-	return "", ErrHomeUnset
+	return homeResolution{} //nolint:exhaustruct_v5 // not resolved.
+}
+
+func homeDir(env []string, lookup homeLookup) (string, error) {
+	res := resolveHome(env, lookup)
+	if !res.ok {
+		return "", ErrHomeUnset
+	}
+
+	return res.dir, nil
+}
+
+// HomeOrigin reports whether guard-owned paths used the user database or HOME.
+// The second result is false when home cannot be resolved or a test-path override is set.
+func HomeOrigin(env []string) (string, bool) {
+	res := resolveHome(env, defaultUserHomeLookup)
+	if !res.ok {
+		return "", false
+	}
+
+	return res.origin, true
 }
 
 func isAbsoluteHome(home string) bool {

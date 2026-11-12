@@ -53,6 +53,7 @@ func TestDecideSessionOffHandoffWithWarning(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -105,6 +106,7 @@ action = "deny"
 			gateGetCallerIdentityOp,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -128,6 +130,7 @@ func TestDecideCorruptSessionsFile(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateGetCallerIdentityOp},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -149,7 +152,7 @@ func TestDecideSSOLoginIgnoresCorruptSessions(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(gateSSOLoginArgs(), env, &stderr)
+	permitted := gate.Decide(gateSSOLoginArgs(), env, "", &stderr)
 	if !permitted {
 		t.Fatalf("Decide = false, stderr = %q", stderr.String())
 	}

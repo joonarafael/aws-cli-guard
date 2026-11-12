@@ -10,7 +10,10 @@ import (
 
 var errLookupFailed = errors.New("lookup failed")
 
-const ignoredHomeEnvEntry = "HOME=/should/not/use"
+const (
+	ignoredHomeEnvEntry  = "HOME=/should/not/use"
+	fallbackHomeEnvEntry = "HOME=/fallback/home"
+)
 
 func lookupReturning(home string) homeLookup {
 	return func() (string, error) {
@@ -46,7 +49,7 @@ func TestConfigDirUserHomeWinsOverEnv(t *testing.T) {
 func TestHomeDirFallbackWhenLookupFails(t *testing.T) {
 	t.Parallel()
 
-	env := []string{"HOME=/fallback/home"}
+	env := []string{fallbackHomeEnvEntry}
 
 	home, err := homeDir(env, lookupFailing())
 	if err != nil {
@@ -61,7 +64,7 @@ func TestHomeDirFallbackWhenLookupFails(t *testing.T) {
 func TestHomeDirFallbackWhenUserHomeRelative(t *testing.T) {
 	t.Parallel()
 
-	env := []string{"HOME=/fallback/home"}
+	env := []string{fallbackHomeEnvEntry}
 
 	home, err := homeDir(env, lookupReturning("relative/home"))
 	if err != nil {

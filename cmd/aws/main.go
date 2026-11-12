@@ -5,14 +5,34 @@ import (
 	"aws-cli-guard/internal/executor"
 	"aws-cli-guard/internal/gate"
 	"aws-cli-guard/internal/output"
+	"aws-cli-guard/internal/paths"
+	"aws-cli-guard/internal/settings"
+	"aws-cli-guard/internal/verbose"
 	"os"
 )
 
 func main() {
 	env := executor.Environ()
 
+	envLevel, err := verbose.EnvLevel(env)
+	if err != nil {
+		output.Cancel(os.Stderr, verbose.ReasonInvalid)
+		os.Exit(output.CancelStatus)
+	}
+
 	realAWSPath, err := executor.FindRealAWS()
 	if err != nil {
+		if envLevel == settings.LevelVerbose {
+			verbose.Write(
+				os.Stderr,
+				envLevel,
+				verbose.Event{ //nolint:exhaustruct_v5 // discovery refuse block.
+					Home:    homeLabelForLog(env),
+					Outcome: "refuse",
+				},
+			)
+		}
+
 		output.Cancel(os.Stderr, executor.CancellationReason(err))
 		os.Exit(output.CancelStatus)
 	}
@@ -22,7 +42,7 @@ func main() {
 		os.Exit(output.CancelStatus)
 	}
 
-	if guard && !gate.Decide(os.Args, env, os.Stderr) {
+	if guard && !gate.Decide(os.Args, env, realAWSPath, os.Stderr) {
 		os.Exit(output.CancelStatus)
 	}
 
@@ -31,4 +51,13 @@ func main() {
 		output.Cancel(os.Stderr, executor.CancellationReason(err))
 		os.Exit(output.CancelStatus)
 	}
+}
+
+func homeLabelForLog(env []string) string {
+	label, ok := paths.HomeOrigin(env)
+	if !ok {
+		return ""
+	}
+
+	return label
 }

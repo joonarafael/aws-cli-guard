@@ -33,6 +33,7 @@ func loadAtPath(path string) (File, error) {
 				Version: supportedVersion,
 				Mode:    0,
 				Verify:  false,
+				Level:   LevelTight,
 			}, nil
 		}
 
