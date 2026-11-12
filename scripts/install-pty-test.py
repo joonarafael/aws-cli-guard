@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 """Run a command under a pty and answer one confirmation line. Test helper only."""
+import errno
 import os
 import pty
 import select
 import sys
 import time
+
+
+def read_pty(fd: int) -> bytes:
+    try:
+        return os.read(fd, 4096)
+    except OSError as exc:
+        # Linux signals a closed pty slave with EIO, not a zero-length read.
+        if exc.errno == errno.EIO:
+            return b""
+        raise
 
 
 def main() -> int:
@@ -31,7 +42,7 @@ def main() -> int:
         rlist, _, _ = select.select([fd], [], [], 0.2)
         if not rlist:
             continue
-        chunk = os.read(fd, 4096)
+        chunk = read_pty(fd)
         if not chunk:
             break
         buf += chunk
@@ -44,7 +55,7 @@ def main() -> int:
         rlist, _, _ = select.select([fd], [], [], 0.2)
         if not rlist:
             break
-        chunk = os.read(fd, 4096)
+        chunk = read_pty(fd)
         if not chunk:
             break
         buf += chunk
