@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-`IN-1`, `OP-3`, `IN-3`, `OP-1`, `OP-2`, and `OP-5` are done: install, the release pipeline, upgrade, session off, persistent disable, and tight and verbose logging ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0026](decisions/0026-upgrade-behavior.md), [ADR 0027](decisions/0027-session-off.md), [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](decisions/0028-persistent-disable-swap.md), [ADR 0029](decisions/0029-verbose-logging.md)). Next is `OP-4`, auto-update. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
+`IN-1`, `OP-3`, `IN-3`, `OP-1`, `OP-2`, and `OP-5` are done: install, the release pipeline, upgrade, session off, persistent disable, and tight and verbose logging ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0026](decisions/0026-upgrade-behavior.md), [ADR 0027](decisions/0027-session-off.md), [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](decisions/0028-persistent-disable-swap.md), [ADR 0029](decisions/0029-verbose-logging.md)). Next is the implementation of `OP-4`, auto-update, specified in [ADR 0030](decisions/0030-auto-update.md). This tree does not ask or download yet. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
 
 `user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
@@ -61,7 +61,7 @@ Phases 2 and 3 are done. The detection engine through `AG-3`, plus the Cursor an
 2. `IN-1` and `OP-3`. The installer and the release pipeline ship together ([ADR 0025](decisions/0025-installer-and-releases.md)). The installer lays down the persistent-disable script.
 3. `IN-3`. Upgrade keeps user policy and can run migrate.
 4. `OP-1`, then `OP-2`. Session off keys off the existing recognized-agent status. Persistent disable needs the script and manifest from `IN-1`.
-5. `OP-5`, then `OP-4`. Verbose logging records the caller signals that exist today. Auto-update waits until releases exist, and init asks about updates only once the updater ships.
+5. `OP-5`, then `OP-4`. Verbose logging is done. Auto-update is specified in [ADR 0030](decisions/0030-auto-update.md). Init asks, and the wrapper contacts GitHub, only when that implementation ships.
 6. `IN-2`. Bash and zsh, after PATH install works.
 
 ### Agent detection last
@@ -288,11 +288,12 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | OP-4 | Auto-update and update notices | To do | Phase 5 | `FS-6`, `OP-3` | — |
 | OP-5 | Tight and verbose logging | Done | Phase 5 | `FD-3` | — |
 
-- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them in Phase 5, after `FS-5` and with installation, before further agent detection. The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Auto-update is not designed in detail yet.
+- These are the [recorded operational criteria](DESIGN.md#12-recorded-operational-criteria). [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them in Phase 5, after `FS-5` and with installation, before further agent detection. The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Auto-update is specified in [ADR 0030](decisions/0030-auto-update.md) and is not implemented yet.
 - `OP-3` is done. A tag `vX.Y.Z` runs [.github/workflows/release.yml](../.github/workflows/release.yml), which calls [scripts/release-assets.sh](../scripts/release-assets.sh) to build the four platform archives, `checksums.txt`, and copy [install.sh](../install.sh), then uploads a draft GitHub Release. Publishing the draft is manual. A failed draft is not replaced automatically; remove it by hand before re-running the workflow.
 - `OP-2` is done ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](decisions/0028-persistent-disable-swap.md)). `aws-guard disable` and `aws-guard enable` exec the sibling `aws-cli-guard-disable` script. The script swaps the installed `aws` name, writes the stand-in and marker, and restores the wrapper on enable. Details are in [ADR 0028](decisions/0028-persistent-disable-swap.md).
 - `OP-1` is done ([ADR 0027](decisions/0027-session-off.md)). `aws-guard off` and `aws-guard on` append to `sessions.json`. The wrapper honors the latest session record unless `agent.Context.Recognized` is true.
 - `OP-5` is done ([ADR 0029](decisions/0029-verbose-logging.md)). `AWS_CLI_GUARD_LOG` and optional `settings.toml` `[logging] level` control tight versus verbose. Verbose prints the decision block on the `aws` path. Init does not write `[logging]`. There is no stack trace and no parent-process field.
+- `OP-4` is specified in [ADR 0030](decisions/0030-auto-update.md) and is not implemented. `[updates] auto` will live in `settings.toml`. Until that code lands, `[updates]` stays an unknown field and init does not ask. The `aws` path will read `updates.json` and a detached helper will contact GitHub. The helper reuses the upgrade replace and still must not write `real_aws`.
 
 ### AD: Advanced features
 

@@ -54,5 +54,5 @@ The default install directory is a private directory under the user's home. The 
 - `OP-2` may rename the installed wrapper to the recorded aside path and write the stand-in at the recorded `aws` path. It must not rename or replace `real_aws`.
 - Shell startup edits stay in `IN-2`. Until the user changes `PATH`, the new directory is not selected.
 - Dogfooding from `bin/` stays the development path until the implementation lands. A local `aws-guard install` works when the three siblings are staged together, which is what the release archive does.
-- Auto-update and logging stay undesigned. When auto-update arrives, it verifies the same checksums and still must not write `real_aws`.
+- Logging is [ADR 0029](0029-verbose-logging.md). Auto-update is [ADR 0030](0030-auto-update.md). It verifies the same checksums and still must not write `real_aws`. This record does not implement it.
 - [ROADMAP.md](../ROADMAP.md) keeps `IN-1` and `OP-3` as to do until the implementation lands.

@@ -32,4 +32,4 @@ Policy, settings, grants, and cache live outside the install prefix ([DESIGN.md]
 
 - [ADR 0025](0025-installer-and-releases.md) consequence on second install is replaced: a verified prefix upgrades instead of refusing.
 - [ROADMAP.md](../ROADMAP.md) marks `IN-3` done; `OP-1` and `OP-2` are next in the product-finish sequence.
-- Auto-update ([OP-4](0025-installer-and-releases.md)) may reuse the same replace mechanics later; it still must not write `real_aws`.
+- Auto-update reuses this replace path ([ADR 0030](0030-auto-update.md)). It still must not write `real_aws`.

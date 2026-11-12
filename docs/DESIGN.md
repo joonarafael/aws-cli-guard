@@ -332,7 +332,7 @@ Policy keys for behavior this build does not enforce are unknown fields. They fa
 
 A missing policy file means the user has not run init. `aws` does not create the file, does not execute the real CLI, and does not treat the absence as an allow. It exits with a wrapper status and tells the user to run `aws-guard init`.
 
-`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows and does not enable agent detection. If the policy file already exists, init refuses to overwrite it. When `settings.toml` is missing, init creates it in that same directory without changing an existing policy file. A build that includes auto-update asks the question from [ADR 0007](decisions/0007-auto-update-asked-at-init.md) at that moment. Identity verification is written off unless the user turns it on.
+`aws-guard init` creates the config directory at mode `0700` and a versioned `config.toml` at mode `0600`. The new file uses the current schema, default action `prompt`, and credential-export action `prompt`. It has no profile allows and does not enable agent detection. If the policy file already exists, init refuses to overwrite it. When `settings.toml` is missing, init creates it in that same directory without changing an existing policy file. A build that includes auto-update asks the question from [ADR 0007](decisions/0007-auto-update-asked-at-init.md) at that moment. The prompt, the cache, and the helper are [ADR 0030](decisions/0030-auto-update.md). Identity verification is written off unless the user turns it on.
 
 A missing grants file means there are no grants. That is normal before the first allow, and it is not corruption. A missing cache means there is nothing cached. Cache misses do not affect authorization.
 
@@ -849,7 +849,7 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Logging is [ADR 0029](decisions/0029-verbose-logging.md). Auto-update is not designed in detail yet.
+These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Logging is [ADR 0029](decisions/0029-verbose-logging.md). Auto-update is [ADR 0030](decisions/0030-auto-update.md).
 
 ### 12.1 Turn the wrapper off for one terminal session
 
@@ -935,11 +935,14 @@ install.sh
 
 ### 12.4 Auto-update and update notices
 
-- `aws-guard init` asks whether automatic updates are on and stores the answer in `settings.toml` ([ADR 0007](decisions/0007-auto-update-asked-at-init.md)). A missing answer means off. Init can write that file without replacing an existing policy file.
-- When a newer release exists and auto-update is off, the tool suggests the update.
-- When auto-update is on, the tool downloads that release, verifies it with the same checksums as the installer, replaces the installed binary, and tells the user that it did so.
-- The check and any suggestion leave the AWS command's stdout and exit code alone, and they do not stall the command. Suggestions are written to stderr.
-- The check contacts the release channel only. It sends what it needs to learn the current release, such as its own version. It does not send AWS credentials, profile names, or command arguments.
+[ADR 0030](decisions/0030-auto-update.md) is the record. This tree does not implement it yet, so init does not ask and the wrapper does not contact GitHub. [ADR 0007](decisions/0007-auto-update-asked-at-init.md) still holds: a build without the updater does not ask and does not download.
+
+- `aws-guard init` asks whether automatic updates are on and stores `[updates] auto` in `settings.toml`. A missing answer means off. A missing terminal does not turn updates on. Init can write that file without replacing an existing policy file.
+- The `aws` path reads a cache record and may print one stderr line. It does not contact the network and does not wait on a download. A detached helper learns the current published GitHub release.
+- When a newer release is cached and auto-update is off, the wrapper suggests that version. The line names the version. It is not a floating latest URL.
+- When auto-update is on, the helper downloads that release, verifies it with the same checksums as the installer, replaces the installed programs, and a later `aws` invocation says that it did so. The manifest's `real_aws` path is left unchanged. A disabled installation is not replaced.
+- The check and any suggestion leave the AWS command's stdout and exit code alone. A failed check does not cancel. Suggestions are written to stderr.
+- The helper contacts the release channel only. It sends its own version. It does not send AWS credentials, profile names, or command arguments.
 - After an update, including a bad one, [persistent disable](#122-persistent-system-wide-disable-and-enable) still works, and an older release remains a direct download.
 
 ### 12.5 Logging
@@ -1149,7 +1152,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - PATH-based setup that follows [Reversibility](#reversibility): never overwrite the real AWS CLI, write an install manifest, and mark any shell edits. The manifest records the Go wrapper path, the `aws` path, and the real AWS CLI path, and the installer places the persistent-disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The directory, the exclusive create, and the release assets are [ADR 0025](decisions/0025-installer-and-releases.md). Shell startup edits stay with the later Bash and zsh work.
 - Safe detection of the actual AWS CLI executable. Skipping every wrapper copy is already done.
 - Upgrade via `aws-guard upgrade` or a second `aws-guard install` / `install.sh` on a verified prefix ([ADR 0026](decisions/0026-upgrade-behavior.md)). It replaces only the wrapper binaries and manifest inside the prefix, never `real_aws`, then runs migrate in process. User policy, settings, grants, and cache stay in their own directories. A foreign file in the prefix still refuses; fresh prefixes still use exclusive create.
-- The recorded operational criteria, in the order in [Remaining order](#remaining-order): the release pipeline ships with the installer, then session off, persistent disable and enable, tight and verbose logging, and auto-update.
+- The recorded operational criteria, in the order in [Remaining order](#remaining-order): the release pipeline ships with the installer, then session off, persistent disable and enable, tight and verbose logging, and auto-update ([ADR 0030](decisions/0030-auto-update.md)).
 - Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)). It follows the operational criteria.
 
 ### Phase 6: Optional advanced features
