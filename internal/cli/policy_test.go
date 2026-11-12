@@ -219,7 +219,7 @@ func TestRunPolicyUsage(t *testing.T) {
 	cases := [][]string{
 		{progName, policySubcommand},
 		{progName, policySubcommand, "unknown"},
-		{progName, policySubcommand, policyListSubcommand, "extra"},
+		{progName, policySubcommand, policyListSubcommand, cliExtraArg},
 		{progName, policySubcommand, policyExplainSub},
 		{progName, policySubcommand, policyExplainSub, "--bad"},
 	}

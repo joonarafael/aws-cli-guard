@@ -1,5 +1,408 @@
 #!/bin/sh
+# POSIX persistent disable/enable for one install prefix. See ADR 0017 and ADR 0028.
 set -eu
 
-printf '%s\n' 'aws-cli-guard: error: persistent disable is not available in this installation yet' >&2
-exit 3
+error() {
+	printf '%s\n' "aws-cli-guard: error: $1" >&2
+	exit 3
+}
+
+detail() {
+	printf '%s\n' "aws-cli-guard: $1"
+}
+
+usage() {
+	error 'usage: aws-cli-guard-disable disable|enable'
+}
+
+# --- locate prefix from this script ---
+script_path=$0
+case $script_path in
+/*) ;;
+*)
+	script_dir_rel=$(dirname "$0")
+	case $script_dir_rel in
+	/*) script_base=$script_dir_rel ;;
+	*) script_base=$(cd "$script_dir_rel" && pwd) ;;
+	esac
+	script_path=$script_base/$(basename "$0")
+	;;
+esac
+script_dir=$(dirname "$script_path")
+prefix=$(cd "$script_dir" && pwd)
+
+name_aws=aws
+name_aside=aws.aside
+name_marker=aws-cli-guard-disabled
+name_incoming=aws.incoming
+name_incoming_partial=aws.incoming.partial
+name_manifest=aws-cli-guard-manifest
+name_guard=aws-guard
+
+path_aws="$prefix/$name_aws"
+path_aside="$prefix/$name_aside"
+path_marker="$prefix/$name_marker"
+path_incoming="$prefix/$name_incoming"
+path_incoming_partial="$prefix/$name_incoming_partial"
+path_manifest="$prefix/$name_manifest"
+
+# --- argument ---
+if [ "$#" -ne 1 ]; then
+	usage
+fi
+action=$1
+case $action in
+disable | enable) ;;
+*) usage ;;
+esac
+
+# --- confirmation on controlling terminal ---
+confirm_phrase=$action
+case $action in
+disable)
+	confirm_prompt='type disable to disable this installation'
+	;;
+enable)
+	confirm_prompt='type enable to enable this installation'
+	;;
+esac
+
+printf '%s\n' "aws-cli-guard: $confirm_prompt"
+
+confirm_line=''
+if ! IFS= read -r confirm_line </dev/tty 2>/dev/null; then
+	confirm_line=''
+fi
+
+# strip trailing CR from read
+confirm_line=$(printf '%s' "$confirm_line" | sed 's/\r$//')
+if [ "$confirm_line" != "$confirm_phrase" ]; then
+	error 'the installation change was not confirmed'
+fi
+
+# --- manifest (data only) ---
+if [ ! -f "$path_manifest" ]; then
+	error 'the install manifest is invalid'
+fi
+
+manifest_invalid() {
+	error 'the install manifest is invalid'
+}
+
+line_no=0
+manifest_version=''
+manifest_aws=''
+manifest_aws_guard=''
+manifest_real_aws=''
+manifest_disable_script=''
+manifest_aside=''
+manifest_marker=''
+
+while IFS= read -r line || [ -n "$line" ]; do
+	line_no=$((line_no + 1))
+	case $line_no in
+	1)
+		case $line in
+		version=*) manifest_version=${line#version=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	2)
+		case $line in
+		aws=*) manifest_aws=${line#aws=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	3)
+		case $line in
+		aws_guard=*) manifest_aws_guard=${line#aws_guard=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	4)
+		case $line in
+		real_aws=*) manifest_real_aws=${line#real_aws=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	5)
+		case $line in
+		disable_script=*) manifest_disable_script=${line#disable_script=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	6)
+		case $line in
+		aside=*) manifest_aside=${line#aside=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	7)
+		case $line in
+		marker=*) manifest_marker=${line#marker=} ;;
+		*) manifest_invalid ;;
+		esac
+		;;
+	*) manifest_invalid ;;
+	esac
+done <"$path_manifest"
+
+if [ "$line_no" -ne 7 ]; then
+	manifest_invalid
+fi
+
+if [ -z "$manifest_version" ] || [ -z "$manifest_real_aws" ]; then
+	manifest_invalid
+fi
+
+want_aws="$prefix/$name_aws"
+want_guard="$prefix/$name_guard"
+want_disable="$prefix/aws-cli-guard-disable"
+want_aside="$prefix/$name_aside"
+want_marker="$prefix/$name_marker"
+
+if [ "$manifest_aws" != "$want_aws" ] ||
+	[ "$manifest_aws_guard" != "$want_guard" ] ||
+	[ "$manifest_disable_script" != "$want_disable" ] ||
+	[ "$manifest_aside" != "$want_aside" ] ||
+	[ "$manifest_marker" != "$want_marker" ]; then
+	manifest_invalid
+fi
+
+# real_aws must be absolute
+case $manifest_real_aws in
+/*) ;;
+*) manifest_invalid ;;
+esac
+
+real_aws_invalid_target() {
+	target=$1
+	for bad in \
+		"$path_aws" \
+		"$path_aside" \
+		"$path_marker" \
+		"$path_incoming" \
+		"$path_incoming_partial" \
+		"$want_guard" \
+		"$want_disable" \
+		"$path_manifest"; do
+		if [ "$target" = "$bad" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+if real_aws_invalid_target "$manifest_real_aws"; then
+	manifest_invalid
+fi
+
+# prefix must be safe to single-quote in generated stand-in
+case $prefix in
+*\'*)
+	error 'the installation layout cannot be changed'
+	;;
+esac
+old_ifs=$IFS
+IFS='
+'
+# If prefix contains a newline, word-splitting yields more than one field.
+set -- $prefix
+IFS=$old_ifs
+if [ "$#" -gt 1 ]; then
+	error 'the installation layout cannot be changed'
+fi
+
+# --- helpers ---
+is_symlink() {
+	[ -L "$1" ]
+}
+
+layout_error() {
+	error 'the installation layout cannot be changed'
+}
+
+refuse_symlink_swap_names() {
+	for p in "$path_aws" "$path_aside" "$path_marker" "$path_incoming" "$path_incoming_partial"; do
+		if [ -e "$p" ] || [ -L "$p" ]; then
+			if is_symlink "$p"; then
+				layout_error
+			fi
+		fi
+	done
+}
+
+remove_incoming_leftovers() {
+	rm -f "$path_incoming" "$path_incoming_partial"
+}
+
+write_stand_in_partial() {
+	# shellcheck disable=SC2016
+	cat >"$path_incoming_partial" <<EOF
+#!/bin/sh
+set -eu
+prefix='$prefix'
+name_manifest='$name_manifest'
+warn_line='aws-cli-guard: warning: this installation is disabled and policy is not applied'
+err_missing='aws-cli-guard: error: the recorded AWS CLI is missing'
+manifest="\$prefix/\$name_manifest"
+if [ ! -f "\$manifest" ]; then
+	printf '%s\n' "\$err_missing" >&2
+	exit 3
+fi
+line_no=0
+real_path=''
+while IFS= read -r line || [ -n "\$line" ]; do
+	line_no=\$((line_no + 1))
+	if [ "\$line_no" -eq 4 ]; then
+		case \$line in
+		real_aws=*) real_path=\${line#real_aws=} ;;
+		*) printf '%s\n' "\$err_missing" >&2; exit 3 ;;
+		esac
+	fi
+done <"\$manifest"
+if [ "\$line_no" -ne 7 ] || [ -z "\$real_path" ]; then
+	printf '%s\n' "\$err_missing" >&2
+	exit 3
+fi
+case \$real_path in
+/*) ;;
+*) printf '%s\n' "\$err_missing" >&2; exit 3 ;;
+esac
+aws_path="\$prefix/$name_aws"
+aside_path="\$prefix/$name_aside"
+guard_path="\$prefix/$name_guard"
+disable_path="\$prefix/aws-cli-guard-disable"
+marker_path="\$prefix/$name_marker"
+incoming_path="\$prefix/$name_incoming"
+incoming_partial_path="\$prefix/$name_incoming.partial"
+for bad in "\$aws_path" "\$aside_path" "\$marker_path" "\$incoming_path" \
+	"\$incoming_partial_path" "\$guard_path" "\$disable_path" "\$manifest"; do
+	if [ "\$real_path" = "\$bad" ]; then
+		printf '%s\n' "\$err_missing" >&2
+		exit 3
+	fi
+done
+if [ ! -f "\$real_path" ] || [ ! -x "\$real_path" ]; then
+	printf '%s\n' "\$err_missing" >&2
+	exit 3
+fi
+printf '%s\n' "\$warn_line" >&2
+exec "\$real_path" "\$@"
+EOF
+	chmod 755 "$path_incoming_partial"
+	mv -f "$path_incoming_partial" "$path_incoming"
+}
+
+aside_present() {
+	[ -f "$path_aside" ] && ! is_symlink "$path_aside"
+}
+
+marker_present() {
+	[ -f "$path_marker" ] && ! is_symlink "$path_marker"
+}
+
+aws_regular_file() {
+	[ -f "$path_aws" ] && ! is_symlink "$path_aws"
+}
+
+incoming_present() {
+	[ -f "$path_incoming" ] && ! is_symlink "$path_incoming"
+}
+
+# --- state detection ---
+has_aside=0
+has_marker=0
+has_aws=0
+has_incoming=0
+
+if aside_present; then has_aside=1; fi
+if marker_present; then has_marker=1; fi
+if aws_regular_file; then has_aws=1; fi
+if incoming_present; then has_incoming=1; fi
+
+# marker without aside
+if [ "$has_marker" -eq 1 ] && [ "$has_aside" -eq 0 ]; then
+	layout_error
+fi
+
+refuse_symlink_swap_names
+
+# --- disable ---
+do_disable() {
+	# already disabled
+	if [ "$has_aside" -eq 1 ] && [ "$has_marker" -eq 1 ] && [ "$has_aws" -eq 1 ]; then
+		remove_incoming_leftovers
+		detail 'this installation is already disabled'
+		exit 0
+	fi
+
+	# enabled: no aside, no marker, aws is wrapper
+	if [ "$has_aside" -eq 0 ] && [ "$has_marker" -eq 0 ] && [ "$has_aws" -eq 1 ]; then
+		write_stand_in_partial
+		mv -f "$path_aws" "$path_aside"
+		mv -f "$path_incoming" "$path_aws"
+		: >"$path_marker"
+		chmod 644 "$path_marker"
+		detail 'this installation is disabled and policy is not applied'
+		detail 'aws-guard enable turns this installation back on'
+		exit 0
+	fi
+
+	# partial: aside + aws + no marker
+	if [ "$has_aside" -eq 1 ] && [ "$has_aws" -eq 1 ] && [ "$has_marker" -eq 0 ]; then
+		: >"$path_marker"
+		chmod 644 "$path_marker"
+		remove_incoming_leftovers
+		detail 'this installation is disabled and policy is not applied'
+		detail 'aws-guard enable turns this installation back on'
+		exit 0
+	fi
+
+	# partial: aside, no aws, incoming present
+	if [ "$has_aside" -eq 1 ] && [ "$has_aws" -eq 0 ] && [ "$has_incoming" -eq 1 ]; then
+		mv -f "$path_incoming" "$path_aws"
+		: >"$path_marker"
+		chmod 644 "$path_marker"
+		detail 'this installation is disabled and policy is not applied'
+		detail 'aws-guard enable turns this installation back on'
+		exit 0
+	fi
+
+	# partial: aside, no aws, no incoming
+	if [ "$has_aside" -eq 1 ] && [ "$has_aws" -eq 0 ] && [ "$has_incoming" -eq 0 ]; then
+		error 'run enable to restore this installation'
+	fi
+
+	layout_error
+}
+
+# --- enable ---
+do_enable() {
+	# already enabled
+	if [ "$has_aside" -eq 0 ] && [ "$has_marker" -eq 0 ] && [ "$has_aws" -eq 1 ]; then
+		remove_incoming_leftovers
+		detail 'this installation is already enabled'
+		exit 0
+	fi
+
+	if [ "$has_aside" -eq 0 ]; then
+		layout_error
+	fi
+
+	rm -f "$path_marker"
+	remove_incoming_leftovers
+
+	if [ "$has_aws" -eq 1 ]; then
+		rm -f "$path_aws"
+	fi
+
+	mv -f "$path_aside" "$path_aws"
+	detail 'this installation is enabled and policy applies'
+	exit 0
+}
+
+case $action in
+disable) do_disable ;;
+enable) do_enable ;;
+esac

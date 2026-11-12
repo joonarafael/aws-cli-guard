@@ -881,7 +881,7 @@ aws-guard on
 
 The user can disable the wrapper for the whole installation and enable it again later. The disabled state persists across terminal sessions, logins, and reboots until enable. System-wide means every session that uses this installation. A per-user install covers that user's sessions. A machine-wide install covers the machine.
 
-This is for troubleshooting, and for recovery when a published build is broken or corrupted. The mechanism is [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md).
+This is for troubleshooting, and for recovery when a published build is broken or corrupted. The mechanism is [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). Confirmation phrases, temporary file names during the swap, stand-in generation, and partial-state recovery are [ADR 0028](decisions/0028-persistent-disable-swap.md).
 
 - While the installation is enabled, the `aws` on `PATH` is the Go wrapper. An enabled command does not pass through a shell.
 - The installer records three absolute paths in the manifest: the Go wrapper, the `aws` path it occupies, and the real AWS CLI found at install time. It also installs one POSIX `sh` script beside the installation. That script is not named `aws`. The manifest and the install documentation name it.

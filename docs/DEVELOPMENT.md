@@ -48,7 +48,7 @@ aws --version        # runs the real CLI when policy allows (see below)
 
 The wrapper walks `PATH`, skips every AWS CLI Guard wrapper copy (including a second build earlier on `PATH`), and execs the next real `aws` it finds.
 
-`make build` also stages `bin/aws-cli-guard-disable`, the persistent-disable stub for local install ([ADR 0025](decisions/0025-installer-and-releases.md)).
+`make build` also stages `bin/aws-cli-guard-disable`, the persistent-disable script for local install ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0028](decisions/0028-persistent-disable-swap.md)).
 
 ### Installing from a local build
 
@@ -119,6 +119,6 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0028`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0029`.
 
 Session-off tty capture (`internal/session/tty_darwin.go`) is platform-sensitive. Run `make check` on macOS before merging changes to that code. The standing macOS CI job still waits for parent-process detection ([ROADMAP.md](ROADMAP.md), `CI-1`).
