@@ -3,6 +3,7 @@
 package install
 
 import (
+	"aws-cli-guard/internal/version"
 	"io"
 	"path/filepath"
 )
@@ -119,7 +120,7 @@ func writeUpgradeLayout(inputs upgradeInputs, stdout io.Writer) error {
 		return ErrUpgradePartial
 	}
 
-	manifest := encodeManifest(inputs.record.paths)
+	manifest := encodeManifest(inputs.record.paths, version.Version)
 	manifestPath := filepath.Join(inputs.prefix, nameManifest)
 
 	err = replaceManifestFile(manifestPath, manifest)

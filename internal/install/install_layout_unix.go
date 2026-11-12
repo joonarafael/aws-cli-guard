@@ -3,6 +3,7 @@
 package install
 
 import (
+	"aws-cli-guard/internal/version"
 	"io"
 	"os"
 	"path/filepath"
@@ -57,7 +58,7 @@ func writeInstallLayout(inputs installInputs, stdout io.Writer) error {
 		disableScript: inputs.layout.disableScript,
 		aside:         inputs.layout.aside,
 		marker:        inputs.layout.marker,
-	})
+	}, version.Version)
 
 	err = writeBytesExclusive(manifestPath, manifest, modeManifest)
 	if err != nil {

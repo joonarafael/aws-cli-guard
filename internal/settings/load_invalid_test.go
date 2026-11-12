@@ -52,7 +52,7 @@ func TestLoadIdentityWithoutVerifyInvalid(t *testing.T) {
 	}
 }
 
-func TestLoadUpdatesTableUnknown(t *testing.T) {
+func TestLoadUpdatesAutoFalse(t *testing.T) {
 	t.Parallel()
 
 	env := configDirEnv(t)
@@ -62,13 +62,52 @@ func TestLoadUpdatesTableUnknown(t *testing.T) {
 auto = false
 `)
 
+	got, err := settings.Load(env)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if got.Auto != settings.AutoOff {
+		t.Fatalf("Auto = %v, want off", got.Auto)
+	}
+}
+
+func TestLoadUpdatesAutoTrue(t *testing.T) {
+	t.Parallel()
+
+	env := configDirEnv(t)
+	writeSettings(t, env, `version = 1
+
+[updates]
+auto = true
+`)
+
+	got, err := settings.Load(env)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if got.Auto != settings.AutoOn {
+		t.Fatalf("Auto = %v, want on", got.Auto)
+	}
+}
+
+func TestLoadUpdatesWithoutAutoInvalid(t *testing.T) {
+	t.Parallel()
+
+	env := configDirEnv(t)
+	writeSettings(t, env, `version = 1
+
+[updates]
+`)
+
 	_, err := settings.Load(env)
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
 	setErr, ok := errors.AsType[*settings.Error](err)
-	if !ok || setErr.Kind != settings.KindDecode {
+	if !ok || setErr.Kind != settings.KindInvalid || setErr.Key != "updates.auto" {
 		t.Fatalf("got %v", err)
 	}
 }

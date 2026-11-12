@@ -7,6 +7,7 @@ func validateSettings(path string, doc document) (File, error) {
 		Mode:    0,
 		Verify:  false,
 		Level:   LevelTight,
+		Auto:    AutoAbsent,
 	}
 
 	if doc.Identity != nil {
@@ -26,6 +27,18 @@ func validateSettings(path string, doc document) (File, error) {
 		}
 
 		out.Level = level
+	}
+
+	if doc.Updates != nil {
+		if doc.Updates.Auto == nil {
+			return File{}, newError(KindInvalid, "", "updates.auto", 0, 0, nil)
+		}
+
+		if *doc.Updates.Auto {
+			out.Auto = AutoOn
+		} else {
+			out.Auto = AutoOff
+		}
 	}
 
 	return out, nil

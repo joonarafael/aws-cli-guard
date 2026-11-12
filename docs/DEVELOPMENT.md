@@ -123,6 +123,6 @@ New significant choices should get an ADR under [docs/decisions/](decisions/). N
 
 For troubleshooting on the `aws` path, `AWS_CLI_GUARD_LOG=verbose` prints the decision block on stderr ([ADR 0029](decisions/0029-verbose-logging.md)).
 
-Auto-update is specified in [ADR 0030](decisions/0030-auto-update.md) and is not implemented in this tree. Init does not ask, and the wrapper does not contact GitHub.
+Auto-update is implemented per [ADR 0030](decisions/0030-auto-update.md). Init asks on `/dev/tty` when `[updates]` is absent. The live `aws` path does not contact the network; the detached helper does.
 
 Session-off tty capture (`internal/session/tty_darwin.go`) is platform-sensitive. Run `make check` on macOS before merging changes to that code. The standing macOS CI job still waits for parent-process detection ([ROADMAP.md](ROADMAP.md), `CI-1`).

@@ -63,7 +63,8 @@ func TestLoadMissingFileDefaults(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if got.Verify || got.Version != 1 || got.Level != settings.LevelTight {
+	if got.Verify || got.Version != 1 || got.Level != settings.LevelTight ||
+		got.Auto != settings.AutoAbsent {
 		t.Fatalf("got %+v", got)
 	}
 

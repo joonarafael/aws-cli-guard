@@ -22,4 +22,4 @@ Accepted
 
 - A machine does not start replacing its binary until the person who ran init says so.
 - Someone who initialized an older build is asked the next time init runs and the answer is absent. Init still must not overwrite `config.toml`.
-- [ADR 0030](0030-auto-update.md) specifies the prompt, the cache, and the helper. The implementation of `OP-4` reads and writes the settings file from ADR 0006. A build that does not contain that implementation does not ask and does not download.
+- [ADR 0030](0030-auto-update.md) specifies the prompt, the cache, and the helper. `OP-4` reads and writes the settings file from ADR 0006. A build that does not contain that implementation does not ask and does not download.

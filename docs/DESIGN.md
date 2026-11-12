@@ -935,7 +935,7 @@ install.sh
 
 ### 12.4 Auto-update and update notices
 
-[ADR 0030](decisions/0030-auto-update.md) is the record. This tree does not implement it yet, so init does not ask and the wrapper does not contact GitHub. [ADR 0007](decisions/0007-auto-update-asked-at-init.md) still holds: a build without the updater does not ask and does not download.
+[ADR 0030](decisions/0030-auto-update.md) is the record. [ADR 0007](decisions/0007-auto-update-asked-at-init.md) still holds for builds without the updater.
 
 - `aws-guard init` asks whether automatic updates are on and stores `[updates] auto` in `settings.toml`. A missing answer means off. A missing terminal does not turn updates on. Init can write that file without replacing an existing policy file.
 - The `aws` path reads a cache record and may print one stderr line. It does not contact the network and does not wait on a download. A detached helper learns the current published GitHub release.

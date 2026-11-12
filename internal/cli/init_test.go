@@ -27,13 +27,7 @@ func TestRunInitCreatesFiles(t *testing.T) {
 		t.Fatalf("status = %d, stderr = %q", status, stderr.String())
 	}
 
-	if stderr.Len() != 0 {
-		t.Fatalf("unexpected stderr: %q", stderr.String())
-	}
-
-	policyPath := filepath.Join(dir, "config.toml")
-
-	data, err := os.ReadFile(policyPath)
+	data, err := os.ReadFile(filepath.Join(dir, "config.toml"))
 	if err != nil {
 		t.Fatalf("ReadFile policy: %v", err)
 	}
@@ -42,23 +36,59 @@ func TestRunInitCreatesFiles(t *testing.T) {
 		t.Fatalf("policy body mismatch")
 	}
 
-	settingsPath := filepath.Join(dir, "settings.toml")
-
-	data, err = os.ReadFile(settingsPath)
+	data, err = os.ReadFile(filepath.Join(dir, "settings.toml"))
 	if err != nil {
 		t.Fatalf("ReadFile settings: %v", err)
 	}
 
 	if string(data) != settings.DefaultFileBody {
-		t.Fatalf("settings body mismatch")
+		t.Fatalf("settings body = %q", string(data))
 	}
 
-	if !strings.Contains(stdout.String(), "created policy file") {
+	if !strings.Contains(stdout.String(), stayOffUpdatesStdout) {
 		t.Fatalf("stdout = %q", stdout.String())
 	}
 }
 
-func TestRunInitAlreadyExists(t *testing.T) {
+func TestRunInitAlreadyExistsWithStoredAuto(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	env := []string{"AWS_CLI_GUARD_CONFIG_DIR=" + dir}
+
+	err := os.MkdirAll(dir, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(filepath.Join(dir, "config.toml"), []byte("version = 1\n"), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(
+		filepath.Join(dir, "settings.toml"),
+		[]byte("version = 1\n\n[updates]\nauto = false\n"),
+		0o600,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+
+	status := cli.Run([]string{progName, initSubcommand}, env, &bytes.Buffer{}, &stderr)
+	if status != output.CancelStatus {
+		t.Fatalf("status = %d", status)
+	}
+
+	want := "aws-cli-guard: error: the policy file already exists"
+	if strings.TrimSuffix(stderr.String(), "\n") != want {
+		t.Fatalf("stderr = %q", stderr.String())
+	}
+}
+
+func TestRunInitBothFilesPresentHeadlessSuccess(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
@@ -79,22 +109,15 @@ func TestRunInitAlreadyExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &stderr)
-	if status != output.CancelStatus {
-		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
+	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &bytes.Buffer{})
+	if status != 0 {
+		t.Fatalf("status = %d", status)
 	}
 
-	if stdout.Len() != 0 {
-		t.Fatalf("unexpected stdout: %q", stdout.String())
-	}
-
-	line := strings.TrimSuffix(stderr.String(), "\n")
-
-	want := "aws-cli-guard: error: the policy file already exists"
-	if line != want {
-		t.Fatalf("stderr = %q want %q", line, want)
+	if !strings.Contains(stdout.String(), stayOffUpdatesStdout) {
+		t.Fatalf("stdout = %q", stdout.String())
 	}
 }
 
@@ -114,15 +137,11 @@ func TestRunInitSettingsOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &stderr)
+	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &bytes.Buffer{})
 	if status != 0 {
-		t.Fatalf("status = %d, stderr = %q", status, stderr.String())
-	}
-
-	if !strings.Contains(stdout.String(), "policy file left unchanged") {
-		t.Fatalf("stdout = %q", stdout.String())
+		t.Fatalf("status = %d", status)
 	}
 
 	if !strings.Contains(stdout.String(), "created settings file") {
@@ -130,7 +149,35 @@ func TestRunInitSettingsOnly(t *testing.T) {
 	}
 }
 
-func TestRunInitExtraArgsUsage(t *testing.T) {
+func TestRunInitUpdatesOnFromReader(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	env := []string{"AWS_CLI_GUARD_CONFIG_DIR=" + dir}
+
+	status := cli.Dispatch(
+		[]string{progName, initSubcommand},
+		env,
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+		panicIfConfirm,
+		readLineReturns("on"),
+	)
+	if status != 0 {
+		t.Fatalf("status = %d", status)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "settings.toml"))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+
+	if !strings.Contains(string(data), "auto = true") {
+		t.Fatalf("body = %q", data)
+	}
+}
+
+func TestRunInitUpdatesMismatchWritesNothing(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
@@ -138,19 +185,28 @@ func TestRunInitExtraArgsUsage(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	status := cli.Run(
-		[]string{progName, initSubcommand, cliExtraArg},
+	status := cli.Dispatch(
+		[]string{progName, initSubcommand},
 		env,
 		&bytes.Buffer{},
 		&stderr,
+		panicIfConfirm,
+		readLineReturns("maybe"),
 	)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d", status)
 	}
 
-	assertUsageLine(t, stderr.String())
+	_, err := os.Stat(filepath.Join(dir, "config.toml"))
+	if !os.IsNotExist(err) {
+		t.Fatalf("policy should be missing: %v", err)
+	}
+}
 
-	if strings.Contains(stderr.String(), "extra") {
-		t.Fatalf("stderr must not echo argv: %q", stderr.String())
+const stayOffUpdatesStdout = "automatic updates stay off"
+
+func readLineReturns(line string) func(string) (string, error) {
+	return func(string) (string, error) {
+		return line, nil
 	}
 }

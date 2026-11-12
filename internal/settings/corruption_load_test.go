@@ -12,8 +12,8 @@ func TestCorruptionFromLoadUnknownField(t *testing.T) {
 	env := configDirEnv(t)
 	writeSettings(t, env, `version = 1
 
-[updates]
-auto = false
+[unknown]
+value = true
 `)
 
 	_, err := settings.Load(env)

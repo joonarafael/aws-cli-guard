@@ -7,11 +7,17 @@ import (
 	"aws-cli-guard/internal/output"
 	"aws-cli-guard/internal/paths"
 	"aws-cli-guard/internal/settings"
+	"aws-cli-guard/internal/update"
 	"aws-cli-guard/internal/verbose"
 	"os"
 )
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == update.CheckArgv {
+		update.RunUpdateCheckFromEnv(os.Environ())
+		os.Exit(0)
+	}
+
 	env := executor.Environ()
 
 	envLevel, err := verbose.EnvLevel(env)

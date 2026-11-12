@@ -38,6 +38,7 @@ func applyProfileRules(
 
 	grantResult := evaluateProfileGrant(subj, decision, grantList, env)
 	if grantResult.permits {
+		runUpdateHandoff(stderr, env)
 		logDecision(
 			stderr,
 			level,

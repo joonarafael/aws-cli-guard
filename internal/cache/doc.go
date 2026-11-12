@@ -1,4 +1,4 @@
-// Package cache manages the disposable cache directory and the cli-version.json session cache.
+// Package cache manages the disposable cache directory, cli-version.json, and updates.json.
 //
 // Live cache entries are immediate children of the cache directory. Names containing
 // ".corrupt." or ".partial." are preserved aside data from recovery or atomic writes,

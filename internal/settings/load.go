@@ -34,6 +34,7 @@ func loadAtPath(path string) (File, error) {
 				Mode:    0,
 				Verify:  false,
 				Level:   LevelTight,
+				Auto:    AutoAbsent,
 			}, nil
 		}
 
