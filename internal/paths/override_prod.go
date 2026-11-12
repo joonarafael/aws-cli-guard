@@ -15,3 +15,7 @@ func stateDirOverride(_ []string) (string, bool) {
 func cacheDirOverride(_ []string) (string, bool) {
 	return "", false
 }
+
+func dirOverrideActive(_ []string) bool {
+	return false
+}

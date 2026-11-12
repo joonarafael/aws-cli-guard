@@ -22,6 +22,10 @@ func TestLoadDefaultFileBody(t *testing.T) {
 		t.Fatal("Verify = true, want false")
 	}
 
+	if got.Level != settings.LevelTight {
+		t.Fatalf("Level = %q, want tight", got.Level)
+	}
+
 	if got.Version != 1 {
 		t.Fatalf("Version = %d", got.Version)
 	}
@@ -59,7 +63,7 @@ func TestLoadMissingFileDefaults(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if got.Verify || got.Version != 1 {
+	if got.Verify || got.Version != 1 || got.Level != settings.LevelTight {
 		t.Fatalf("got %+v", got)
 	}
 

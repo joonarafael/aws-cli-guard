@@ -33,6 +33,8 @@ Status 3 is reserved for this. The real AWS CLI keeps its own codes, including 0
 
 The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Recognized `aws sso login` is handed through without policy ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
 
+Logging is tight by default: an allowed command adds no extra stderr. Set `AWS_CLI_GUARD_LOG=verbose` for one invocation, or set `level = "verbose"` under `[logging]` in `settings.toml`, to print a troubleshooting decision block on stderr ([ADR 0029](docs/decisions/0029-verbose-logging.md)).
+
 ## Install
 
 Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, the persistent-disable script, and an install manifest under a new directory. Use `aws-guard disable` and `aws-guard enable` (or run `aws-cli-guard-disable` in the install directory when the Go binary does not run) to turn policy off or on for the whole installation ([ADR 0017](docs/decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](docs/decisions/0028-persistent-disable-swap.md)). The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory ([ADR 0025](docs/decisions/0025-installer-and-releases.md)).

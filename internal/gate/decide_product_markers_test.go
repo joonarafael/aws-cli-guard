@@ -56,6 +56,7 @@ action = "deny"
 					gateGetCallerIdentityOp,
 				},
 				env,
+				"",
 				&stderr,
 			)
 			if permitted {

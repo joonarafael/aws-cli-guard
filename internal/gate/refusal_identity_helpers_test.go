@@ -32,7 +32,7 @@ func decideDenied(t *testing.T, env []string, args []string) string {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(args, env, &stderr)
+	permitted := gate.Decide(args, env, "", &stderr)
 	if permitted {
 		t.Fatalf("Decide = true, want false; stderr = %q", stderr.String())
 	}

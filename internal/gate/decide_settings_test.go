@@ -27,6 +27,7 @@ func TestDecideMissingSettingsAllowsWithPolicy(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -63,6 +64,7 @@ func TestDecideCorruptSettingsUnchanged(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -111,6 +113,7 @@ verify = true
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -160,6 +163,7 @@ func TestDecideLooseSettingsWarnsAndAllows(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -181,6 +185,7 @@ func TestDecideMissingPolicyIgnoresCorruptSettings(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateGetCallerIdentityOp},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -209,7 +214,7 @@ func TestDecideSSOLoginIgnoresCorruptSettings(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	permitted := gate.Decide(gateSSOLoginArgs(), env, &stderr)
+	permitted := gate.Decide(gateSSOLoginArgs(), env, "", &stderr)
 	if !permitted {
 		t.Fatalf("Decide = false, stderr = %q", stderr.String())
 	}

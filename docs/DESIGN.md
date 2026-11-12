@@ -849,7 +849,7 @@ The real AWS CLI should be replaceable with a test executable during automated t
 
 ## 12. Recorded operational criteria
 
-These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Auto-update and logging are not designed in detail yet.
+These behaviors are part of the intended product. [ADR 0023](decisions/0023-product-finish-before-agent-detection.md) schedules them after migrate and with installation, before further agent detection. Session-off is specified in [Turn the wrapper off for one terminal session](#121-turn-the-wrapper-off-for-one-terminal-session). Persistent disable is specified in [Persistent system-wide disable and enable](#122-persistent-system-wide-disable-and-enable) and [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md). The publish pipeline is [ADR 0025](decisions/0025-installer-and-releases.md). Logging is [ADR 0029](decisions/0029-verbose-logging.md). Auto-update is not designed in detail yet.
 
 ### 12.1 Turn the wrapper off for one terminal session
 
@@ -944,13 +944,13 @@ install.sh
 
 ### 12.5 Logging
 
-- Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path. The exception is the `default` profile warning in [Default profile](#63-default-profile), which is always one stderr line when that profile is the subject.
-- Verbose logging is for troubleshooting. It records the decision path: how the profile was resolved, which policy rule matched, which caller-context signals were seen, which real AWS CLI binary was selected, and why the wrapper handed off or refused.
-- Both modes write to stderr, so AWS CLI stdout stays usable by scripts. Wrapper lines use the prefixes in [User Experience](#9-user-experience), so a log line is visibly from AWS CLI Guard.
-- Both modes omit passwords, secret access keys, session tokens, credential-process output, and other credential material. Verbose mode and any stack trace use the same redaction. Entire command lines stay out of the default log. See [Secret handling](#secret-handling).
-- The trigger is `AWS_CLI_GUARD_LOG` or a policy-file setting. It is not a flag on `aws`. See [Wrapper control plane](#wrapper-control-plane).
+[ADR 0029](decisions/0029-verbose-logging.md) is the record.
 
-Illustrative, not final:
+- Default logging is tight: concise, limited to security-relevant outcomes and errors, and quiet on the ordinary allow path. The exception is the `default` profile warning in [Default profile](#63-default-profile), which is always one stderr line when that profile is the subject. When no `[logging]` table is present and `AWS_CLI_GUARD_LOG` is unset or empty, the level is tight.
+- Verbose logging is for troubleshooting. It adds a decision block on stderr after any tight lines on the same invocation. The block records how the credential subject was resolved, which policy rule matched, grant status for a `prompt` named profile, stdin class, whether the caller was recognized, whether guard-owned paths used the user database or `HOME`, which real AWS CLI binary was selected, and the outcome (`allow`, `refuse`, `session off`, `login handoff`, or `version handoff`). It does not invent a parent-process field before parent-process detection ships.
+- Both modes write to stderr, so AWS CLI stdout stays usable by scripts. Verbose detail lines use the `aws-cli-guard:` prefix through [Secret handling](#secret-handling).
+- Both modes omit passwords, secret access keys, session tokens, credential-process output, and other credential material. Verbose mode and any stack trace use the same redaction. Entire command lines stay out of the default log.
+- The durable switch is optional `[logging] level` in `settings.toml` (`tight` or `verbose`). `AWS_CLI_GUARD_LOG` overrides it for one process when set to a non-empty value. It is not a flag on `aws`. See [Wrapper control plane](#wrapper-control-plane). Login, version handoff, and discovery failure use the env var only; they do not load settings.
 
 ```text
 AWS_CLI_GUARD_LOG=verbose aws s3 ls

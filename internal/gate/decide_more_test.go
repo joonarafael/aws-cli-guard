@@ -18,6 +18,7 @@ func TestDecideMissingGrantsMeansEmptyList(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "s3", "ls", gateProfileFlag, gateHandoffProfile},
 		env,
+		"",
 		&stderr,
 	)
 	if !permitted {
@@ -37,6 +38,7 @@ func TestDecideCorruptGrants(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, "s3", "ls", gateProfileFlag, gateHandoffProfile},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -64,6 +66,7 @@ func TestDecideExportAllowStillProfilePolicy(t *testing.T) {
 			gateTestProfile,
 		},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {
@@ -83,6 +86,7 @@ func TestDecidePathUnsetOnPresentOnlyBeforeLoad(t *testing.T) {
 	permitted := gate.Decide(
 		[]string{gateProgName, gateSTSService, gateGetCallerIdentityOp},
 		env,
+		"",
 		&stderr,
 	)
 	if permitted {

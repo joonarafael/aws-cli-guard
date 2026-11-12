@@ -30,3 +30,19 @@ func dirOverride(key string, env []string) (string, bool) {
 
 	return override, true
 }
+
+func dirOverrideActive(env []string) bool {
+	_, present := configDirOverride(env)
+	if present {
+		return true
+	}
+
+	_, present = stateDirOverride(env)
+	if present {
+		return true
+	}
+
+	_, present = cacheDirOverride(env)
+
+	return present
+}

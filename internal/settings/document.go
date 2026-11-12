@@ -3,6 +3,11 @@ package settings
 type document struct {
 	Version  int               `toml:"version"`
 	Identity *identityDocument `toml:"identity"`
+	Logging  *loggingDocument  `toml:"logging"`
+}
+
+type loggingDocument struct {
+	Level *string `toml:"level"`
 }
 
 type identityDocument struct {
