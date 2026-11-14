@@ -79,7 +79,7 @@ Run the linters and formatters while you work. Fix each failure as it appears, b
 3. If you touched shell, run `shellcheck -S warning` on those scripts.
 4. If you touched documentation, run `make md-fmt`, then `make md-lint`.
 5. If you changed code, run `make test`.
-6. Run `make check` before you call the work done. That is the local gate: Go lint, the 300-line file cap, Markdown lint, vet, and race-enabled tests. CI runs that gate, then the build, gitleaks, actionlint, ShellCheck, and govulncheck.
+6. Run `make check` before you call the work done. That is the local gate: Go lint, the 300-line file cap, Markdown lint, vet, and race-enabled tests. CI runs that gate, then the build, gitleaks, actionlint, and ShellCheck. govulncheck still runs in that job. A finding or a scanner crash is written to the job summary and a sticky pull-request comment, and does not fail the job ([ADR 0031](docs/decisions/0031-govulncheck-does-not-block.md)).
 7. Keep the change small, and match the patterns already in the surrounding code.
 8. Record a new significant choice as an ADR under [docs/decisions/](docs/decisions/). Number it sequentially. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) says which number is free.
 

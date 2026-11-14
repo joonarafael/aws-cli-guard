@@ -33,7 +33,7 @@ go mod tidy
 
 Markdown is checked with [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](../Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and verifies its SHA-256. Line length is disabled in [.rumdl.toml](../.rumdl.toml). Relative links and heading fragments are checked. `make md-fmt` rewrites fixable issues and still exits successfully when something has to be fixed by hand; `make md-lint` is the check CI runs.
 
-Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)).
+Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)). govulncheck runs in that workflow and does not fail the job. Findings and scanner crashes are written to the job summary and a sticky pull-request comment ([ADR 0031](decisions/0031-govulncheck-does-not-block.md)).
 
 ### Dogfooding without installing
 
@@ -119,7 +119,7 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0031`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0032`.
 
 For troubleshooting on the `aws` path, `AWS_CLI_GUARD_LOG=verbose` prints the decision block on stderr ([ADR 0029](decisions/0029-verbose-logging.md)).
 

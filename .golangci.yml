@@ -87,7 +87,7 @@ run:
     enable-build-vcs: false
     allow-parallel-runners: true
     allow-serial-runners: true
-    go: '1.26.3'
+    go: '1.27.4'
     concurrency: 8
 severity:
     default: error

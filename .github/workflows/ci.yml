@@ -15,9 +15,10 @@ concurrency:
 
 permissions:
     contents: read
+    pull-requests: write
 
 env:
-    GO_VERSION: 1.26.3
+    GO_VERSION: 1.27.4
     GITLEAKS_VERSION: 8.24.2
     ACTIONLINT_VERSION: 1.7.7
     SHELLCHECK_VERSION: 0.11.0
@@ -87,7 +88,40 @@ jobs:
             - name: Run ShellCheck
               run: |
                   shellcheck -S warning scripts/lint/*.sh
-                  shellcheck -S warning install.sh scripts/aws-cli-guard-disable scripts/release-assets.sh
+                  shellcheck -S warning install.sh scripts/aws-cli-guard-disable scripts/release-assets.sh scripts/ci/govulncheck-report.sh
 
             - name: Run govulncheck
-              run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
+              id: govulncheck
+              # Findings and a scanner crash on the pinned Go toolchain are
+              # reported below. They do not fail this job (ADR 0031).
+              continue-on-error: true
+              run: |
+                  set +e
+                  go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./... > govulncheck.log 2>&1
+                  status=$?
+                  set -e
+                  echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+                  cat govulncheck.log
+                  exit "$status"
+
+            - name: Report govulncheck
+              if: ${{ !cancelled() && steps.govulncheck.outcome != 'skipped' }}
+              env:
+                  GOVULNCHECK_EXIT_CODE: ${{ steps.govulncheck.outputs.exit_code }}
+                  GOVULNCHECK_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  set -euo pipefail
+                  ./scripts/ci/govulncheck-report.sh --self-test
+                  ./scripts/ci/govulncheck-report.sh \
+                      "$GOVULNCHECK_EXIT_CODE" \
+                      govulncheck.log \
+                      govulncheck-comment.md \
+                      "$GOVULNCHECK_RUN_URL"
+                  cat govulncheck-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Comment govulncheck On Pull Request
+              if: ${{ !cancelled() && github.event_name == 'pull_request' && steps.govulncheck.outcome != 'skipped' }}
+              uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+              with:
+                  header: govulncheck
+                  path: govulncheck-comment.md
