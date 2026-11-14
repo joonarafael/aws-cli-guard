@@ -19,10 +19,17 @@ const (
 	reasonInitSettings    = "the settings file could not be created"
 )
 
-func runInit(args []string, env []string, stdout, stderr io.Writer) int {
+func runInit(args []string, env []string, stdout, stderr io.Writer, readLine readLineFunc) int {
 	if len(args) != initArgsExact {
 		output.Error(stderr, usageLine)
 
+		return output.CancelStatus
+	}
+
+	loaded, loadOK, loadErr := loadSettingsForInit(env)
+
+	plan, ok := planInitUpdates(env, stderr, readLine, loaded, loadOK, loadErr)
+	if !ok {
 		return output.CancelStatus
 	}
 
@@ -33,7 +40,19 @@ func runInit(args []string, env []string, stdout, stderr io.Writer) int {
 		return output.CancelStatus
 	}
 
-	settingsCreated, err := settings.Create(env)
+	var settingsCreated, settingsUpdated bool
+
+	settingsWereAbsent := loaded.Auto == settings.AutoAbsent
+
+	switch {
+	case plan.headless:
+		settingsCreated, err = settings.Create(env)
+	case settingsWereAbsent && plan.answered != settings.AutoAbsent:
+		settingsCreated, settingsUpdated, err = applyInitSettings(env, plan)
+	default:
+		settingsCreated, err = settings.Create(env)
+	}
+
 	if err != nil {
 		output.Error(stderr, initCreateReason(err, false))
 
@@ -41,27 +60,43 @@ func runInit(args []string, env []string, stdout, stderr io.Writer) int {
 	}
 
 	if !policyCreated && !settingsCreated {
+		if plan.headless {
+			writeInitSuccess(stdout, false, false, false, plan.printStayOff)
+
+			return 0
+		}
+
 		output.Error(stderr, reasonPolicyExists)
 
 		return output.CancelStatus
 	}
 
-	writeInitSuccess(stdout, policyCreated, settingsCreated)
+	writeInitSuccess(stdout, policyCreated, settingsCreated, settingsUpdated, plan.printStayOff)
 
 	return 0
 }
 
-func writeInitSuccess(stdout io.Writer, policyCreated, settingsCreated bool) {
+func writeInitSuccess(
+	stdout io.Writer,
+	policyCreated, settingsCreated, settingsUpdated, printStayOff bool,
+) {
 	if policyCreated {
 		output.Detail(stdout, "created policy file")
 	} else {
 		output.Detail(stdout, "policy file left unchanged")
 	}
 
-	if settingsCreated {
+	switch {
+	case settingsUpdated:
+		output.Detail(stdout, "updated settings file")
+	case settingsCreated:
 		output.Detail(stdout, "created settings file")
-	} else {
+	default:
 		output.Detail(stdout, "settings file left unchanged")
+	}
+
+	if printStayOff {
+		output.Detail(stdout, stayOffUpdatesLine)
 	}
 }
 

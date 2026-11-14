@@ -2,10 +2,7 @@
 
 package install
 
-import (
-	"aws-cli-guard/internal/version"
-	"strings"
-)
+import "strings"
 
 type manifestPaths struct {
 	aws           string
@@ -16,9 +13,9 @@ type manifestPaths struct {
 	marker        string
 }
 
-func encodeManifest(paths manifestPaths) []byte {
+func encodeManifest(paths manifestPaths, stamp string) []byte {
 	lines := []string{
-		"version=" + version.Version,
+		"version=" + stamp,
 		"aws=" + paths.aws,
 		"aws_guard=" + paths.awsGuard,
 		"real_aws=" + paths.realAWS,

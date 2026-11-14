@@ -19,6 +19,34 @@ type Lock struct {
 	released bool
 }
 
+// TryOpenLock opens path.lock and tries LOCK_EX|LOCK_NB. nil lock means busy or unavailable.
+func TryOpenLock(path string) (*Lock, error) {
+	lockPath := path + ".lock"
+
+	err := parentDirExists(lockPath)
+	if err != nil {
+		return nil, err
+	}
+
+	lockFD, err := openLockFile(lockPath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = syscall.Flock(lockFD, syscall.LOCK_EX|syscall.LOCK_NB)
+	if err != nil {
+		_ = syscall.Close(lockFD)
+
+		if errors.Is(err, syscall.EWOULDBLOCK) {
+			return nil, nil //nolint:nilnil // busy lock is a normal skip, not an error.
+		}
+
+		return nil, fmt.Errorf("aws-cli-guard: flock %q: %w", lockPath, err)
+	}
+
+	return &Lock{mu: sync.Mutex{}, path: lockPath, fd: lockFD, released: false}, nil
+}
+
 // OpenLock opens path.lock and acquires an exclusive flock (blocking).
 func OpenLock(path string) (*Lock, error) {
 	lockPath := path + ".lock"

@@ -14,6 +14,7 @@ import (
 
 const maxReplacePartialAttempts = 100
 
+//nolint:unparam // callers pass modeExecutable; the parameter keeps the write path explicit.
 func replaceRegularFile(dst, src string, mode os.FileMode) error {
 	if sameInstallPath(dst, src) {
 		return nil

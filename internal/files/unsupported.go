@@ -27,6 +27,11 @@ func OpenLock(_ string) (*Lock, error) {
 	return nil, ErrPlatformUnsupported
 }
 
+// TryOpenLock tries a non-blocking exclusive lock.
+func TryOpenLock(_ string) (*Lock, error) {
+	return nil, ErrPlatformUnsupported
+}
+
 // Release releases the lock.
 func (lock *Lock) Release() error {
 	_ = lock

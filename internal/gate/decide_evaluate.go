@@ -69,6 +69,7 @@ func trySessionOffHandoff(
 	}
 
 	output.Warning(stderr, session.SessionOffWarning)
+	runUpdateHandoff(stderr, env)
 	writeSessionOffEvent(stderr, level, env, inv, subj, caller, realAWS)
 
 	return true, true

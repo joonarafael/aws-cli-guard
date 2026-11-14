@@ -10,7 +10,7 @@ Accepted
 
 [ADR 0025](0025-installer-and-releases.md) fixes the asset names, `checksums.txt`, and the rule that a floating latest URL is not the install path. Published GitHub Releases omit drafts. [ADR 0026](0026-upgrade-behavior.md) replaces the four install files and then migrates, and it never writes `real_aws`. The wrapper then replaces its process with the real AWS CLI, so it cannot finish a download after the handoff. A download before the handoff would stall the command.
 
-`[updates]` is still an unknown settings field ([ADR 0029](0029-verbose-logging.md)). Init does not ask.
+Before the implementation landed, `[updates]` was an unknown settings field ([ADR 0029](0029-verbose-logging.md)) and init did not ask.
 
 ## Decision
 
@@ -93,7 +93,7 @@ After a successful replace it runs `policy.Migrate` and `grants.Migrate` in proc
 
 ## Consequences
 
-- [ROADMAP.md](../ROADMAP.md) keeps `OP-4` as to do. The next product change is the implementation of this record. `IN-2` stays after that. Init in this tree still does not ask.
+- [ROADMAP.md](../ROADMAP.md) marks `OP-4` done. The next product change is `IN-2`, shell integration.
 - [DESIGN.md](../DESIGN.md#124-auto-update-and-update-notices) points here.
 - [DEVELOPMENT.md](../DEVELOPMENT.md) next ADR number is `0031`.
 - A settings file that contains `[updates]` is unreadable to this binary and to older binaries, which reject unknown fields and cancel. That starts when the implementation writes the key.
