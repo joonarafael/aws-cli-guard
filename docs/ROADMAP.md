@@ -33,7 +33,7 @@ A high-level overview of the epics needed to build AWS CLI Guard as described in
 
 Phase 3 is complete. Caller context, the marker switch, agent action keys, and the Cursor and Claude Code rows are shipped ([ADR 0022](decisions/0022-cursor-and-claude-code-markers.md)). Further agent detection waits.
 
-`IN-1`, `OP-3`, `IN-3`, `OP-1`, `OP-2`, `OP-5`, and `OP-4` are done: install, the release pipeline, upgrade, session off, persistent disable, tight and verbose logging, and auto-update ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0026](decisions/0026-upgrade-behavior.md), [ADR 0027](decisions/0027-session-off.md), [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](decisions/0028-persistent-disable-swap.md), [ADR 0029](decisions/0029-verbose-logging.md), [ADR 0030](decisions/0030-auto-update.md)). Next is `IN-2`, Bash and zsh integration. The schedule is [Remaining order](#remaining-order) and [ADR 0023](decisions/0023-product-finish-before-agent-detection.md).
+`IN-1` through `IN-3`, `OP-1` through `OP-5`, and the release pipeline are done, including Bash and zsh startup integration ([ADR 0025](decisions/0025-installer-and-releases.md), [ADR 0026](decisions/0026-upgrade-behavior.md), [ADR 0027](decisions/0027-session-off.md), [ADR 0017](decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](decisions/0028-persistent-disable-swap.md), [ADR 0029](decisions/0029-verbose-logging.md), [ADR 0030](decisions/0030-auto-update.md), [ADR 0032](decisions/0032-shell-startup-files.md)). The product-finish sequence is complete. Next is `AG-6`, user-declared markers, then the rest of the detection tail ([ADR 0023](decisions/0023-product-finish-before-agent-detection.md)).
 
 `user_declared` and `parent_process` stay unknown fields until `AG-6` and `AG-4`. Init still writes policy version 2 and does not enable detection.
 
@@ -62,7 +62,7 @@ Phases 2 and 3 are done. The detection engine through `AG-3`, plus the Cursor an
 3. `IN-3`. Upgrade keeps user policy and can run migrate.
 4. `OP-1`, then `OP-2`. Session off keys off the existing recognized-agent status. Persistent disable needs the script and manifest from `IN-1`.
 5. `OP-5`, then `OP-4`. Verbose logging and auto-update are done ([ADR 0029](decisions/0029-verbose-logging.md), [ADR 0030](decisions/0030-auto-update.md)).
-6. `IN-2`. Bash and zsh, after PATH install works.
+6. `IN-2`. Done. Bash and zsh startup files ([ADR 0032](decisions/0032-shell-startup-files.md)).
 
 ### Agent detection last
 
@@ -270,13 +270,13 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | IN-1 | Installer with manifest and `PATH` setup | Done | Phase 5 | — | `IN-2`, `IN-3`, `OP-2` |
-| IN-2 | Shell integration | To do | Phase 5 | `IN-1` | — |
+| IN-2 | Shell integration | Done | Phase 5 | `IN-1` | — |
 | IN-3 | Upgrade behavior | Done | Phase 5 | `IN-1`, `FS-5` | — |
 
 - `IN-1` shipped `aws-guard install`, `install.sh`, the manifest, exclusive create, and the disable stub. The directory and asset names are [ADR 0025](decisions/0025-installer-and-releases.md). The publish shape is [Publish pipeline](DESIGN.md#123-publish-pipeline).
 - `IN-3` shipped `aws-guard upgrade`, upgrade-on-second-install, in-place replacement of the four install files, and migrate after a successful replace ([ADR 0026](decisions/0026-upgrade-behavior.md)).
 - `IN-1` records the Go wrapper path, the `aws` path, and the real AWS CLI path, and installs the POSIX disable script beside the installation ([ADR 0017](decisions/0017-persistent-disable-swaps-aws.md)). The enabled `aws` is the Go wrapper. A chosen prefix never replaces an existing file.
-- `IN-2` is Bash and zsh, with shared POSIX `sh`, per [ADR 0005](decisions/0005-bash-and-zsh.md).
+- `IN-2` is done ([ADR 0032](decisions/0032-shell-startup-files.md)). `aws-guard shell bash|zsh` edits `.bashrc` or `.zshrc` with a marked `PATH` export. Install still prints a pasteable `export PATH` line.
 
 ### OP: Operational criteria
 

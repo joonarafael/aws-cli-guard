@@ -60,6 +60,11 @@ func DefaultInstallPrefix(env []string) (string, error) {
 	return defaultInstallPrefixWithLookup(env, defaultUserHomeLookup)
 }
 
+// HomeDir returns the absolute home directory for the process user.
+func HomeDir(env []string) (string, error) {
+	return homeDir(env, defaultUserHomeLookup)
+}
+
 func defaultInstallPrefixWithLookup(env []string, lookup homeLookup) (string, error) {
 	home, err := homeDir(env, lookup)
 	if err != nil {

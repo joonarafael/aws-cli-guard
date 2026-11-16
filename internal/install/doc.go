@@ -1,2 +1,3 @@
-// Package install implements aws-guard install and upgrade per ADR 0025 and ADR 0026.
+// Package install implements aws-guard install, upgrade, and shell startup integration
+// per ADR 0025, ADR 0026, and ADR 0032.
 package install

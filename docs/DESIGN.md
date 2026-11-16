@@ -123,7 +123,7 @@ Limitations:
 
 #### Mode B: Shell integration
 
-An optional shell function or integration script forwards AWS invocations to AWS CLI Guard.
+An optional marked block in the user's Bash or zsh startup file puts the install prefix earlier on `PATH`. Shipped behavior is [ADR 0032](decisions/0032-shell-startup-files.md): a `PATH` export between marker comments, not a forwarding function. A shell function or integration script remains a possible extension.
 
 Advantages:
 
@@ -1153,7 +1153,7 @@ The test suite should explicitly verify that no agent detector treats an absent 
 - Safe detection of the actual AWS CLI executable. Skipping every wrapper copy is already done.
 - Upgrade via `aws-guard upgrade` or a second `aws-guard install` / `install.sh` on a verified prefix ([ADR 0026](decisions/0026-upgrade-behavior.md)). It replaces only the wrapper binaries and manifest inside the prefix, never `real_aws`, then runs migrate in process. User policy, settings, grants, and cache stay in their own directories. A foreign file in the prefix still refuses; fresh prefixes still use exclusive create.
 - The recorded operational criteria, in the order in [Remaining order](#remaining-order): the release pipeline ships with the installer, then session off, persistent disable and enable, tight and verbose logging, and auto-update ([ADR 0030](decisions/0030-auto-update.md)).
-- Optional shell integration for Bash and zsh, with shared logic in POSIX `sh` ([ADR 0005](decisions/0005-bash-and-zsh.md)). It follows the operational criteria.
+- Optional shell integration for Bash and zsh via `aws-guard shell` and a marked `PATH` export ([ADR 0032](decisions/0032-shell-startup-files.md), [ADR 0005](decisions/0005-bash-and-zsh.md)).
 
 ### Phase 6: Optional advanced features
 

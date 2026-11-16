@@ -34,7 +34,7 @@ func TestRunInstallUsagePrefixForm(t *testing.T) {
 	var stderr bytes.Buffer
 
 	status := cli.Run(
-		[]string{progName, installSubcommand, "--prefix"},
+		[]string{progName, installSubcommand, flagPrefixTest},
 		nil,
 		&bytes.Buffer{},
 		&stderr,

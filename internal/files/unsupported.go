@@ -17,6 +17,11 @@ func WriteAtomic(_ string, _ []byte) error {
 	return ErrPlatformUnsupported
 }
 
+// WriteAtomicMode atomically replaces a file with the given mode on create.
+func WriteAtomicMode(_ string, _ []byte, _ os.FileMode) error {
+	return ErrPlatformUnsupported
+}
+
 // ReadRegular reads a regular file.
 func ReadRegular(_ string) ([]byte, os.FileMode, error) {
 	return nil, 0, ErrPlatformUnsupported

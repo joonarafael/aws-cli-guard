@@ -53,3 +53,12 @@ var ErrUpgradePartial = errors.New("aws-cli-guard: upgrade did not finish")
 
 // ErrReplacePartial is returned when no partial filename is available for replace.
 var ErrReplacePartial = errors.New("aws-cli-guard: replace: no partial name")
+
+// ErrShellStartupTooLarge is returned when a shell startup file exceeds the size limit.
+var ErrShellStartupTooLarge = errors.New("aws-cli-guard: shell startup file is too large")
+
+// ErrShellStartupUpdate is returned when a shell startup file could not be updated.
+var ErrShellStartupUpdate = errors.New("aws-cli-guard: shell startup file could not be updated")
+
+// ErrShellNameUnsupported is returned when the shell name is not bash or zsh.
+var ErrShellNameUnsupported = errors.New("aws-cli-guard: shell name is not supported")

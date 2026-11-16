@@ -39,7 +39,7 @@ func TestRunUpgradeUsagePrefixForm(t *testing.T) {
 	var stderr bytes.Buffer
 
 	status := cli.Run(
-		[]string{progName, upgradeSubcommand, "--prefix"},
+		[]string{progName, upgradeSubcommand, flagPrefixTest},
 		nil,
 		&bytes.Buffer{},
 		&stderr,

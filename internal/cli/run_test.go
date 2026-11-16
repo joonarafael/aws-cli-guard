@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	progName    = "aws-guard"
-	cliExtraArg = "extra"
+	progName       = "aws-guard"
+	cliExtraArg    = "extra"
+	flagPrefixTest = "--prefix"
 )
 
 func TestRunNoArgs(t *testing.T) {

@@ -39,7 +39,7 @@ Logging is tight by default: an allowed command adds no extra stderr. Set `AWS_C
 
 Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, the persistent-disable script, and an install manifest under a new directory. Use `aws-guard disable` and `aws-guard enable` (or run `aws-cli-guard-disable` in the install directory when the Go binary does not run) to turn policy off or on for the whole installation ([ADR 0017](docs/decisions/0017-persistent-disable-swaps-aws.md), [ADR 0028](docs/decisions/0028-persistent-disable-swap.md)). The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory ([ADR 0025](docs/decisions/0025-installer-and-releases.md)).
 
-On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH`. Run `aws-guard init` if you have not already.
+On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH` for the current shell. To keep the prefix on `PATH` in new terminals, run `aws-guard shell bash` or `aws-guard shell zsh` after install ([ADR 0032](docs/decisions/0032-shell-startup-files.md)). That adds a marked block to `.bashrc` or `.zshrc`. Remove it with `aws-guard shell bash --remove` or `aws-guard shell zsh --remove`. Run `aws-guard init` if you have not already.
 
 After a maintainer publishes a draft release from GitHub, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page:
 

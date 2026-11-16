@@ -53,7 +53,7 @@ func CopyAside(path string, now time.Time) (string, error) {
 }
 
 func writeAsideFile(aside string, data []byte) error {
-	partial, err := createPartialFile(aside, time.Now(), data)
+	partial, err := createPartialFile(aside, time.Now(), data, fileMode)
 	if err != nil {
 		return err
 	}

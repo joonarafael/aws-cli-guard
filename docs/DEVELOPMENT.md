@@ -60,7 +60,7 @@ aws-guard install
 # or: aws-guard install --prefix /path/to/dir
 ```
 
-The default prefix is `~/.local/share/aws-cli-guard` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). A second install refuses while any install file remains in that prefix. Paste the printed `export PATH='...'` line into your shell, then run `aws-guard init` when needed.
+The default prefix is `~/.local/share/aws-cli-guard` ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). A second install refuses while any install file remains in that prefix. Paste the printed `export PATH='...'` line into your shell, or run `aws-guard shell bash` or `aws-guard shell zsh` to add the same `PATH` line to the startup file ([ADR 0032](decisions/0032-shell-startup-files.md)). Then run `aws-guard init` when needed. Dogfooding from `bin/` still prepends `PATH` for the session only; `aws-guard shell` requires a verified install prefix.
 
 Release builds stamp the version with `-ldflags '-X aws-cli-guard/internal/version.Version=X.Y.Z'`. Local release assets use the same stamp:
 
@@ -119,7 +119,7 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0032`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0033`.
 
 For troubleshooting on the `aws` path, `AWS_CLI_GUARD_LOG=verbose` prints the decision block on stderr ([ADR 0029](decisions/0029-verbose-logging.md)).
 
