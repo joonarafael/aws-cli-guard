@@ -17,9 +17,21 @@ const (
 	floorPatch = 0
 
 	ceilingMajor = 2
-	ceilingMinor = 9
-	ceilingPatch = 0
+	ceilingMinor = 40
+	ceilingPatch = 3
 )
+
+func formatRelease(major, minor, patch int) string {
+	return fmt.Sprintf("%d.%d.%d", major, minor, patch)
+}
+
+func floorRelease() string {
+	return formatRelease(floorMajor, floorMinor, floorPatch)
+}
+
+func ceilingRelease() string {
+	return formatRelease(ceilingMajor, ceilingMinor, ceilingPatch)
+}
 
 // Relation is how a parsed CLI version relates to the supported range.
 type Relation int
@@ -234,8 +246,9 @@ func WarningText(res Result) string {
 	case RelationOlder:
 		if res.Version != "" {
 			return fmt.Sprintf(
-				"AWS CLI %s is older than 2.9.0; running it with no policy",
+				"AWS CLI %s is older than %s; running it with no policy",
 				res.Version,
+				floorRelease(),
 			)
 		}
 
@@ -245,12 +258,16 @@ func WarningText(res Result) string {
 	case RelationNewer:
 		if res.Version != "" {
 			return fmt.Sprintf(
-				"AWS CLI %s is newer than the verified release 2.9.0; policy still applies",
+				"AWS CLI %s is newer than the verified release %s; policy still applies",
 				res.Version,
+				ceilingRelease(),
 			)
 		}
 
-		return "AWS CLI is newer than the verified release 2.9.0; policy still applies"
+		return fmt.Sprintf(
+			"AWS CLI is newer than the verified release %s; policy still applies",
+			ceilingRelease(),
+		)
 	default:
 		return ""
 	}

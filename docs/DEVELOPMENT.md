@@ -33,7 +33,7 @@ go mod tidy
 
 Markdown is checked with [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](../Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and verifies its SHA-256. Line length is disabled in [.rumdl.toml](../.rumdl.toml). Relative links and heading fragments are checked. `make md-fmt` rewrites fixable issues and still exits successfully when something has to be fixed by hand; `make md-lint` is the check CI runs.
 
-Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests and pushes to `master` (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)). govulncheck runs in that workflow and does not fail the job. Findings and scanner crashes are written to the job summary and a sticky pull-request comment ([ADR 0031](decisions/0031-govulncheck-does-not-block.md)).
+Run `make check` before pushing. The finish checklist is in [AGENTS.md](../AGENTS.md). GitHub Actions runs the same gate on Linux for pull requests (see [.github/workflows/ci.yml](../.github/workflows/ci.yml)). Release tags also run `make check` before building assets (see [.github/workflows/release.yml](../.github/workflows/release.yml)). govulncheck runs in that workflow and does not fail the job. Findings and scanner crashes are written to the job summary and a sticky pull-request comment ([ADR 0031](decisions/0031-govulncheck-does-not-block.md)).
 
 ### Dogfooding without installing
 
@@ -70,11 +70,11 @@ make dist VERSION=X.Y.Z
 
 That writes the four platform archives, `checksums.txt`, and a copy of `install.sh` under `dist/`. The helper is [scripts/release-assets.sh](../scripts/release-assets.sh).
 
-Pushing a tag `vX.Y.Z` runs [.github/workflows/release.yml](../.github/workflows/release.yml), which builds those assets and creates a **draft** GitHub Release. Publish the draft manually after verification. If a draft for that tag already exists or the upload failed partway, delete the draft release on GitHub before pushing the tag again.
+Pushing a tag `vX.Y.Z` runs [.github/workflows/release.yml](../.github/workflows/release.yml), which builds those assets and creates a **draft** GitHub Release. Publish the draft manually after verification. If a draft for that tag already exists or the upload failed partway, delete the draft release on GitHub before pushing the tag again. When publishing, bump the `VERSION=…` line in [README.md](../README.md) Quick start to match the release.
 
 Every guarded command, including `aws --version`, goes through policy. Without a policy file, the wrapper cancels and asks you to run `aws-guard init`. After init, the `default` profile still needs an allow rule or a grant before the real CLI runs.
 
-Before policy runs, the wrapper checks that binary's version against the 2.9.0 floor and verified ceiling ([ADR 0002](decisions/0002-aws-cli-version-floor.md)). The check is cached per terminal session in `cli-version.json` under the cache directory (`~/.cache/aws-cli-guard/` in a normal install). A CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning with no policy. A CLI newer than the verified ceiling warns once per session and still applies policy. When policy allows the command, the real CLI's output is shown; the wrapper's own `--version` probe does not replace that stdout.
+Before policy runs, the wrapper checks that binary's version against the 2.9.0 floor and the verified ceiling (currently 2.40.3; [ADR 0002](decisions/0002-aws-cli-version-floor.md), [ADR 0034](decisions/0034-aws-cli-ceiling-2-40-3.md)). The check is cached per terminal session in `cli-version.json` under the cache directory (`~/.cache/aws-cli-guard/` in a normal install). A CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning with no policy. A CLI newer than the verified ceiling warns once per session and still applies policy. When policy allows the command, the real CLI's output is shown; the wrapper's own `--version` probe does not replace that stdout.
 
 A `make build` binary resolves policy, settings, grants, and cache under the user-database home directory ([ADR 0014](decisions/0014-guard-paths-from-user-database.md)). It ignores `XDG_*` and the `AWS_CLI_GUARD_*_DIR` variables. To dogfood against a scratch policy without touching your live files, build with the test-path tag:
 
@@ -119,7 +119,7 @@ A cancellation exits 3. The two cancellation lines start with `aws-cli-guard: er
 
 ## Architecture decisions
 
-New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0033`.
+New significant choices should get an ADR under [docs/decisions/](decisions/). Number them sequentially. The next free number is `0035`.
 
 For troubleshooting on the `aws` path, `AWS_CLI_GUARD_LOG=verbose` prints the decision block on stderr ([ADR 0029](decisions/0029-verbose-logging.md)).
 

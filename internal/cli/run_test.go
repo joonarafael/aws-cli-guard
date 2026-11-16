@@ -44,30 +44,13 @@ func TestRunUnknownCommand(t *testing.T) {
 	}
 }
 
-func TestRunFlagLikeCommand(t *testing.T) {
-	t.Parallel()
-
-	var stderr bytes.Buffer
-
-	status := cli.Run([]string{progName, "--help"}, nil, &bytes.Buffer{}, &stderr)
-	if status != output.CancelStatus {
-		t.Fatalf("status = %d, want %d", status, output.CancelStatus)
-	}
-
-	assertUsageLine(t, stderr.String())
-
-	if strings.Contains(stderr.String(), "--help") {
-		t.Fatalf("stderr must not echo argv: %q", stderr.String())
-	}
-}
-
 func assertUsageLine(t *testing.T, stderr string) {
 	t.Helper()
 
-	line := strings.TrimSuffix(stderr, "\n")
-
+	lines := strings.Split(strings.TrimSuffix(stderr, "\n"), "\n")
 	want := "aws-cli-guard: error: usage: aws-guard <command>"
-	if line != want {
-		t.Fatalf("stderr = %q want %q", line, want)
+
+	if len(lines) == 0 || lines[0] != want {
+		t.Fatalf("stderr first line = %q want %q", lines[0], want)
 	}
 }

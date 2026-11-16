@@ -32,12 +32,28 @@ func Dispatch(
 	}
 
 	if len(args) < minArgsWithCommand {
-		output.Error(stderr, usageLine)
+		printUsageWithCommands(stderr)
 
 		return output.CancelStatus
 	}
 
+	return routeCommand(
+		args, env, stdout, stderr, confirm, updatesReadLine,
+	)
+}
+
+func routeCommand(
+	args []string,
+	env []string,
+	stdout, stderr io.Writer,
+	confirm confirmFunc,
+	updatesReadLine readLineFunc,
+) int {
 	switch args[1] {
+	case helpCommand, "--help", "-h":
+		return runHelp(stdout)
+	case versionCommand, "--version":
+		return runVersion(stdout)
 	case initCommand:
 		return runInit(args, env, stdout, stderr, updatesReadLine)
 	case recoverCommand:
@@ -69,7 +85,7 @@ func Dispatch(
 	case shellCommand:
 		return runShell(args, env, stdout, stderr)
 	default:
-		output.Error(stderr, usageLine)
+		printUsageWithCommands(stderr)
 
 		return output.CancelStatus
 	}

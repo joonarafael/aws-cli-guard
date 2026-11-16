@@ -54,6 +54,38 @@ func TestReleaseAssetsRejectsBadVersions(t *testing.T) {
 	}
 }
 
+func TestReleaseAssetsRelativeOutdir(t *testing.T) {
+	t.Parallel()
+
+	root := moduleRoot(t)
+	work := t.TempDir()
+	relOut := "dist"
+
+	err := runReleaseAssetsFromDir(t, root, work, releaseTestVersion, relOut)
+	if err != nil {
+		t.Fatalf("release-assets.sh: %v", err)
+	}
+
+	outdir := filepath.Join(work, relOut)
+
+	_, statErr := os.Stat(filepath.Join(outdir, "checksums.txt"))
+	if statErr != nil {
+		t.Fatalf("checksums.txt: %v", statErr)
+	}
+
+	_, statErr = os.Stat(filepath.Join(outdir, "install.sh"))
+	if statErr != nil {
+		t.Fatalf("install.sh: %v", statErr)
+	}
+
+	archive := fmt.Sprintf("aws-cli-guard_%s_linux_amd64.tar.gz", releaseTestVersion)
+
+	_, statErr = os.Stat(filepath.Join(outdir, archive))
+	if statErr != nil {
+		t.Fatalf("%s: %v", archive, statErr)
+	}
+}
+
 func TestReleaseAssetsArchivesAndChecksums(t *testing.T) {
 	t.Parallel()
 

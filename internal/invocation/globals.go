@@ -28,7 +28,12 @@ func globalOptions() []globalOption {
 		{
 			name:    "output",
 			kind:    optChoice,
-			choices: []string{"json", "text", "table", "yaml", "yaml-stream"},
+			choices: []string{"json", "text", "table", "yaml", "yaml-stream", "off"},
+		},
+		{
+			name:    "cli-error-format",
+			kind:    optChoice,
+			choices: []string{"legacy", "json", "yaml", "text", "table", "enhanced"},
 		},
 		stringOption("query"),
 		stringOption(profileOptionName),
@@ -51,6 +56,7 @@ func globalOptions() []globalOption {
 		flagOption("no-cli-pager"),
 		flagOption("cli-auto-prompt"),
 		flagOption("no-cli-auto-prompt"),
+		flagOption("help"),
 	}
 }
 

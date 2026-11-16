@@ -65,9 +65,13 @@ script_dir=$(
 repo_root=$(
 	cd -- "$script_dir/.." && pwd
 )
-cd "$repo_root" || error 'cannot enter repository root'
 
 mkdir -p "$outdir"
+outdir=$(
+	cd -- "$outdir" && pwd
+)
+
+cd "$repo_root" || error 'cannot enter repository root'
 
 ldflags="-X aws-cli-guard/internal/version.Version=${version}"
 disable_src="${repo_root}/scripts/aws-cli-guard-disable"

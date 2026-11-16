@@ -28,7 +28,7 @@ type Invocation struct {
 	PrintsAccessKeys bool
 }
 
-// Parse interprets args in the AWS CLI 2.9.0 top-level global-option grammar.
+// Parse interprets args in the AWS CLI 2.9.0–2.40.3 top-level global-option grammar.
 // args[0] is the program name and is ignored.
 func Parse(args []string) Invocation {
 	if len(args) == 0 {

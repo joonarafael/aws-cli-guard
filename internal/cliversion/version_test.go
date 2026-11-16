@@ -15,7 +15,8 @@ func TestClassifyOutputSupported(t *testing.T) {
 	}{
 		{"full", "aws-cli/2.9.0 Python/3.11.0 Linux/test exe/test", "2.9.0"},
 		{"short", "aws-cli/2.9 Python/3.11.0", "2.9"},
-		{"exact ceiling", "aws-cli/2.9.0", "2.9.0"},
+		{"exact ceiling", "aws-cli/2.40.3", "2.40.3"},
+		{"mid range", "aws-cli/2.36.14", "2.36.14"},
 	}
 
 	for _, testCase := range cases {
@@ -51,12 +52,17 @@ func TestClassifyOutputOlder(t *testing.T) {
 func TestClassifyOutputNewer(t *testing.T) {
 	t.Parallel()
 
-	got := cliversion.ClassifyOutput([]byte("aws-cli/2.9.1"), nil)
+	got := cliversion.ClassifyOutput([]byte("aws-cli/2.40.4"), nil)
 	if got.Relation != cliversion.RelationNewer {
 		t.Fatalf("relation = %v", got.Relation)
 	}
 
-	got = cliversion.ClassifyOutput([]byte("aws-cli/2.9.0.1"), nil)
+	got = cliversion.ClassifyOutput([]byte("aws-cli/2.9.1"), nil)
+	if got.Relation != cliversion.RelationSupported {
+		t.Fatalf("2.9.1 relation = %v, want supported", got.Relation)
+	}
+
+	got = cliversion.ClassifyOutput([]byte("aws-cli/2.40.3.1"), nil)
 	if got.Relation != cliversion.RelationNewer {
 		t.Fatalf("patch relation = %v", got.Relation)
 	}
@@ -138,10 +144,10 @@ func TestWarningText(t *testing.T) {
 
 	newer := cliversion.WarningText(cliversion.Result{
 		Relation: cliversion.RelationNewer,
-		Version:  "2.9.1",
+		Version:  "2.40.4",
 	})
 
-	wantNewer := "AWS CLI 2.9.1 is newer than the verified release 2.9.0; policy still applies"
+	wantNewer := "AWS CLI 2.40.4 is newer than the verified release 2.40.3; policy still applies"
 	if newer != wantNewer {
 		t.Fatalf("newer = %q", newer)
 	}

@@ -157,6 +157,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | PR-4 | Reading AWS config and credentials files, including custom locations | Done | MVP | — | `PR-5`, `GR-2` |
 | PR-5 | Detecting credential providers: SSO, role chaining, `credential_process` | Done | Phase 2 | `PR-4`, `GR-1`, `GR-2` | `PR-6`, `FS-5`, `GR-5`, `AD-1` |
 | PR-6 | Showing account and role in messages | Done | Phase 2 | `PR-5` | — |
+| PR-7 | `login_session` in credential-source fingerprint | To do | Phase 4 | — | `GR-5` |
 
 - `PR-3` warns on stderr when the credential subject is the named profile `default`. The command still follows policy for `default`.
 - `PR-4` is pulled ahead of Phase 2. The design lists custom AWS config locations under Phase 2, but the grant fingerprint in `GR-2` is MVP work and needs to read the AWS config file correctly.
@@ -233,6 +234,7 @@ Q-1 to Q-6 are design questions 2, 4, 5, 8, 9, and 12. Q-7 comes from [Persisten
 | ID | Title | Status | Milestone | Blocked by | Blocks |
 | --- | --- | --- | --- | --- | --- |
 | SS-1 | How `aws sso login` is handled | Done | Phase 2 | `PR-2` | — |
+| SS-2 | How `aws login` is handled | To do | Phase 4 | — | — |
 
 - [ADR 0004](decisions/0004-login-out-of-scope.md) decides the behavior: recognize login and hand it to the real CLI, with no policy and no grant.
 - `internal/invocation` exposes `Invocation.IsLogin()` for a successfully parsed `aws sso login` (`inv.OK && inv.Command == "sso" && inv.Operation == "login"`). A failed parse is not login and follows the normal guarded path.
