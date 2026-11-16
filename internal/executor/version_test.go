@@ -144,7 +144,7 @@ func TestWrapperNewerCLIStillGuards(t *testing.T) {
 		fake,
 		append(
 			emptyPolicyConfigEnvEntries(t, work),
-			"FAKE_AWS_VERSION=aws-cli/2.9.1 Python/3.11.0",
+			"FAKE_AWS_VERSION=aws-cli/2.40.4 Python/3.11.0",
 		),
 		"sts",
 		cancellationSecretArg,
@@ -170,7 +170,7 @@ func TestWrapperNewerCLIWarnsOnceAndStillCancels(t *testing.T) {
 	fake := build(t, root, filepath.Join(work, "fake-aws"), "./internal/executor/testdata/fakeaws")
 	env := append(
 		emptyPolicyConfigEnvEntries(t, work),
-		"FAKE_AWS_VERSION=aws-cli/2.9.1 Python/3.11.0",
+		"FAKE_AWS_VERSION=aws-cli/2.40.4 Python/3.11.0",
 	)
 
 	_, err := runWrapperVersionCase(

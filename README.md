@@ -10,6 +10,18 @@ AWS CLI Guard is not a strict security boundary or a watertight security mechani
 
 Moreover, AWS CLI Guard does not check for what a profile can **actually** do, it has nothing to do with AWS IAM policies.
 
+## Quick start
+
+Prerequisites: Linux or macOS, `curl`, and AWS CLI v2 on `PATH`.
+
+After the first release is published, pick the version from [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases) and run one line (bash):
+
+```bash
+VERSION=0.1.0; curl -fsSL "https://github.com/joonarafael/aws-cli-guard/releases/download/v${VERSION}/install.sh" | sh -s -- --version "$VERSION" && export PATH="$HOME/.local/share/aws-cli-guard:$PATH" && aws-guard shell bash && aws-guard init
+```
+
+For zsh, use `aws-guard shell zsh` instead of `aws-guard shell bash`. Re-running the install line upgrades binaries in place. A second `aws-guard init` reports that the policy file already exists. Run `aws-guard help` to list every control-plane command.
+
 ## Limitations
 
 AWS CLI Guard is a PATH-based local wrapper. It makes accidental misuse less likely; it does not guarantee that every process on the machine reaches AWS only through it.
@@ -22,6 +34,7 @@ AWS CLI Guard is a PATH-based local wrapper. It makes accidental misuse less lik
 - A process that can change the installation, `PATH`, or local files can step around the wrapper.
 - An AWS CLI older than 2.9.0, or one whose version cannot be read, is handed through after a warning, with no policy ([ADR 0002](docs/decisions/0002-aws-cli-version-floor.md)).
 - This build recognizes `aws sso login`, including with `--profile` or `--sso-session`, and hands it through with no policy and no grant. A login form this build does not recognize follows the normal guarded path. A later command that uses a profile is still subject to policy ([ADR 0004](docs/decisions/0004-login-out-of-scope.md)).
+- `aws login` and the `login_session` profile key are not treated specially; they follow the normal guarded path ([ADR 0034](docs/decisions/0034-aws-cli-ceiling-2-40-3.md)).
 
 For the current terminal session only, `aws-guard off` (with confirmation on the controlling terminal) and `aws-guard on` turn policy off and on. A new terminal starts with policy on. A recognized AI agent still follows policy when detection is on. Writing `sessions.json` under the state directory is a same-user bypass, like editing policy or grants locally. Persistent installation-wide disable is separate ([ADR 0017](docs/decisions/0017-persistent-disable-swaps-aws.md)). For actual authorization, AWS-side controls remain authoritative.
 
@@ -31,7 +44,7 @@ A cancellation means AWS CLI Guard stopped the command. The wrapper exits with s
 
 Status 3 is reserved for this. The real AWS CLI keeps its own codes, including 0, 1, 2, 130, 252, 253, 254, and 255. After an allowed command, the wrapper is gone and the exit code is the CLI's code. The CLI's own output is not prefixed.
 
-The supported AWS CLI is 2.9.0 and newer. An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Recognized `aws sso login` is handed through without policy ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
+The supported AWS CLI is 2.9.0 through the verified ceiling (2.40.3 in this release). An older CLI is run as-is after a warning, with no policy applied ([Limitations](#limitations)). Recognized `aws sso login` is handed through without policy ([Limitations](#limitations)). The decision records under [docs/decisions/](docs/decisions/) are the detail.
 
 Logging is tight by default: an allowed command adds no extra stderr. Set `AWS_CLI_GUARD_LOG=verbose` for one invocation, or set `level = "verbose"` under `[logging]` in `settings.toml`, to print a troubleshooting decision block on stderr ([ADR 0029](docs/decisions/0029-verbose-logging.md)).
 
@@ -49,6 +62,19 @@ sh install.sh --version X.Y.Z
 
 Optional `--prefix` and `--base-url` follow [ADR 0025](docs/decisions/0025-installer-and-releases.md). Tag pushes create a draft release only; publishing it is a manual step on GitHub.
 
+## First run: everything waits for your approval
+
+After `aws-guard init`, every profile in `config.toml` defaults to `prompt`, including `default`. Commands such as `aws --version`, `aws help`, `aws configure`, and `aws configure sso` use the `default` profile when you do not pass `--profile`, so they are blocked until you allow that profile or create a grant. `aws sso login` is handed through without a grant ([ADR 0004](docs/decisions/0004-login-out-of-scope.md)).
+
+To proceed:
+
+- Grant temporary access: `aws-guard allow <profile> --ttl 8h` (confirm on the controlling terminal).
+- Allow a profile permanently in `~/.config/aws-cli-guard/config.toml`, for example `[profiles.dev]` with `action = "allow"`. You can set `approval_ttl` under `[defaults]` for grants created without `--ttl`. Quote profile names that contain dots.
+- Inspect policy with `aws-guard policy explain <profile>` and grants with `aws-guard grants list`.
+- Turn policy off for this terminal only with `aws-guard off` (with confirmation).
+
+The `default` profile warning appears on stderr before each guarded command that resolves to `default`.
+
 ## Upgrade
 
 When the install prefix already holds a valid installation, a second install upgrades in place:
@@ -62,6 +88,14 @@ aws-guard install
 You can also run `aws-guard upgrade` explicitly (`aws-guard upgrade [--prefix dir]`). Upgrade refreshes `aws`, `aws-guard`, the disable stub, and the manifest. It does not change the recorded real AWS CLI path. After a successful replace it runs `aws-guard migrate` logic on your policy and grants files in `~/.config/aws-cli-guard` and `~/.local/state/aws-cli-guard` (or your user-database paths).
 
 If migrate fails after upgrade, stderr prints diagnosis plus recovery steps: use a `*.migrated.*` sibling if one was created, fix the file and run `aws-guard migrate`, use `aws-guard recover policy` or `aws-guard recover grants` on a terminal for corrupt files, or move the config, state, and cache directories aside and run `aws-guard init` to start over. Moving config also moves `settings.toml`; you can move that file back. A broken install prefix can be moved aside and reinstalled without deleting policy. See [ADR 0026](docs/decisions/0026-upgrade-behavior.md).
+
+## Uninstall (manual)
+
+1. If the installation is persistently disabled, run `aws-guard enable` first. `aws-guard shell --remove` refuses while the prefix is in the disabled layout.
+2. Run `aws-guard shell bash --remove` and/or `aws-guard shell zsh --remove`. Pass `--prefix` when you used a custom install directory. If the marked block is missing, delete the lines from `# aws-cli-guard begin` through `# aws-cli-guard end` by hand in `.bashrc` or `.zshrc`.
+3. Delete `~/.local/share/aws-cli-guard` (or your `--prefix` directory). For a shared prefix, remove only `aws`, `aws-guard`, `aws-cli-guard-disable`, `aws-cli-guard-manifest`, and any `aws.aside` or `aws-cli-guard-disabled` artifacts the disable swap created.
+4. Optional: delete `~/.config/aws-cli-guard`, `~/.local/state/aws-cli-guard`, and `~/.cache/aws-cli-guard` if you do not want policy, grants, or cache data to remain.
+5. Open a new terminal and run `command -v aws`. You should see the real AWS CLI; the wrapper never modified it.
 
 ## Developing
 

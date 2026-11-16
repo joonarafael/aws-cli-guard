@@ -22,9 +22,15 @@ import (
 func runReleaseAssets(t *testing.T, root, version, outdir string) error {
 	t.Helper()
 
+	return runReleaseAssetsFromDir(t, root, root, version, outdir)
+}
+
+func runReleaseAssetsFromDir(t *testing.T, root, workDir, version, outdir string) error {
+	t.Helper()
+
 	script := filepath.Join(root, "scripts", "release-assets.sh")
 	cmd := exec.CommandContext(t.Context(), "sh", script, version, outdir)
-	cmd.Dir = root
+	cmd.Dir = workDir
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

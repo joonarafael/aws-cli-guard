@@ -53,6 +53,9 @@ jobs:
             - name: Use Readonly Go Modules
               run: echo 'GOFLAGS=-mod=readonly' >> "$GITHUB_ENV"
 
+            - name: Source Code Hygiene
+              run: make check
+
             - name: Build Release Assets
               env:
                   CGO_ENABLED: "0"
