@@ -93,7 +93,7 @@ jobs:
             - name: Run govulncheck
               id: govulncheck
               # Findings and a scanner crash on the pinned Go toolchain are
-              # reported below. They do not fail this job (ADR 0031).
+              # reported below. They do not fail this job.
               continue-on-error: true
               run: |
                   set +e

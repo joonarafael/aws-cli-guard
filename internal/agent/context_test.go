@@ -48,6 +48,6 @@ func TestForcedRecognitionStillFollowsProfilePolicy(t *testing.T) {
 	}
 
 	if !ctx.FollowsProfilePolicy() {
-		t.Fatal("recognized caller should still follow profile policy in AG-1")
+		t.Fatal("recognized caller should still follow profile policy")
 	}
 }

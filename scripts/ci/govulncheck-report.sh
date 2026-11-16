@@ -5,7 +5,7 @@ set -eu
 
 # Turn a govulncheck log into the sticky pull-request comment and job summary.
 # The CI job stays green when the scanner finds vulnerabilities or throws.
-# See ADR 0031.
+# This report never fails the CI job.
 #
 # GO_VERSION and GOVULNCHECK_VERSION must be set. GOVULNCHECK_REPORT_LIMIT
 # caps how many findings the comment lists (default 30).

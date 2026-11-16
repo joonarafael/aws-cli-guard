@@ -6,7 +6,7 @@ const recognitionAgent recognition = 1
 
 // builtinMarkerNames lists command-scoped environment variable names for built-in
 // agent integrations. Production rows are recorded with the product and pinned
-// version in ADR 0022. Test builds may append one extra name.
+// version in markers_catalog.go. Test builds may append one extra name.
 func builtinMarkerNames() []string {
 	prod := productionBuiltinMarkerNames()
 	extra := extraBuiltinMarkerNames()

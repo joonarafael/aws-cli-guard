@@ -8,7 +8,14 @@ Treat it as a local safety mechanism against accidental misuse. Stronger guarant
 
 When a check is ambiguous, stop the command, explain why on stderr, and exit 3. That status is reserved for a cancellation. The real AWS CLI keeps its own exit codes.
 
-The repository is early. Little of the product is implemented. Shipped behavior is the code. Intended behavior is [docs/DESIGN.md](docs/DESIGN.md). Accepted choices are [docs/decisions/](docs/decisions/). What to build next is [docs/ROADMAP.md](docs/ROADMAP.md). An open roadmap question stays open until an ADR answers it.
+| Topic | Document |
+| --- | --- |
+| Intent | [docs/DESIGN.md](docs/DESIGN.md) |
+| Current behavior | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Lessons learned | [docs/FINDINGS.md](docs/FINDINGS.md) |
+| Conventions | [docs/CODING_STYLE.md](docs/CODING_STYLE.md) |
+| Workflow | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Planned work | GitHub issues |
 
 **Never read or expose secrets.** That includes `.env` files, AWS credentials, SSO tokens, and any other material that would reveal keys or session data. If you need to know something about the user's environment, ask them.
 
@@ -22,12 +29,14 @@ You can talk with the user in any language they prefer. The codebase, documentat
 | --- | --- | --- |
 | Entrypoints | `cmd/aws`, `cmd/aws-guard` | Wrapper and control-plane `main` |
 | Libraries | `internal/` | Packages that exist today |
-| Docs | `docs/` | Design, development, roadmap, ADRs |
+| Docs | `docs/` | Design, architecture, findings, coding style |
+| Contributing | `CONTRIBUTING.md` | Build, test, maintain, contribute |
+| GitHub | `.github/` | PR template, issue forms, workflows |
 | Lint scripts | `scripts/lint/` | Go file length, rumdl, golangci-lint config check |
 | Build | `Makefile` | Day-to-day targets |
 | CI | `.github/workflows/ci.yml` | Hygiene gate, plus secret scan, workflow lint, ShellCheck, govulncheck |
 
-How to build, test, and dogfood is [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Read it before changing the workflow.
+How to build, test, and dogfood is [CONTRIBUTING.md](CONTRIBUTING.md). Read it before changing the workflow.
 
 Keep this map short. Update it when a new top-level area appears. Leave function-level detail in the code.
 
@@ -43,15 +52,15 @@ Formatting and linting are **strict and automated**. CI rejects non-compliant co
 | Vet and tests |  | `make vet`, `make test` |
 | Local gate |  | `make check` |
 
-`golangci-lint` is pinned in [go.mod](go.mod) as a Go `tool` dependency. Make runs `go tool golangci-lint`. Nothing has to be installed globally. To bump the pin, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+`golangci-lint` is pinned in [go.mod](go.mod) as a Go `tool` dependency. Make runs `go tool golangci-lint`. Nothing has to be installed globally. To bump the pin, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Markdown uses [rumdl](https://github.com/rvben/rumdl), pinned by `RUMDL_VERSION` in the [Makefile](Makefile). The first `make md-lint` or `make md-fmt` downloads that release into `.cache/rumdl` and checks its SHA-256. `make md-fmt` rewrites what it can and still exits successfully when a problem has to be fixed by hand. `make md-lint` is the check CI runs.
 
 Shell is POSIX `sh` only (`#!/bin/sh`, `set -eu`) and must pass ShellCheck. CI runs `shellcheck -S warning scripts/lint/*.sh`. Dialect and optional checks are in [.shellcheckrc](.shellcheckrc).
 
-Go is the version on the `go` line in `go.mod`. Linux and macOS are the supported development hosts ([ADR 0001](docs/decisions/0001-linux-and-macos-first.md)). `make test` needs a C compiler because tests run with the race detector (`CGO_ENABLED=1`). `make build` stays a pure Go binary (`CGO_ENABLED=0`). Tests use a fake AWS executable, so they need no AWS account and no credentials.
+Go is the version on the `go` line in `go.mod`. Linux and macOS are the supported development hosts. `make test` needs a C compiler because tests run with the race detector (`CGO_ENABLED=1`). `make build` stays a pure Go binary (`CGO_ENABLED=0`). Tests use a fake AWS executable, so they need no AWS account and no credentials.
 
-The linter configuration is the style guide. Match the code around your change. Fix the code when a linter fails.
+Style is [docs/CODING_STYLE.md](docs/CODING_STYLE.md) plus [.golangci.yml](.golangci.yml). Match the code around your change. Fix the code when a linter fails.
 
 ## Debugging
 
@@ -59,12 +68,12 @@ The linter configuration is the style guide. Match the code around your change. 
 
 1. Read the output. A cancellation exits with status **3**. The two cancellation lines start with `aws-cli-guard: error:`; further guidance (diagnosis, allow hints) uses `aws-cli-guard:` detail lines. A `default` profile warning may appear on stderr before a cancellation. A warning that leaves the command running starts with `aws-cli-guard: warning:`. After an allowed command, the process is the real AWS CLI and the exit code is the CLI's.
 2. Reproduce with `make test`, or with `go test` in the package you changed.
-3. For a behavior question, read the design and the ADRs before editing.
+3. For a behavior question, read [docs/DESIGN.md](docs/DESIGN.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before editing.
 4. Confirm `go version` matches `go.mod`. A sandbox may have different tools than the user's machine.
 
 `make test` and `make check` are safe to run. They do not call AWS.
 
-Dogfood by prepending `bin/` to `PATH` for the current shell, as [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) describes. Leave `~/.local/bin` alone until an installer exists.
+Dogfood by prepending `bin/` to `PATH` for the current shell, as [CONTRIBUTING.md](CONTRIBUTING.md) describes. Leave `~/.local/bin` alone until an installer exists.
 
 ## Linters and Formatters
 
@@ -79,9 +88,9 @@ Run the linters and formatters while you work. Fix each failure as it appears, b
 3. If you touched shell, run `shellcheck -S warning` on those scripts.
 4. If you touched documentation, run `make md-fmt`, then `make md-lint`.
 5. If you changed code, run `make test`.
-6. Run `make check` before you call the work done. That is the local gate: Go lint, the 300-line file cap, Markdown lint, vet, and race-enabled tests. CI runs that gate, then the build, gitleaks, actionlint, and ShellCheck. govulncheck still runs in that job. A finding or a scanner crash is written to the job summary and a sticky pull-request comment, and does not fail the job ([ADR 0031](docs/decisions/0031-govulncheck-does-not-block.md)).
+6. Run `make check` before you call the work done. That is the local gate: Go lint, the 300-line file cap, Markdown lint, vet, and race-enabled tests. CI runs that gate, then the build, gitleaks, actionlint, and ShellCheck. govulncheck still runs in that job. A finding or a scanner crash is written to the job summary and a sticky pull-request comment, and does not fail the job.
 7. Keep the change small, and match the patterns already in the surrounding code.
-8. Record a new significant choice as an ADR under [docs/decisions/](docs/decisions/). Number it sequentially. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) says which number is free.
+8. Update [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) when behavior or a contract changes; add [docs/FINDINGS.md](docs/FINDINGS.md) for a non-obvious pitfall; put future work in a GitHub issue, not in docs.
 
 If you added files, keep each directory small and split by concern. The size limit this repository enforces is 300 lines per Go file, tests included.
 

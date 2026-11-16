@@ -1,9 +1,10 @@
 package agent
 
-// claudeCodeChildSessionEnv is the Claude Code marker recorded in ADR 0022.
+// claudeCodeChildSessionEnv is vendor-documented for Claude Code v2.1.172 and later;
+// IDE terminals do not set it.
 const claudeCodeChildSessionEnv = "CLAUDE_CODE_CHILD_SESSION"
 
-// cursorAgentEnv is the Cursor marker recorded in ADR 0022.
+// cursorAgentEnv was observed on Cursor 3.29.9.
 const cursorAgentEnv = "CURSOR_AGENT"
 
 func productionBuiltinMarkerNames() []string {

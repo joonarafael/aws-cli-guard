@@ -1,5 +1,5 @@
 #!/bin/sh
-# POSIX persistent disable/enable for one install prefix. See ADR 0017 and ADR 0028.
+# POSIX persistent disable/enable for one install prefix.
 set -eu
 
 error() {
