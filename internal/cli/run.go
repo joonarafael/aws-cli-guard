@@ -66,6 +66,8 @@ func Dispatch(
 		return runDisable(args, env, stdout, stderr)
 	case enableCommand:
 		return runEnable(args, env, stdout, stderr)
+	case shellCommand:
+		return runShell(args, env, stdout, stderr)
 	default:
 		output.Error(stderr, usageLine)
 

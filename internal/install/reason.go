@@ -3,25 +3,36 @@ package install
 import "errors"
 
 const (
-	reasonHomeUnset           = "the home directory is unavailable"
-	reasonPrefixInvalid       = "the install prefix is invalid"
-	reasonPathOccupied        = "an install path is already occupied"
-	reasonPrefixNotDirectory  = "the install prefix is not a directory"
-	reasonSiblingMissing      = "a required install file is missing from this package"
-	reasonRealAWSNotFound     = "the real AWS CLI was not found"
-	reasonRealAWSInPrefix     = "the real AWS CLI path is inside the install prefix"
-	reasonResolveExecutable   = "the running executable could not be resolved"
-	reasonPlatformUnsupported = "install is not supported on this platform"
-	reasonInstallFailed       = "install failed"
-	reasonNotInstalled        = "there is no installation to upgrade in that prefix"
-	reasonNotOurInstallation  = "the installed files are not a wrapper this binary can replace"
-	reasonDisableLayout       = "persistent disable is active or partially present in that prefix"
-	reasonManifestInvalid     = "the install manifest is invalid"
-	reasonUpgradePartial      = "upgrade did not finish; run the same command again"
+	reasonHomeUnset            = "the home directory is unavailable"
+	reasonPrefixInvalid        = "the install prefix is invalid"
+	reasonPathOccupied         = "an install path is already occupied"
+	reasonPrefixNotDirectory   = "the install prefix is not a directory"
+	reasonSiblingMissing       = "a required install file is missing from this package"
+	reasonRealAWSNotFound      = "the real AWS CLI was not found"
+	reasonRealAWSInPrefix      = "the real AWS CLI path is inside the install prefix"
+	reasonResolveExecutable    = "the running executable could not be resolved"
+	reasonPlatformUnsupported  = "install is not supported on this platform"
+	reasonInstallFailed        = "install failed"
+	reasonNotInstalled         = "there is no installation to upgrade in that prefix"
+	reasonNotOurInstallation   = "the installed files are not a wrapper this binary can replace"
+	reasonDisableLayout        = "persistent disable is active or partially present in that prefix"
+	reasonManifestInvalid      = "the install manifest is invalid"
+	reasonUpgradePartial       = "upgrade did not finish; run the same command again"
+	reasonShellStartupTooLarge = "the shell startup file is too large"
+	reasonShellStartupSymlink  = "the shell startup file is a symlink"
+	reasonShellStartupNotReg   = "the shell startup file is not a regular file"
+	reasonShellMarkersConflict = "the shell startup file has conflicting marker comments"
+	reasonShellLineEndings     = "the shell startup file has unsupported line endings"
+	reasonShellUpdateFailed    = "the shell startup file could not be updated"
+	reasonShellNameUnsupported = "the shell name is not supported"
 )
 
-// Reason maps an install error to a fixed user-facing reason line.
+// Reason maps an install or shell error to a fixed user-facing reason line.
 func Reason(err error) string {
+	if msg, ok := shellReason(err); ok {
+		return msg
+	}
+
 	switch {
 	case errors.Is(err, ErrHomeUnset):
 		return reasonHomeUnset

@@ -16,12 +16,18 @@ const fileMode = 0o600
 // A race that swaps in a symlink between the pre-rename Lstat and Rename is accepted;
 // Rename does not follow a symlink into its target.
 func WriteAtomic(path string, data []byte) error {
+	return WriteAtomicMode(path, data, fileMode)
+}
+
+// WriteAtomicMode replaces path with data and applies mode to a newly created partial file.
+// An existing destination keeps its permission bits; mode applies only when creating the partial.
+func WriteAtomicMode(path string, data []byte, mode os.FileMode) error {
 	err := lstatDestForWrite(path)
 	if err != nil {
 		return err
 	}
 
-	partial, err := createPartialFile(path, time.Now(), data)
+	partial, err := createPartialFile(path, time.Now(), data, mode&os.FileMode(filePermMask))
 	if err != nil {
 		return err
 	}
@@ -60,11 +66,16 @@ func lstatDestForWrite(path string) error {
 	return nil
 }
 
-func createPartialFile(livePath string, now time.Time, data []byte) (string, error) {
+func createPartialFile(
+	livePath string,
+	now time.Time,
+	data []byte,
+	mode os.FileMode,
+) (string, error) {
 	var lastErr error
 
 	for _, partial := range partialPathCandidates(livePath, now) {
-		partialFD, err := openPartialExclusive(partial)
+		partialFD, err := openPartialExclusive(partial, mode)
 		if err != nil {
 			if partialNameRetryable(err) {
 				lastErr = err
@@ -94,11 +105,11 @@ func partialNameRetryable(err error) bool {
 	return errors.Is(err, syscall.EEXIST) || errors.Is(err, syscall.ELOOP)
 }
 
-func openPartialExclusive(partial string) (int, error) {
+func openPartialExclusive(partial string, mode os.FileMode) (int, error) {
 	partialFD, err := syscall.Open(
 		partial,
 		syscall.O_CREAT|syscall.O_EXCL|syscall.O_WRONLY|syscall.O_NOFOLLOW,
-		fileMode,
+		uint32(mode.Perm()),
 	)
 	if err != nil {
 		if errors.Is(err, syscall.ENOENT) {
@@ -112,7 +123,7 @@ func openPartialExclusive(partial string) (int, error) {
 		return 0, fmt.Errorf("aws-cli-guard: create partial %q: %w", partial, err)
 	}
 
-	chmodErr := os.Chmod(partial, fileMode)
+	chmodErr := os.Chmod(partial, mode.Perm())
 	if chmodErr != nil {
 		_ = syscall.Close(partialFD)
 

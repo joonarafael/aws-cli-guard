@@ -105,4 +105,8 @@ func assertInstallStdout(t *testing.T, prefix string, stdout *bytes.Buffer) {
 	if !strings.Contains(out, "export PATH='"+prefix+":$PATH'\n") {
 		t.Fatalf("stdout = %q, want export line", out)
 	}
+
+	if !strings.Contains(out, "shell: aws-guard shell bash or aws-guard shell zsh") {
+		t.Fatalf("stdout = %q, want shell hint", out)
+	}
 }
