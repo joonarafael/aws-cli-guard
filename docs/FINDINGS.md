@@ -207,3 +207,15 @@ Why it mattered: Blocking CI on flaky scanner output hid real regressions.
 What we do now: Report findings in job summary and PR comment; job does not fail on vulncheck alone.
 
 Where: [scripts/ci/govulncheck-report.sh](../scripts/ci/govulncheck-report.sh)
+
+## F-18: AWS CLI v1 and v2 tags share one repository
+
+Date: 2026-11-16
+
+Found: `aws/aws-cli` carries both `1.*` and `2.*` tags. Tag lists from `git ls-remote` are not semver-ordered. Patch releases can add global options (for example `2.39.6` added `--help`).
+
+Why it mattered: A naive "latest tag" scan or a comment on every weekly run would miss v2 releases or spam the tracker when only the version string moved.
+
+What we do now: Filter `2.*`, sort numerically, and diff `awscli/data/cli.json` global options on every ahead-of-ceiling release—not only on minor bumps.
+
+Where: [scripts/ci/aws-cli-ceiling-watch.sh](../scripts/ci/aws-cli-ceiling-watch.sh)

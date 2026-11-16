@@ -34,7 +34,7 @@ You can talk with the user in any language they prefer. The codebase, documentat
 | GitHub | `.github/` | PR template, issue forms, workflows |
 | Lint scripts | `scripts/lint/` | Go file length, rumdl, golangci-lint config check |
 | Build | `Makefile` | Day-to-day targets |
-| CI | `.github/workflows/ci.yml` | Hygiene gate, plus secret scan, workflow lint, ShellCheck, govulncheck |
+| CI | `.github/workflows/ci.yml`, `.github/workflows/aws-cli-ceiling-watch.yml` | Hygiene gate, secret scan, workflow lint, ShellCheck, govulncheck; weekly AWS CLI ceiling watch |
 
 How to build, test, and dogfood is [CONTRIBUTING.md](CONTRIBUTING.md). Read it before changing the workflow.
 

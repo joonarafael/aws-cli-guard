@@ -100,6 +100,8 @@ Subprocess tests in [internal/executor](internal/executor/) compile fakeaws and 
 
 Linux job: `make check`, build, gitleaks, actionlint, ShellCheck, govulncheck report. **govulncheck does not fail the job** — findings land in the job summary and a sticky PR comment ([FINDINGS.md](docs/FINDINGS.md) F-17).
 
+The [AWS CLI Ceiling Watch](.github/workflows/aws-cli-ceiling-watch.yml) workflow runs weekly (Mondays 06:17 UTC) and on manual dispatch. It compares the newest AWS CLI v2 tag with the verified ceiling in [internal/cliversion/version.go](internal/cliversion/version.go). When the release is newer, it keeps a single open issue with label `aws-cli-ceiling`, updates the title and body each run, and comments only when global options in `awscli/data/cli.json` change. When the newest tag matches the ceiling, any open watch issue closes automatically. GitHub may disable scheduled workflows after 60 days without activity in a public repository.
+
 Verbose troubleshooting: `AWS_CLI_GUARD_LOG=verbose` or `level = "verbose"` in `settings.toml`.
 
 ## Maintain
@@ -124,11 +126,12 @@ Update `go.mod`, `GO_VERSION` in [ci.yml](.github/workflows/ci.yml) and [release
 ### Raise the AWS CLI verified ceiling
 
 1. Read AWS CLI changelog since the current ceiling.
-2. Check parity with `awscli/data/cli.json` if available.
+2. Start from the open `aws-cli-ceiling` issue; it lists global-option changes in `awscli/data/cli.json`.
 3. Update [internal/invocation/globals.go](internal/invocation/globals.go) and constants in [internal/cliversion/version.go](internal/cliversion/version.go).
 4. Add tests.
-5. Update ceiling in [README.md](README.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+5. Update ceiling in [README.md](README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and this file when it names the ceiling (for example the 2.40.3 note under CI scope).
 6. Add a [FINDINGS.md](docs/FINDINGS.md) entry when behavior shifts.
+7. Reference the watch issue with `Fixes #N` in the pull request.
 
 ### Cut a release
 
