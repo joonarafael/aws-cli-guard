@@ -1,0 +1,85 @@
+name: Bug report
+description: Report incorrect wrapper or control-plane behavior
+title: "[Bug]: "
+labels:
+    - bug
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Never paste credentials, session tokens, or AWS config file contents.
+              Redact account IDs if needed.
+    - type: input
+      id: guard_version
+      attributes:
+          label: aws-guard version
+          description: Output of `aws-guard version`
+          placeholder: "0.1.0"
+      validations:
+          required: true
+    - type: input
+      id: aws_version
+      attributes:
+          label: AWS CLI version
+          description: Output of `aws --version` from the real CLI
+          placeholder: "aws-cli/2.31.0"
+      validations:
+          required: true
+    - type: dropdown
+      id: os_arch
+      attributes:
+          label: OS and architecture
+          options:
+              - Linux amd64
+              - Linux arm64
+              - macOS amd64
+              - macOS arm64
+              - Other
+      validations:
+          required: true
+    - type: dropdown
+      id: install_method
+      attributes:
+          label: Install method
+          options:
+              - install.sh
+              - local aws-guard install
+              - bin/ dogfood
+      validations:
+          required: true
+    - type: textarea
+      id: command
+      attributes:
+          label: Command run
+          description: Redact secrets and account-specific values
+          placeholder: aws sts get-caller-identity --profile example
+      validations:
+          required: true
+    - type: textarea
+      id: happened
+      attributes:
+          label: What happened
+          description: Include aws-cli-guard stderr lines and exit status
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: What you expected
+      validations:
+          required: true
+    - type: textarea
+      id: verbose
+      attributes:
+          label: Verbose log (optional)
+          description: Output with AWS_CLI_GUARD_LOG=verbose
+      validations:
+          required: false
+    - type: checkboxes
+      id: secrets_ok
+      attributes:
+          label: Confirmation
+          options:
+              - label: I removed credentials and secrets
+      validations:
+          required: true

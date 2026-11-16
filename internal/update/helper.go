@@ -27,7 +27,7 @@ type CheckOptions struct {
 
 // RunUpdateCheck is the detached helper entrypoint.
 //
-//nolint:funlen // single orchestration path; splitting would obscure ADR 0030 order.
+//nolint:funlen // splitting would obscure the check, download, replace, migrate order.
 func RunUpdateCheck(opts CheckOptions) {
 	if opts.Stamp == "" {
 		opts.Stamp = version.Version

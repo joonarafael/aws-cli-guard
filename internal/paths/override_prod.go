@@ -2,7 +2,7 @@
 
 package paths
 
-// Production builds ignore AWS_CLI_GUARD_*_DIR; see ADR 0014.
+// Production builds ignore AWS_CLI_GUARD_*_DIR so env cannot redirect policy or state.
 
 func configDirOverride(_ []string) (string, bool) {
 	return "", false

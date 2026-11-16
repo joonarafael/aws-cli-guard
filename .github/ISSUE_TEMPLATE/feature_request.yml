@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest a new capability or behavior change
+title: "[Feature]: "
+labels:
+    - enhancement
+body:
+    - type: textarea
+      id: problem
+      attributes:
+          label: Problem
+          description: What user need or gap does this address?
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: Proposal
+          description: What should change?
+      validations:
+          required: true
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: Alternatives considered
+      validations:
+          required: false
+    - type: dropdown
+      id: policy_impact
+      attributes:
+          label: Does this change what the wrapper allows or refuses?
+          options:
+              - "No"
+              - "Yes"
+              - "Unsure"
+      validations:
+          required: true

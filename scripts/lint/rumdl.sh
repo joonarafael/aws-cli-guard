@@ -6,7 +6,7 @@ set -eu
 # Downloads the rumdl release named by RUMDL_VERSION into .cache and execs it.
 # Make targets pass the version. CI runs those targets, so Markdown lint does
 # not depend on a global install. Linux and macOS, amd64 and arm64, match the
-# hosts in ADR 0001.
+# supported Linux and macOS hosts.
 
 : "${RUMDL_VERSION:?RUMDL_VERSION is required (rumdl release, without a leading v)}"
 

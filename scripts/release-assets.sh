@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build release archives for OP-3 (ADR 0025).
+# Build the four platform archives, checksums.txt, and install.sh.
 set -eu
 
 error() {
