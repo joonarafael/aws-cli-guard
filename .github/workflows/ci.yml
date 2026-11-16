@@ -88,7 +88,10 @@ jobs:
             - name: Run ShellCheck
               run: |
                   shellcheck -S warning scripts/lint/*.sh
-                  shellcheck -S warning install.sh scripts/aws-cli-guard-disable scripts/release-assets.sh scripts/ci/govulncheck-report.sh
+                  shellcheck -S warning install.sh scripts/aws-cli-guard-disable scripts/release-assets.sh scripts/ci/govulncheck-report.sh scripts/ci/aws-cli-ceiling-watch.sh
+
+            - name: Self-Test AWS CLI Ceiling Watch
+              run: ./scripts/ci/aws-cli-ceiling-watch.sh --self-test
 
             - name: Run govulncheck
               id: govulncheck

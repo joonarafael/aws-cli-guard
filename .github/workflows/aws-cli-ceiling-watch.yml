@@ -1,0 +1,33 @@
+name: AWS CLI Ceiling Watch
+
+on:
+    schedule:
+        - cron: "17 6 * * 1"
+    workflow_dispatch:
+
+concurrency:
+    group: aws-cli-ceiling-watch
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    issues: write
+
+jobs:
+    watch:
+        name: Compare Ceiling With Latest AWS CLI
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Self-Test
+              run: ./scripts/ci/aws-cli-ceiling-watch.sh --self-test
+            - name: Watch
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: ./scripts/ci/aws-cli-ceiling-watch.sh run
