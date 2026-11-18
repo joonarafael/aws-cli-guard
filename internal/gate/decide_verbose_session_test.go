@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
+//nolint:paralleltest // ControllingTTY and LstatCharDeviceStats hooks.
 func TestDecideSessionOffVerboseNoTokenOrPath(t *testing.T) {
-	t.Parallel()
-
 	env := append(gateEnv(t), "AWS_CLI_GUARD_LOG=verbose")
 	writeGatePolicy(t, env, denyPolicyBody(gateTestProfile))
 	writeGateSessions(t, env, gateSessionOffJSON(session.ID()))
+	hideControllingTTY(t)
 
 	prev := session.LstatCharDeviceStats
 	session.LstatCharDeviceStats = func(path string) (session.CharDeviceStat, error) {

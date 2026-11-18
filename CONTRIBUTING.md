@@ -87,6 +87,10 @@ Integration tests always set `AWS_CLI_GUARD_REAL_AWS`.
 
 Do not run `go test ./...` without the tag: subprocess tests could read your real home directory.
 
+`cli.Run` wires the init update prompt and confirmations to `/dev/tty`. Headless init tests call `Dispatch` and omit the line reader. In a terminal, `cli.Run` for `init` waits until the package timeout.
+
+Session-off unit tests inject `session.ControllingTTY`. Otherwise a development terminal is the session device, and the lstat fallback those tests stub never runs.
+
 ### Platform checks
 
 - **Linux** — primary CI host (`ubuntu-24.04`).
