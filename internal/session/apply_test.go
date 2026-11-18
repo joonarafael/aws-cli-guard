@@ -65,11 +65,16 @@ func TestPolicySkippedMissingDevice(t *testing.T) {
 		Records: []sessions.Record{offRecord(session.ID())},
 	}
 
+	withoutControllingTTY(t)
+
+	prev := session.LstatCharDeviceStats
+
 	session.LstatCharDeviceStats = func(string) (session.CharDeviceStat, error) {
 		return session.CharDeviceStat{}, os.ErrNotExist
 	}
 
 	t.Cleanup(func() {
+		session.LstatCharDeviceStats = prev
 	})
 
 	if session.PolicySkipped(file, session.ID()) {
@@ -79,6 +84,8 @@ func TestPolicySkippedMissingDevice(t *testing.T) {
 
 func stubLstat(t *testing.T) {
 	t.Helper()
+
+	withoutControllingTTY(t)
 
 	prev := session.LstatCharDeviceStats
 
@@ -92,6 +99,20 @@ func stubLstat(t *testing.T) {
 
 	t.Cleanup(func() {
 		session.LstatCharDeviceStats = prev
+	})
+}
+
+func withoutControllingTTY(t *testing.T) {
+	t.Helper()
+
+	prev := session.ControllingTTY
+
+	session.ControllingTTY = func() (sessions.TTY, bool) {
+		return sessions.TTY{}, false //nolint:exhaustruct_v5 // absent terminal.
+	}
+
+	t.Cleanup(func() {
+		session.ControllingTTY = prev
 	})
 }
 

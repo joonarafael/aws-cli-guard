@@ -32,7 +32,7 @@ func PolicySkipped(file sessions.File, sessionID string) bool {
 }
 
 func ttyMatchesRecord(record sessions.TTY) bool {
-	if current, ok := CurrentControllingTTY(); ok {
+	if current, ok := ControllingTTY(); ok {
 		return ttyEqual(current, record)
 	}
 
@@ -63,6 +63,11 @@ type CharDeviceStat struct {
 //
 //nolint:gochecknoglobals // test hook for session-off honor without a live tty.
 var LstatCharDeviceStats = defaultLstatCharDevice
+
+// ControllingTTY reports the controlling terminal. Tests inject alternate behavior.
+//
+//nolint:gochecknoglobals // test hook so session-off ignores the developer terminal.
+var ControllingTTY = CurrentControllingTTY
 
 func defaultLstatCharDevice(path string) (CharDeviceStat, error) {
 	info, err := os.Lstat(path)

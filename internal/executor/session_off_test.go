@@ -23,8 +23,8 @@ func TestWrapperSessionOffHandoff(t *testing.T) {
 
 	writeEnforcePolicy(t, work, denyProfilePolicy())
 
-	slavePath, dev, ino, rdev := openPTYDeviceLinux(t)
-	writeSessionOffFile(t, work, session.ID(), slavePath, dev, ino, rdev)
+	ttyPath, dev, ino, rdev := sessionTTYForWrapper(t)
+	writeSessionOffFile(t, work, session.ID(), ttyPath, dev, ino, rdev)
 
 	wrapper := build(t, root, filepath.Join(work, "aws"), "./cmd/aws")
 	fake := build(t, root, filepath.Join(work, "fake-aws"), "./internal/executor/testdata/fakeaws")
@@ -100,6 +100,19 @@ func TestWrapperSessionOffMissingDeviceStillDenied(t *testing.T) {
 	if statErr == nil {
 		t.Fatal("fake AWS must not run")
 	}
+}
+
+func sessionTTYForWrapper(t *testing.T) (string, uint64, uint64, uint64) {
+	t.Helper()
+
+	// The wrapper inherits this session. Bind the record to its controlling
+	// terminal when one exists; otherwise record a pty and use the lstat path.
+	current, ok := session.CurrentControllingTTY()
+	if ok {
+		return current.Path, current.Dev, current.Ino, current.Rdev
+	}
+
+	return openPTYDeviceLinux(t)
 }
 
 func openPTYDeviceLinux(t *testing.T) (string, uint64, uint64, uint64) {

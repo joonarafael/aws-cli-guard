@@ -6,6 +6,7 @@ import (
 	"aws-cli-guard/internal/policy"
 	"aws-cli-guard/internal/settings"
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +23,7 @@ func TestRunInitCreatesFiles(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &stderr)
+	status := runHeadlessInit(env, &stdout, &stderr)
 	if status != 0 {
 		t.Fatalf("status = %d, stderr = %q", status, stderr.String())
 	}
@@ -77,7 +78,7 @@ func TestRunInitAlreadyExistsWithStoredAuto(t *testing.T) {
 
 	var stderr bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &bytes.Buffer{}, &stderr)
+	status := runHeadlessInit(env, &bytes.Buffer{}, &stderr)
 	if status != output.CancelStatus {
 		t.Fatalf("status = %d", status)
 	}
@@ -111,7 +112,7 @@ func TestRunInitBothFilesPresentHeadlessSuccess(t *testing.T) {
 
 	var stdout bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &bytes.Buffer{})
+	status := runHeadlessInit(env, &stdout, &bytes.Buffer{})
 	if status != 0 {
 		t.Fatalf("status = %d", status)
 	}
@@ -139,7 +140,7 @@ func TestRunInitSettingsOnly(t *testing.T) {
 
 	var stdout bytes.Buffer
 
-	status := cli.Run([]string{progName, initSubcommand}, env, &stdout, &bytes.Buffer{})
+	status := runHeadlessInit(env, &stdout, &bytes.Buffer{})
 	if status != 0 {
 		t.Fatalf("status = %d", status)
 	}
@@ -204,6 +205,22 @@ func TestRunInitUpdatesMismatchWritesNothing(t *testing.T) {
 }
 
 const stayOffUpdatesStdout = "automatic updates stay off"
+
+// runHeadlessInit runs init with no terminal reader.
+// cli.Run opens /dev/tty and blocks when this process has a controlling terminal.
+func runHeadlessInit(env []string, stdout, stderr io.Writer) int {
+	return cli.Dispatch(
+		[]string{progName, initSubcommand},
+		env,
+		stdout,
+		stderr,
+		initMustNotConfirm,
+	)
+}
+
+func initMustNotConfirm(string, string) error {
+	panic("headless init must not confirm")
+}
 
 func readLineReturns(line string) func(string) (string, error) {
 	return func(string) (string, error) {

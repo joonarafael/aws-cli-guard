@@ -219,3 +219,15 @@ Why it mattered: A naive "latest tag" scan or a comment on every weekly run woul
 What we do now: Filter `2.*`, sort numerically, and diff `awscli/data/cli.json` global options on every ahead-of-ceiling release—not only on minor bumps.
 
 Where: [scripts/ci/aws-cli-ceiling-watch.sh](../scripts/ci/aws-cli-ceiling-watch.sh)
+
+## F-19: A development terminal changes the test suite
+
+Date: 2026-11-18
+
+Found: CI has no controlling terminal. `cli.Run` for `init` then fails to open `/dev/tty` and stays headless. Session-off matching does the same and falls through to the lstat hook. In a terminal both opens succeed: init reads a line from the developer, and session-off compares the live device with the fixture.
+
+Why it mattered: `make check` sat in `internal/cli` until the 10-minute package timeout. With a terminal attached, session-off tests failed instead of hanging.
+
+What we do now: Headless init tests call `Dispatch` with no line reader, and a pty subprocess checks that path still exits. Session-off unit tests inject `ControllingTTY`. The Linux wrapper test binds the record to the live controlling terminal when the process has one.
+
+Where: [internal/cli/init_test.go](../internal/cli/init_test.go), [internal/session/apply.go](../internal/session/apply.go)

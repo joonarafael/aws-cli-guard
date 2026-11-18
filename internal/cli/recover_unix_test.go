@@ -21,6 +21,10 @@ const (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv(initHeadlessChildEnv) == "1" {
+		os.Exit(runInitHeadlessChild())
+	}
+
 	if os.Getenv(recoverChildEnv) == "1" {
 		dir := os.Getenv("AWS_CLI_GUARD_CONFIG_DIR")
 		policyPath := filepath.Join(dir, "config.toml")
