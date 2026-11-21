@@ -6,7 +6,7 @@ It is meant to reduce accidental misuse—not to replace IAM, SSO, or organizati
 
 ## Quick start
 
-Prerequisites: Linux or macOS, `curl`, and AWS CLI v2 on `PATH`.
+Prerequisites: Linux or macOS, with `curl`, `minisign`, `sha256sum` or `shasum`, and AWS CLI v2 on `PATH`. `install.sh` exits 3 when one of those tools is missing.
 
 Binaries for Linux and macOS (`amd64` and `arm64`) ship on [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases). Pin a version and run one line (bash); the example uses **0.1.0**—substitute a newer tag when you install:
 
