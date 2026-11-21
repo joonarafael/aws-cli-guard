@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-public_key='RWSiCicdTEh6UtgSJRrVY8hc2KZNAz4rO2UGvfHC4vIPzHmNv4s9YLQo'
+public_key='RWSC06+kT/YwNrdt/+Mehhn7XryQ0e58b8YhL1jbvULBcI7TzMnucUi8'
 
 usage() {
 	printf '%s\n' 'aws-cli-guard: error: usage: install.sh --version X.Y.Z [--prefix dir] [--base-url url]' >&2

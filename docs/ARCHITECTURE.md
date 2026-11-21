@@ -286,7 +286,7 @@ Install uses **exclusive create** (`O_CREAT|O_EXCL`) so a partial install cannot
 
 Tag `v*` triggers the draft **Release** workflow building four platform archives, `checksums.txt`, and `install.sh`. That workflow does not sign anything.
 
-A separate **Sign Release Checksums** workflow (`workflow_dispatch`, GitHub Environment `release-signing` with required reviewers) may sign the draft's `checksums.txt`: the operator supplies the file's SHA-256 after verifying it out-of-band, a reviewer approves the protected environment, the job re-downloads `checksums.txt` from the draft, rejects a digest mismatch, signs with `MINISIGN_SECRET_KEY` (not available to the build job), checks the signature against [internal/update/minisign.pub](../internal/update/minisign.pub), and uploads `checksums.txt.minisig`. Maintainers may still sign offline and upload the signature by hand.
+A separate **Sign Release Checksums** workflow (`workflow_dispatch`, GitHub Environment **Production** with required reviewers) may sign the draft's `checksums.txt`: the operator supplies the file's SHA-256 after verifying it out-of-band, a reviewer approves the environment, the job re-downloads `checksums.txt` from the draft, rejects a digest mismatch, signs with `MINISIGN_SECRET_KEY` (not available to the build job), checks the signature against [internal/update/minisign.pub](../internal/update/minisign.pub), and uploads `checksums.txt.minisig`. Maintainers may still sign offline and upload the signature by hand.
 
 Release verification order (install script and auto-update helper):
 

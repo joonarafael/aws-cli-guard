@@ -240,6 +240,6 @@ Found: `checksums.txt` ships from the same GitHub release URL as the tar archive
 
 Why it mattered: Treating checksum-only verification as publisher authentication would overstate what install and auto-update guarantee.
 
-What we do now: Maintainers sign `checksums.txt` offline or via the **Sign Release Checksums** workflow (protected environment, out-of-band SHA-256 input, separate from the build workflow). `install.sh` and the update helper verify that signature (pinned public key) before SHA-256 checks. The draft **Release** workflow does not hold the signing secret.
+What we do now: Maintainers sign `checksums.txt` offline or via the **Sign Release Checksums** workflow (**Production** environment, out-of-band SHA-256 input, separate from the build workflow). `install.sh` and the update helper verify that signature (pinned public key) before SHA-256 checks. The draft **Release** workflow does not hold the signing secret.
 
 Where: [install.sh](../install.sh), [internal/update/minisign.go](../internal/update/minisign.go), [internal/update/minisign.pub](../internal/update/minisign.pub)

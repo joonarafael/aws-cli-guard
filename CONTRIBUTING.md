@@ -148,18 +148,10 @@ Update `go.mod`, `GO_VERSION` in [ci.yml](.github/workflows/ci.yml) and [release
 
 The [.github/workflows/release-sign.yml](.github/workflows/release-sign.yml) job runs only on `workflow_dispatch`. It does not build assets; the tag **Release** workflow still creates the draft.
 
-One-time setup (repository settings):
-
-- Create GitHub Environment **`release-signing`** with at least one **required reviewer**.
-- Add secret **`MINISIGN_SECRET_KEY`**: full contents of the minisign secret key file that matches [internal/update/minisign.pub](internal/update/minisign.pub) (generate offline with `minisign -G`; use `minisign -G -W` only for throwaway keys).
-- Restrict the environment to trusted branches if your org uses rulesets or deployment branches.
-
-Release steps:
-
 1. Actions → **Sign Release Checksums** → Run workflow.
 2. Set **tag** to the draft tag (for example `v1.2.3`) and **checksums_sha256** to the digest you computed locally.
-3. A required reviewer approves the `release-signing` environment after confirming the SHA-256 matches the draft `checksums.txt` they fetched out-of-band.
-4. The job downloads that file from the draft, rejects a digest mismatch, signs with the environment secret, verifies against the committed public key, and uploads `checksums.txt.minisig`.
+3. Approve the **Production** environment after confirming the SHA-256 matches the draft `checksums.txt` you fetched out-of-band.
+4. The job downloads that file from the draft, rejects a digest mismatch, signs, verifies against [internal/update/minisign.pub](internal/update/minisign.pub), and uploads `checksums.txt.minisig`.
 
 #### Fully offline
 
@@ -173,7 +165,7 @@ Release steps:
 3. Delete failed drafts before re-tagging. A rebuilt `checksums.txt` needs a new signature.
 4. Bump README Quick start `VERSION=`.
 
-The tag **Release** workflow never signs assets. The **Sign Release Checksums** workflow signs only after a human-supplied SHA-256 check and environment approval; it does not run in the same job as the build. Only the public key in [internal/update/minisign.pub](internal/update/minisign.pub) is in the repository.
+The tag **Release** workflow never signs assets. The **Sign Release Checksums** workflow signs only after a human-supplied SHA-256 check and **Production** environment approval; it does not run in the same job as the build. Only the public key in [internal/update/minisign.pub](internal/update/minisign.pub) is in the repository.
 
 ## Contribute
 
