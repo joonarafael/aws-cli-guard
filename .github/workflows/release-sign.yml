@@ -1,0 +1,51 @@
+name: Sign Release Checksums
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: Release tag (for example v1.2.3)
+                required: true
+                type: string
+            checksums_sha256:
+                description: >-
+                    SHA-256 of that draft release checksums.txt (verify locally
+                    before approving the Production environment)
+                required: true
+                type: string
+
+concurrency:
+    group: release-sign-${{ inputs.tag }}
+    cancel-in-progress: false
+
+permissions:
+    contents: write
+
+jobs:
+    sign:
+        name: Sign checksums.txt
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        environment: Production
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install minisign
+              run: sudo apt-get install -y minisign
+
+            - name: Self-Test
+              run: ./scripts/ci/release-sign-checksums.sh --self-test
+
+            - name: Sign And Upload
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+              run: |
+                  set -euo pipefail
+                  ./scripts/ci/release-sign-checksums.sh run \
+                      --tag "${{ inputs.tag }}" \
+                      --checksums-sha256 "${{ inputs.checksums_sha256 }}"

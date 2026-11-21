@@ -8,6 +8,7 @@ How to build, test, maintain, and contribute to AWS CLI Guard.
 
 - **Go** — same major version as the `go` line in [go.mod](go.mod). Linux and macOS are supported development hosts.
 - **C compiler** — required for `make test` (race detector, `CGO_ENABLED=1`). `make build` uses `CGO_ENABLED=0`.
+- **minisign** — required for `make test` (release install and auto-update verification tests). CI installs it with `apt-get`.
 - **No AWS account** — tests use a fake AWS executable.
 
 Windows is not a supported development or runtime target; `make vet` and `make lint` still type-check `!unix` stubs.
@@ -139,11 +140,32 @@ Update `go.mod`, `GO_VERSION` in [ci.yml](.github/workflows/ci.yml) and [release
 
 ### Cut a release
 
-1. Push tag `vX.Y.Z`.
-2. Verify the draft release assets.
-3. Publish manually on GitHub.
-4. Delete failed drafts before re-tagging.
-5. Bump README Quick start `VERSION=`.
+1. Push tag `vX.Y.Z` and wait for the draft **Release** workflow to finish.
+2. Download that draft's `checksums.txt` and record its SHA-256, for example `sha256sum checksums.txt`.
+3. Sign `checksums.txt` using either path below, then publish only after verification.
+
+#### Sign Release Checksums workflow (recommended)
+
+The [.github/workflows/release-sign.yml](.github/workflows/release-sign.yml) job runs only on `workflow_dispatch`. It does not build assets; the tag **Release** workflow still creates the draft.
+
+1. Actions → **Sign Release Checksums** → Run workflow.
+2. Set **tag** to the draft tag (for example `v1.2.3`) and **checksums_sha256** to the digest you computed locally.
+3. Approve the **Production** environment after confirming the SHA-256 matches the draft `checksums.txt` you fetched out-of-band.
+4. The job downloads that file from the draft, rejects a digest mismatch, signs, verifies against [internal/update/minisign.pub](internal/update/minisign.pub), and uploads `checksums.txt.minisig`.
+
+#### Fully offline
+
+1. `minisign -Sm checksums.txt -s <secret-key-path>`.
+2. Upload `checksums.txt.minisig` to the draft release.
+
+#### Finish
+
+1. Verify: `minisign -Vm checksums.txt -P "$(sed -n '2p' internal/update/minisign.pub)"`.
+2. Publish the release manually on GitHub.
+3. Delete failed drafts before re-tagging. A rebuilt `checksums.txt` needs a new signature.
+4. Bump README Quick start `VERSION=`.
+
+The tag **Release** workflow never signs assets. The **Sign Release Checksums** workflow signs only after a human-supplied SHA-256 check and **Production** environment approval; it does not run in the same job as the build. Only the public key in [internal/update/minisign.pub](internal/update/minisign.pub) is in the repository.
 
 ## Contribute
 

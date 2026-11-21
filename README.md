@@ -54,13 +54,21 @@ Local install uses `aws-guard install`, which writes the wrapper, the control pl
 
 On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH` for the current shell. To keep the prefix on `PATH` in new terminals, run `aws-guard shell bash` or `aws-guard shell zsh` after install. That adds a marked block to `.bashrc` or `.zshrc`. Remove it with `aws-guard shell bash --remove` or `aws-guard shell zsh --remove`. Run `aws-guard init` if you have not already.
 
-After a maintainer publishes a draft release from GitHub, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page:
+After a maintainer publishes a release from GitHub, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page. You need **curl**, **minisign**, and **sha256sum** or **shasum** on `PATH`.
 
 ```bash
 sh install.sh --version X.Y.Z
 ```
 
-`install.sh` accepts optional `--prefix` and `--base-url`. Tag pushes create a draft release only; publishing it is a manual step on GitHub.
+`install.sh` downloads the platform archive, `checksums.txt`, and `checksums.txt.minisig`, verifies the minisign signature on `checksums.txt`, then checks the archive SHA-256 from that file. To verify checksums yourself before running the script:
+
+```bash
+minisign -Vm checksums.txt -P "$(sed -n '2p' path/to/minisign.pub)"
+```
+
+The pinned public key in `install.sh` matches [internal/update/minisign.pub](internal/update/minisign.pub). Compare `install.sh` to the git tag if you need assurance about the script itself.
+
+`install.sh` accepts optional `--prefix` and `--base-url`. Tag pushes create a draft release only; maintainers attach `checksums.txt.minisig` and publish on GitHub ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## First run: everything waits for your approval
 

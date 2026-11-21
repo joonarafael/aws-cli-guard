@@ -139,13 +139,26 @@ func hostReleaseArchive(version string) (string, bool) {
 	return fmt.Sprintf("aws-cli-guard_%s_%s_%s.tar.gz", version, goos, goarch), true
 }
 
-func releaseAssetsHandler(archive string, archiveBytes []byte, checksums string) http.Handler {
+func releaseAssetsHandler(
+	archive string,
+	archiveBytes []byte,
+	checksums string,
+	sig []byte,
+) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		switch filepath.Base(request.URL.Path) {
 		case archive:
 			_, _ = responseWriter.Write(archiveBytes)
 		case "checksums.txt":
 			_, _ = io.WriteString(responseWriter, checksums)
+		case "checksums.txt.minisig":
+			if sig == nil {
+				http.NotFound(responseWriter, request)
+
+				return
+			}
+
+			_, _ = responseWriter.Write(sig)
 		default:
 			http.NotFound(responseWriter, request)
 		}
@@ -154,11 +167,11 @@ func releaseAssetsHandler(archive string, archiveBytes []byte, checksums string)
 
 func runInstallScriptWithVersion(
 	t *testing.T,
-	root, version, prefix, baseURL, realBinDir string,
+	root, version, prefix, baseURL, realBinDir, pubB64 string,
 ) ([]byte, error) {
 	t.Helper()
 
-	script := filepath.Join(root, "install.sh")
+	script := writeInstallScriptCopy(t, root, pubB64)
 	cmd := exec.CommandContext(
 		t.Context(),
 		"sh",
@@ -171,7 +184,7 @@ func runInstallScriptWithVersion(
 		baseURL,
 	)
 
-	cmd.Env = installScriptEnv(realBinDir)
+	cmd.Env = installScriptEnvWithMinisign(realBinDir, minisignDir(t))
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -179,22 +192,4 @@ func runInstallScriptWithVersion(
 	}
 
 	return output, nil
-}
-
-func installScriptEnv(realBinDir string) []string {
-	sep := string(os.PathListSeparator)
-	path := realBinDir + sep + "/usr/bin" + sep + "/bin"
-	env := make([]string, 0, len(os.Environ())+1)
-
-	for _, entry := range os.Environ() {
-		if strings.HasPrefix(entry, "PATH=") {
-			continue
-		}
-
-		env = append(env, entry)
-	}
-
-	env = append(env, "PATH="+path)
-
-	return env
 }

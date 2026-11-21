@@ -17,4 +17,8 @@ var (
 	errArchiveParentPath    = errors.New("aws-cli-guard: update: parent path")
 	errArchiveUnexpected    = errors.New("aws-cli-guard: update: unexpected member")
 	errReleaseHTTP          = errors.New("aws-cli-guard: update: release request failed")
+	errSignatureMissing     = errors.New("aws-cli-guard: update: signature missing")
+	errSignatureTooLarge    = errors.New("aws-cli-guard: update: signature too large")
+	errSignatureInvalid     = errors.New("aws-cli-guard: update: signature invalid")
+	errSignatureUntrusted   = errors.New("aws-cli-guard: update: signature untrusted")
 )

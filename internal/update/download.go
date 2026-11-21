@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"aead.dev/minisign"
 )
 
 const (
@@ -40,6 +42,7 @@ func FetchReleaseArchive(
 	client ReleaseClient,
 	httpClient *http.Client,
 	version, goos, goarch, destDir string,
+	publicKey minisign.PublicKey,
 ) error {
 	if httpClient == nil {
 		httpClient = client.HTTP
@@ -63,17 +66,15 @@ func FetchReleaseArchive(
 		return err
 	}
 
-	err = downloadFile(
-		httpClient,
-		base+"/checksums.txt",
-		filepath.Join(destDir, "checksums.txt"),
-		maxChecksumsSize,
-	)
+	err = downloadAndVerifyChecksums(httpClient, base, destDir, publicKey)
 	if err != nil {
 		return err
 	}
 
-	return verifyArchive(filepath.Join(destDir, archive), filepath.Join(destDir, "checksums.txt"))
+	return verifyArchive(
+		filepath.Join(destDir, archive),
+		filepath.Join(destDir, "checksums.txt"),
+	)
 }
 
 //nolint:wrapcheck // stdlib HTTP and file errors stay diagnostic at call sites.
