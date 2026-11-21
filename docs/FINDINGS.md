@@ -231,3 +231,15 @@ Why it mattered: `make check` sat in `internal/cli` until the 10-minute package 
 What we do now: Headless init tests call `Dispatch` with no line reader, and a pty subprocess checks that path still exits. Session-off unit tests inject `ControllingTTY`. The Linux wrapper test binds the record to the live controlling terminal when the process has one.
 
 Where: [internal/cli/init_test.go](../internal/cli/init_test.go), [internal/session/apply.go](../internal/session/apply.go)
+
+## F-20: Checksums alone do not authenticate release assets
+
+Date: 2026-11-21
+
+Found: `checksums.txt` ships from the same GitHub release URL as the tar archives. SHA-256 there detects corruption and casual tampering after download, not a publisher substitute or workflow compromise that rebuilds matching hashes.
+
+Why it mattered: Treating checksum-only verification as publisher authentication would overstate what install and auto-update guarantee.
+
+What we do now: Maintainers sign `checksums.txt` offline with minisign; `install.sh` and the update helper verify that signature (pinned public key) before SHA-256 checks. CI never holds the signing secret.
+
+Where: [install.sh](../install.sh), [internal/update/minisign.go](../internal/update/minisign.go), [internal/update/minisign.pub](../internal/update/minisign.pub)

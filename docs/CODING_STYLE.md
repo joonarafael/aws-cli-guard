@@ -66,7 +66,7 @@ Assert exit **3** and `aws-cli-guard: error:` on cancellations.
 
 ## Dependencies
 
-**depguard** allows only the Go standard library, `aws-cli-guard`, and `github.com/pelletier/go-toml/v2`. New dependencies need justification in the pull request.
+**depguard** allows only the Go standard library, `aws-cli-guard`, `github.com/pelletier/go-toml/v2`, and `aead.dev/minisign` (minisign signature verification for release checksums). New dependencies need justification in the pull request.
 
 ## Lint suppressions
 

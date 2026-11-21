@@ -27,6 +27,7 @@ const (
 	archiveMemberDisable = "aws-cli-guard-disable"
 )
 
+//nolint:unparam // helper formats release archive names for install.sh tests.
 func hostArchiveForVersion(version string) string {
 	return fmt.Sprintf("aws-cli-guard_%s_%s_%s.tar.gz", version, runtime.GOOS, runtime.GOARCH)
 }

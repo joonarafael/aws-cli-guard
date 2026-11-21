@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+public_key='RWSiCicdTEh6UtgSJRrVY8hc2KZNAz4rO2UGvfHC4vIPzHmNv4s9YLQo'
+
 usage() {
 	printf '%s\n' 'aws-cli-guard: error: usage: install.sh --version X.Y.Z [--prefix dir] [--base-url url]' >&2
 	exit 3
@@ -103,6 +105,15 @@ trap cleanup EXIT
 
 curl -fsSL "${base_url}/${archive}" -o "${tmp}/${archive}"
 curl -fsSL "${base_url}/checksums.txt" -o "${tmp}/checksums.txt"
+curl -fsSL "${base_url}/checksums.txt.minisig" -o "${tmp}/checksums.txt.minisig"
+
+if ! command -v minisign >/dev/null 2>&1; then
+	error 'minisign is required'
+fi
+
+if ! minisign -Vm "${tmp}/checksums.txt" -x "${tmp}/checksums.txt.minisig" -P "$public_key" >/dev/null 2>&1; then
+	error 'checksums signature invalid'
+fi
 
 checksum_line=$(grep "  ${archive}$" "${tmp}/checksums.txt" || true)
 [ -n "$checksum_line" ] || error 'checksum for archive not found'

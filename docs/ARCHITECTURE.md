@@ -284,15 +284,21 @@ Install uses **exclusive create** (`O_CREAT|O_EXCL`) so a partial install cannot
 
 ## Releases and auto-update
 
-Tag `v*` triggers draft GitHub Release workflow building four platform archives, `checksums.txt`, and `install.sh`.
+Tag `v*` triggers draft GitHub Release workflow building four platform archives, `checksums.txt`, and `install.sh`. The workflow does not sign anything. A maintainer signs `checksums.txt` offline with minisign and uploads `checksums.txt.minisig` before publishing.
+
+Release verification order (install script and auto-update helper):
+
+1. Download the platform archive, `checksums.txt`, and `checksums.txt.minisig`.
+2. Verify the minisign signature on the exact `checksums.txt` bytes against the public key in [internal/update/minisign.pub](../internal/update/minisign.pub) (also pinned in [install.sh](../install.sh)). The trusted comment must name `file:checksums.txt`.
+3. Verify the archive SHA-256 line in `checksums.txt`, then unpack.
 
 Auto-update (when enabled in settings):
 
 - Live `aws` only reads cache and may spawn detached helper — no network in the hot path.
-- Helper downloads release assets, verifies SHA-256 from `checksums.txt`, replaces install prefix binaries, runs migrate when needed.
+- Helper follows the verification order above, replaces install prefix binaries, runs migrate when needed.
 - Helper never writes `real_aws` in the manifest.
 
-Fixed GitHub org/repo URLs are compiled into the updater; notices surface through cache state in `updates.json`.
+Fixed GitHub org/repo URLs and the release public key are compiled into the updater; notices surface through cache state in `updates.json`.
 
 ## Output, exit status, and logging
 

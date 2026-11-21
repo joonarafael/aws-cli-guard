@@ -27,6 +27,7 @@ linters:
                         - $gostd
                         - aws-cli-guard
                         - github.com/pelletier/go-toml/v2
+                        - aead.dev/minisign
         exhaustruct_v5:
             allow-empty: false
             allow-empty-returns: false

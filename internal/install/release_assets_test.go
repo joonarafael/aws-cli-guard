@@ -170,7 +170,10 @@ func TestReleaseAssetsInstallScriptWithBuiltArchive(t *testing.T) {
 	sum := sha256.Sum256(archiveBytes)
 	checksums := fmt.Sprintf("%s  %s\n", hex.EncodeToString(sum[:]), archive)
 
-	server := httptest.NewServer(releaseAssetsHandler(archive, archiveBytes, checksums))
+	secPath, pubB64 := generateMinisignKeypair(t)
+	sig := signChecksums(t, secPath, []byte(checksums))
+
+	server := httptest.NewServer(releaseAssetsHandler(archive, archiveBytes, checksums, sig))
 	defer server.Close()
 
 	realDir := filepath.Join(work, "real-bin")
@@ -183,6 +186,7 @@ func TestReleaseAssetsInstallScriptWithBuiltArchive(t *testing.T) {
 		prefix,
 		server.URL,
 		realDir,
+		pubB64,
 	)
 	if err != nil {
 		t.Fatalf("install.sh: %v\n%s", err, output)

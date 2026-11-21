@@ -8,6 +8,7 @@ How to build, test, maintain, and contribute to AWS CLI Guard.
 
 - **Go** — same major version as the `go` line in [go.mod](go.mod). Linux and macOS are supported development hosts.
 - **C compiler** — required for `make test` (race detector, `CGO_ENABLED=1`). `make build` uses `CGO_ENABLED=0`.
+- **minisign** — required for `make test` (release install and auto-update verification tests). CI installs it with `apt-get`.
 - **No AWS account** — tests use a fake AWS executable.
 
 Windows is not a supported development or runtime target; `make vet` and `make lint` still type-check `!unix` stubs.
@@ -139,11 +140,16 @@ Update `go.mod`, `GO_VERSION` in [ci.yml](.github/workflows/ci.yml) and [release
 
 ### Cut a release
 
-1. Push tag `vX.Y.Z`.
-2. Verify the draft release assets.
-3. Publish manually on GitHub.
-4. Delete failed drafts before re-tagging.
-5. Bump README Quick start `VERSION=`.
+1. Push tag `vX.Y.Z` and wait for the draft release workflow to finish.
+2. Download that draft's `checksums.txt`.
+3. Sign it offline: `minisign -Sm checksums.txt -s <secret-key-path>`.
+4. Upload `checksums.txt.minisig` to the draft release.
+5. Verify: `minisign -Vm checksums.txt -P "$(sed -n '2p' internal/update/minisign.pub)"`.
+6. Publish the release manually on GitHub.
+7. Delete failed drafts before re-tagging. A rebuilt `checksums.txt` needs a new signature.
+8. Bump README Quick start `VERSION=`.
+
+The release workflow never signs assets. Only the public key in [internal/update/minisign.pub](internal/update/minisign.pub) is in the repository.
 
 ## Contribute
 

@@ -207,6 +207,11 @@ func downloadAndReplace(opts CheckOptions, prefix, latest string) error {
 		_ = os.RemoveAll(tempDir)
 	}()
 
+	publicKey, err := EmbeddedPublicKey()
+	if err != nil {
+		return err
+	}
+
 	err = FetchReleaseArchive(
 		opts.Client,
 		opts.Client.HTTP,
@@ -214,6 +219,7 @@ func downloadAndReplace(opts CheckOptions, prefix, latest string) error {
 		opts.Goos,
 		opts.Goarch,
 		tempDir,
+		publicKey,
 	)
 	if err != nil {
 		return err
