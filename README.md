@@ -68,7 +68,7 @@ minisign -Vm checksums.txt -P "$(sed -n '2p' path/to/minisign.pub)"
 
 The pinned public key in `install.sh` matches [internal/update/minisign.pub](internal/update/minisign.pub). Compare `install.sh` to the git tag if you need assurance about the script itself.
 
-`install.sh` accepts optional `--prefix` and `--base-url`. Tag pushes create a draft release only; a maintainer signs `checksums.txt` offline, attaches `checksums.txt.minisig`, and publishes manually on GitHub.
+`install.sh` accepts optional `--prefix` and `--base-url`. Tag pushes create a draft release only. Maintainers attach `checksums.txt.minisig` via the **Sign Release Checksums** GitHub Actions workflow (after out-of-band SHA-256 verification and environment approval) or by signing offline, then publish manually on GitHub. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## First run: everything waits for your approval
 

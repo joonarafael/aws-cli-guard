@@ -77,7 +77,7 @@ jobs:
                   gh release create "${tag}" \
                       --draft \
                       --title "${tag}" \
-                      --notes "Draft release. Sign checksums.txt offline, upload checksums.txt.minisig, verify with minisign, then publish." \
+                      --notes "Draft release. Run Sign Release Checksums (workflow_dispatch) after verifying checksums.txt SHA-256, or sign offline and upload checksums.txt.minisig, then publish." \
                       "dist/aws-cli-guard_${version}_linux_amd64.tar.gz" \
                       "dist/aws-cli-guard_${version}_linux_arm64.tar.gz" \
                       "dist/aws-cli-guard_${version}_darwin_amd64.tar.gz" \
