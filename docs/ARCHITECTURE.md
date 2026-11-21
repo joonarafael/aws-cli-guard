@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how AWS CLI Guard behaves in the current codebase. Intent and principles live in [DESIGN.md](DESIGN.md). Non-obvious pitfalls are in [FINDINGS.md](FINDINGS.md).
+This document describes how AWS CLI Guard behaves today: decision flow, on-disk state, install layout, and control-plane commands. For product intent see [DESIGN.md](DESIGN.md); for user-facing install and limitations see [README.md](../README.md). Contributor-only pitfalls are in [FINDINGS.md](FINDINGS.md).
 
 ## Overview
 

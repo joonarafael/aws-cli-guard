@@ -1,20 +1,14 @@
 # AWS CLI Guard
 
-AWS CLI Guard is a lightweight, local-first wrapper around AWS CLI v2 that adds user-controlled authorization guardrails to AWS profile usage. It's small, understandable, local-first, and conservative when it cannot determine whether an invocation is permitted.
+AWS CLI Guard is a local wrapper around AWS CLI v2 that sits earlier on `PATH` and asks for approval before commands run under a guarded profile. You choose **allow**, **prompt**, or **deny** per profile, grant temporary access from your terminal, and optionally apply stricter rules when a coding agent is recognized.
 
-It adds friction to potentially dangerous profile usage without unnecessarily disrupting ordinary development workflows.
-
-The primary value is the combination of profile-aware approval, persistent local policy, and best-effort AI-agent detection. It makes accidental access less likely and helps users retain control over which AWS identities their tools can use, while clearly acknowledging that stronger guarantees require controls outside the wrapper.
-
-AWS CLI Guard is not a strict security boundary or a watertight security mechanism. It's a local safety mechanism designed to make accidental misuse less likely. See [Limitations](#limitations) for what the wrapper does not enforce.
-
-Moreover, AWS CLI Guard does not check for what a profile can **actually** do, it has nothing to do with AWS IAM policies.
+It is meant to reduce accidental misuse—not to replace IAM, SSO, or organizational controls. The wrapper does not evaluate what a profile is permitted to do in AWS; it only enforces your local policy. See [Limitations](#limitations) for what it does not block.
 
 ## Quick start
 
 Prerequisites: Linux or macOS, `curl`, and AWS CLI v2 on `PATH`.
 
-After the first release is published, pick the version from [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases) and run one line (bash):
+Binaries for Linux and macOS (`amd64` and `arm64`) ship on [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases). Pin a version and run one line (bash); the example uses **0.1.0**—substitute a newer tag when you install:
 
 ```bash
 VERSION=0.1.0; curl -fsSL "https://github.com/joonarafael/aws-cli-guard/releases/download/v${VERSION}/install.sh" | sh -s -- --version "$VERSION" && export PATH="$HOME/.local/share/aws-cli-guard:$PATH" && aws-guard shell bash && aws-guard init
@@ -50,13 +44,12 @@ Logging is tight by default: an allowed command adds no extra stderr. Set `AWS_C
 
 ## Install
 
-Local install uses `aws-guard install`, which writes the wrapper, the control plane binary, the persistent-disable script, and an install manifest under a new directory. Use `aws-guard disable` and `aws-guard enable` (or run `aws-cli-guard-disable` in the install directory when the Go binary does not run) to turn policy off or on for the whole installation. The default prefix is `~/.local/share/aws-cli-guard`. You can pass `--prefix` to choose another directory. The installer never replaces an existing file in that directory.
+### From a GitHub release
 
-On success the command prints the prefix and a line you can paste to put that directory earlier on `PATH` for the current shell. To keep the prefix on `PATH` in new terminals, run `aws-guard shell bash` or `aws-guard shell zsh` after install. That adds a marked block to `.bashrc` or `.zshrc`. Remove it with `aws-guard shell bash --remove` or `aws-guard shell zsh --remove`. Run `aws-guard init` if you have not already.
-
-After a maintainer publishes a release from GitHub, install from a pinned version with the release `install.sh` asset (not a floating latest URL). Pick the version from the project's GitHub Releases page. You need **curl**, **minisign**, and **sha256sum** or **shasum** on `PATH`.
+Download `install.sh` for a **pinned** version from [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases) (do not rely on a floating `latest` URL). You need **curl**, **minisign**, and **sha256sum** or **shasum** on `PATH`.
 
 ```bash
+curl -fsSLO "https://github.com/joonarafael/aws-cli-guard/releases/download/vX.Y.Z/install.sh"
 sh install.sh --version X.Y.Z
 ```
 
@@ -68,9 +61,17 @@ minisign -Vm checksums.txt -P "$(sed -n '2p' path/to/minisign.pub)"
 
 The pinned public key in `install.sh` matches [internal/update/minisign.pub](internal/update/minisign.pub). Compare `install.sh` to the git tag if you need assurance about the script itself.
 
-`install.sh` accepts optional `--prefix` and `--base-url`. Tag pushes create a draft release only; maintainers attach `checksums.txt.minisig` and publish on GitHub ([CONTRIBUTING.md](CONTRIBUTING.md)).
+`install.sh` accepts optional `--prefix` and `--base-url`. Default prefix: `~/.local/share/aws-cli-guard`.
 
-## First run: everything waits for your approval
+### PATH and shell startup
+
+Put the install prefix **before** the real AWS CLI on `PATH`. After install, run `aws-guard shell bash` or `aws-guard shell zsh` so new terminals pick up the wrapper automatically (marked block in `.bashrc` or `.zshrc`). Remove it with `aws-guard shell bash --remove` or `aws-guard shell zsh --remove`. Run `aws-guard init` once to create policy files.
+
+### Install layout and disable
+
+`aws-guard install` (or a second run of `install.sh` on an existing prefix) writes or upgrades the wrapper, control plane, persistent-disable script, and manifest under the prefix. Use `aws-guard disable` and `aws-guard enable`, or `aws-cli-guard-disable` in the install directory, to turn policy off or on for the whole installation without uninstalling. A fresh install refuses to overwrite unexpected files in the prefix; upgrades replace the shipped binaries in place.
+
+## After install: approve profiles before commands run
 
 After `aws-guard init`, every profile in `config.toml` defaults to `prompt`, including `default`. Commands such as `aws --version`, `aws help`, `aws configure`, and `aws configure sso` use the `default` profile when you do not pass `--profile`, so they are blocked until you allow that profile or create a grant. `aws sso login` is handed through without a grant.
 
@@ -107,11 +108,11 @@ If migrate fails after upgrade, stderr prints diagnosis plus recovery steps: use
 
 ## Documentation
 
-- [Design](docs/DESIGN.md) — intent, goals, and principles
-- [Architecture](docs/ARCHITECTURE.md) — how the software works today
-- [Findings](docs/FINDINGS.md) — non-obvious lessons from implementation
-- [Contributing](CONTRIBUTING.md) — build, test, maintain, and contribute
+- [Design](docs/DESIGN.md) — what the tool is for and how it is meant to behave
+- [Architecture](docs/ARCHITECTURE.md) — behavior, on-disk formats, and operator commands
+- [Security](SECURITY.md) — how to report vulnerabilities
+- [Contributing](CONTRIBUTING.md) — build from source, test, release, and send pull requests
+- [Findings](docs/FINDINGS.md) — implementation pitfalls (mainly for contributors)
 - [Coding style](docs/CODING_STYLE.md) — repository conventions
-- [Security](SECURITY.md) — reporting vulnerabilities
 
-Working agreements for AI-assisted changes are in [AGENTS.md](AGENTS.md).
+AI-assisted development notes are in [AGENTS.md](AGENTS.md).

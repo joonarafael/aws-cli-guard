@@ -73,7 +73,7 @@ Style is [docs/CODING_STYLE.md](docs/CODING_STYLE.md) plus [.golangci.yml](.gola
 
 `make test` and `make check` are safe to run. They do not call AWS.
 
-Dogfood by prepending `bin/` to `PATH` for the current shell, as [CONTRIBUTING.md](CONTRIBUTING.md) describes. Leave `~/.local/bin` alone until an installer exists.
+Dogfood by prepending `bin/` to `PATH` for the current shell, as [CONTRIBUTING.md](CONTRIBUTING.md) describes, or install a release with `install.sh` from [GitHub Releases](https://github.com/joonarafael/aws-cli-guard/releases) into a scratch prefix.
 
 ## Linters and Formatters
 
