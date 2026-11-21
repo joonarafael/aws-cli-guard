@@ -1,6 +1,6 @@
 # Contributing
 
-How to build, test, maintain, and contribute to AWS CLI Guard.
+How to build AWS CLI Guard from source, run tests, cut releases, and send pull requests. End-user install and day-to-day use are in [README.md](README.md).
 
 ## Develop
 

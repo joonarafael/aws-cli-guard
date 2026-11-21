@@ -153,12 +153,6 @@ The wrapper is PATH-based and same-user. Documented bypasses and operator contro
 
 AWS-side IAM and account policies remain authoritative for what a profile can do in AWS.
 
-## Product principle
+## Summary
 
-AWS CLI Guard should be small, understandable, local-first, and conservative when it cannot determine whether an invocation is permitted.
-
-It should add friction to potentially dangerous profile usage without unnecessarily disrupting ordinary development workflows.
-
-The primary value is the combination of profile-aware approval, persistent local policy, and best-effort AI-agent detection.
-
-The wrapper should make accidental access less likely and help users retain control over which AWS identities their tools can use, while clearly acknowledging that stronger guarantees require controls outside the wrapper.
+AWS CLI Guard stays small, local-first, and conservative when it cannot tell whether an invocation is permitted. It adds deliberate friction to risky profile use without blocking routine development. Profile-aware approval, durable local policy, and optional agent detection work together so you keep control over which AWS identities your shell and tools may use; stronger guarantees still require controls outside the wrapper.

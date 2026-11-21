@@ -1,6 +1,6 @@
 # Findings log
 
-This file records non-obvious discoveries that changed code or rules. Plain design choices belong in [ARCHITECTURE.md](ARCHITECTURE.md), not here.
+This file is for **contributors**: non-obvious discoveries that changed code or policy. Operators and end users should rely on [README.md](../README.md), [DESIGN.md](DESIGN.md), and [ARCHITECTURE.md](ARCHITECTURE.md). Routine design choices belong in ARCHITECTURE, not here.
 
 Entries are append-only. If behavior changes, add a note under the original entry rather than rewriting history.
 
